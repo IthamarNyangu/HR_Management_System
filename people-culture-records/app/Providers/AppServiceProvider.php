@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use App\Models\User;
+use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,6 +22,20 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        Paginator::useBootstrapFive();
+
+        Gate::before(function (User $user) {
+            return $user->isAdmin() ? true : null;
+        });
+
+        Gate::define('access-dashboard', fn (User $user) => $user->is_active);
+
+        Gate::define('manage-master-data', function (User $user) {
+            return $user->is_active && $user->isHrManager();
+        });
+
+        Gate::define('manage-users', function (User $user) {
+            return $user->is_active && $user->isAdmin();
+        });
     }
 }
