@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\MasterDataController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\EmployeeController;
 use App\Support\MasterDataRegistry;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -25,6 +26,11 @@ Route::middleware(['auth', 'active'])->group(function () use ($masterDataTypes) 
     Route::get('/dashboard', DashboardController::class)
         ->middleware('can:access-dashboard')
         ->name('dashboard');
+
+    Route::get('/employees/archived', [EmployeeController::class, 'archived'])->name('employees.archived');
+    Route::patch('/employees/{employee}/archive', [EmployeeController::class, 'archive'])->name('employees.archive');
+    Route::patch('/employees/{id}/restore', [EmployeeController::class, 'restore'])->whereNumber('id')->name('employees.restore');
+    Route::resource('employees', EmployeeController::class)->except(['destroy']);
 
     Route::prefix('admin')->name('admin.')->group(function () use ($masterDataTypes) {
         Route::middleware('can:manage-master-data')->group(function () use ($masterDataTypes) {
