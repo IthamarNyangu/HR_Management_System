@@ -1,22 +1,22 @@
 @php
     $items = [
-        ['label' => 'Dashboard', 'route' => 'dashboard', 'active' => request()->routeIs('dashboard'), 'enabled' => true],
-        ['label' => 'Employees', 'route' => null, 'active' => false, 'enabled' => false],
-        ['label' => 'Disciplinary Cases', 'route' => null, 'active' => false, 'enabled' => false],
-        ['label' => 'Staff Promotions', 'route' => null, 'active' => false, 'enabled' => false],
-        ['label' => 'Staff Relocations', 'route' => null, 'active' => false, 'enabled' => false],
-        ['label' => 'Reports', 'route' => null, 'active' => false, 'enabled' => false],
-        ['label' => 'Imports / Exports', 'route' => null, 'active' => false, 'enabled' => false],
-        ['label' => 'Admin Panel', 'route' => 'admin.index', 'active' => request()->routeIs('admin.index') || request()->routeIs('admin.master-data.*'), 'enabled' => auth()->user()->can('manage-master-data')],
-        ['label' => 'User Management', 'route' => 'admin.users.index', 'active' => request()->routeIs('admin.users.*'), 'enabled' => auth()->user()->can('manage-users')],
-        ['label' => 'Audit Logs', 'route' => null, 'active' => false, 'enabled' => false],
-        ['label' => 'Archived Records', 'route' => null, 'active' => false, 'enabled' => false],
+        ['label' => 'Dashboard', 'icon' => 'bi-speedometer2', 'route' => 'dashboard', 'active' => request()->routeIs('dashboard'), 'enabled' => true],
+        ['label' => 'Employees', 'icon' => 'bi-people', 'route' => null, 'active' => false, 'enabled' => false],
+        ['label' => 'Disciplinary Cases', 'icon' => 'bi-shield-exclamation', 'route' => null, 'active' => false, 'enabled' => false],
+        ['label' => 'Staff Promotions', 'icon' => 'bi-graph-up-arrow', 'route' => null, 'active' => false, 'enabled' => false],
+        ['label' => 'Staff Relocations', 'icon' => 'bi-geo-alt', 'route' => null, 'active' => false, 'enabled' => false],
+        ['label' => 'Reports', 'icon' => 'bi-bar-chart', 'route' => null, 'active' => false, 'enabled' => false],
+        ['label' => 'Imports / Exports', 'icon' => 'bi-cloud-arrow-up', 'route' => null, 'active' => false, 'enabled' => false],
+        ['label' => 'Admin Panel', 'icon' => 'bi-sliders', 'route' => 'admin.index', 'active' => request()->routeIs('admin.index') || request()->routeIs('admin.master-data.*'), 'enabled' => auth()->user()->can('manage-master-data')],
+        ['label' => 'User Management', 'icon' => 'bi-person-gear', 'route' => 'admin.users.index', 'active' => request()->routeIs('admin.users.*'), 'enabled' => auth()->user()->can('manage-users')],
+        ['label' => 'Audit Logs', 'icon' => 'bi-clock-history', 'route' => null, 'active' => false, 'enabled' => false],
+        ['label' => 'Archived Records', 'icon' => 'bi-archive', 'route' => null, 'active' => false, 'enabled' => false],
     ];
 @endphp
 
 <aside class="sidebar p-3 d-lg-block">
-    <div class="d-flex align-items-center justify-content-between mb-4">
-        <div>
+    <div class="d-flex align-items-center gap-3 mb-4">
+        <div class="min-w-0">
             <div class="fw-bold">People & Culture</div>
             <div class="small text-white-50">Records Management</div>
         </div>
@@ -26,10 +26,14 @@
         @foreach ($items as $item)
             @if ($item['enabled'] && $item['route'])
                 <a class="nav-link {{ $item['active'] ? 'active' : '' }}" href="{{ route($item['route']) }}">
-                    {{ $item['label'] }}
+                    <i class="bi {{ $item['icon'] }} nav-icon" aria-hidden="true"></i>
+                    <span>{{ $item['label'] }}</span>
                 </a>
             @else
-                <span class="nav-link disabled">{{ $item['label'] }}</span>
+                <span class="nav-link disabled">
+                    <i class="bi {{ $item['icon'] }} nav-icon" aria-hidden="true"></i>
+                    <span>{{ $item['label'] }}</span>
+                </span>
             @endif
         @endforeach
     </nav>

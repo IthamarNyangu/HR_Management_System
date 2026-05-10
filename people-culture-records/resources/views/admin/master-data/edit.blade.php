@@ -12,7 +12,7 @@
 
 @section('content')
     <div class="bg-white border rounded-2 p-4">
-        <form method="POST" action="{{ route('admin.master-data.update', [$type, $record->id]) }}">
+        <form method="POST" action="{{ route('admin.master-data.update', [$type, $record->id]) }}" data-confirm="true" data-confirm-title="Save master data changes?" data-confirm-message="You are about to update this {{ strtolower($config['label']) }} record. This may affect dropdown values used across the system. Do you want to continue?" data-confirm-button="Save changes">
             @csrf
             @method('PUT')
             @include('admin.master-data.partials.form')

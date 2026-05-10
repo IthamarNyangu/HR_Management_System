@@ -8,12 +8,15 @@
     <style>
         body { background: #eef2f7; min-height: 100vh; }
         .login-card { max-width: 440px; border: 1px solid #e1e6ef; border-radius: .5rem; }
+        .login-logo { width: 148px; height: auto; }
+        .btn { display: inline-flex; align-items: center; justify-content: center; min-height: 2.5rem; font-weight: 500; text-align: center; }
     </style>
 </head>
 <body class="d-flex align-items-center">
     <main class="container">
         <div class="login-card bg-white shadow-sm mx-auto p-4">
-            <div class="mb-4">
+            <div class="mb-4 text-center">
+                <img src="{{ asset('images/RTCZ.png') }}" alt="right to care zambia logo" class="login-logo mb-3">
                 <h1 class="h4 mb-1">People & Culture Records</h1>
                 <p class="text-muted mb-0">Sign in to continue.</p>
             </div>

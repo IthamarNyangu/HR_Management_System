@@ -11,7 +11,7 @@
 
 @section('content')
     <div class="bg-white border rounded-2 p-4">
-        <form method="POST" action="{{ route('admin.users.update', $user) }}">
+        <form method="POST" action="{{ route('admin.users.update', $user) }}" data-confirm="true" data-confirm-title="Save user changes?" data-confirm-message="You are about to update this user's account, role, province, or active status. Do you want to continue?" data-confirm-button="Save changes">
             @csrf
             @method('PUT')
             @include('admin.users.partials.form')

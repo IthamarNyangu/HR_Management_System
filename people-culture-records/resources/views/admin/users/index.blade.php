@@ -50,7 +50,7 @@
                             <td class="text-end">
                                 <div class="d-inline-flex gap-2">
                                     <a href="{{ route('admin.users.edit', $user) }}" class="btn btn-sm btn-outline-primary">Edit</a>
-                                    <form method="POST" action="{{ route('admin.users.toggle-status', $user) }}">
+                                    <form method="POST" action="{{ route('admin.users.toggle-status', $user) }}" data-confirm="true" data-confirm-title="{{ $user->is_active ? 'Deactivate user?' : 'Activate user?' }}" data-confirm-message="{{ $user->is_active ? 'This user will no longer be able to log in. Do you want to continue?' : 'This user will regain access to the system. Do you want to continue?' }}" data-confirm-button="{{ $user->is_active ? 'Deactivate user' : 'Activate user' }}" data-confirm-variant="{{ $user->is_active ? 'btn-warning' : 'btn-primary' }}">
                                         @csrf
                                         @method('PATCH')
                                         <button type="submit" class="btn btn-sm btn-outline-secondary">

@@ -12,10 +12,17 @@
     <div class="row g-3">
         @foreach ($types as $type => $config)
             <div class="col-sm-6 col-xl-4">
-                <a href="{{ route('admin.master-data.records', $type) }}" class="text-decoration-none">
-                    <div class="bg-white border rounded-2 p-3 h-100">
-                        <div class="fw-semibold text-dark">{{ $config['label'] }}</div>
-                        <div class="small text-muted">Manage records</div>
+                <a href="{{ route('admin.master-data.records', $type) }}" class="text-decoration-none d-block h-100">
+                    <div class="admin-card p-3 h-100">
+                        <div class="d-flex align-items-center gap-3">
+                            <span class="admin-card-icon">
+                                <i class="bi {{ $config['icon'] }}" aria-hidden="true"></i>
+                            </span>
+                            <span>
+                                <span class="d-block fw-semibold text-dark">{{ $config['label'] }}</span>
+                                <span class="d-block small text-muted">Manage records</span>
+                            </span>
+                        </div>
                     </div>
                 </a>
             </div>

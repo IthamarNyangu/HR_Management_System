@@ -12,7 +12,7 @@
 
 @section('content')
     <div class="bg-white border rounded-2 p-4">
-        <form method="POST" action="{{ route('admin.master-data.store', $type) }}">
+        <form method="POST" action="{{ route('admin.master-data.store', $type) }}" data-confirm="true" data-confirm-title="Create master data record?" data-confirm-message="You are about to add a new {{ strtolower($config['label']) }} record that may appear in HR dropdowns. Do you want to continue?" data-confirm-button="Create record">
             @csrf
             @include('admin.master-data.partials.form', ['record' => null])
         </form>

@@ -64,7 +64,7 @@
                             <td class="text-end">
                                 <div class="d-inline-flex gap-2">
                                     <a href="{{ route('admin.master-data.edit', [$type, $record->id]) }}" class="btn btn-sm btn-outline-primary">Edit</a>
-                                    <form method="POST" action="{{ route('admin.master-data.toggle-status', [$type, $record->id]) }}">
+                                    <form method="POST" action="{{ route('admin.master-data.toggle-status', [$type, $record->id]) }}" data-confirm="true" data-confirm-title="{{ $record->is_active ? 'Deactivate record?' : 'Activate record?' }}" data-confirm-message="{{ $record->is_active ? 'This record will stop appearing as an active option in the system. Do you want to continue?' : 'This record will become available again as an active option. Do you want to continue?' }}" data-confirm-button="{{ $record->is_active ? 'Deactivate record' : 'Activate record' }}" data-confirm-variant="{{ $record->is_active ? 'btn-warning' : 'btn-primary' }}">
                                         @csrf
                                         @method('PATCH')
                                         <button type="submit" class="btn btn-sm btn-outline-secondary">

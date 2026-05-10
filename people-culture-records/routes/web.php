@@ -4,11 +4,22 @@ use App\Http\Controllers\Admin\MasterDataController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\DashboardController;
 use App\Support\MasterDataRegistry;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 $masterDataTypes = implode('|', array_map(fn (string $type) => preg_quote($type, '/'), array_keys(MasterDataRegistry::all())));
 
 Route::redirect('/', '/dashboard');
+
+Route::post('/sign-out', function (Request $request) {
+    Auth::logout();
+
+    $request->session()->invalidate();
+    $request->session()->regenerateToken();
+
+    return redirect()->route('login');
+})->middleware('auth')->name('app.logout');
 
 Route::middleware(['auth', 'active'])->group(function () use ($masterDataTypes) {
     Route::get('/dashboard', DashboardController::class)
