@@ -9,8 +9,8 @@
                 Please confirm that you want to continue.
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" id="confirmationModalConfirm">Continue</button>
+                <button type="button" class="btn btn-secondary btn-md" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary btn-md" id="confirmationModalConfirm">Continue</button>
             </div>
         </div>
     </div>

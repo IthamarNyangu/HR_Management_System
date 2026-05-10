@@ -12,9 +12,9 @@
 @section('page-actions')
     <div class="d-flex gap-2">
         @can('update', $employee)
-            <a href="{{ route('employees.edit', $employee) }}" class="btn btn-primary">Edit Employee</a>
+            <a href="{{ route('employees.edit', $employee) }}" class="btn btn-primary btn-md">Edit Employee</a>
         @endcan
-        <a href="{{ route('employees.index') }}" class="btn btn-outline-secondary">Back</a>
+        <a href="{{ route('employees.index') }}" class="btn btn-secondary btn-md">Back</a>
     </div>
 @endsection
 

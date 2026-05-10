@@ -126,8 +126,8 @@
     </div>
 
     <div class="col-12 d-flex gap-2">
-        <button type="submit" class="btn btn-primary">Save Employee</button>
-        <a href="{{ route('employees.index') }}" class="btn btn-outline-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary btn-md">Save Employee</button>
+        <a href="{{ route('employees.index') }}" class="btn btn-secondary btn-md">Cancel</a>
     </div>
 </div>
 

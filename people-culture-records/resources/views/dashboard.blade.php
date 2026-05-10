@@ -8,8 +8,8 @@
         @foreach ($cards as $card)
             <div class="col-sm-6 col-xl">
                 <div class="metric-card bg-white p-3 h-100">
-                    <div class="text-muted small">{{ $card['label'] }}</div>
-                    <div class="display-6 fw-semibold">{{ $card['value'] }}</div>
+                    <div class="metric-label text-muted small">{{ $card['label'] }}</div>
+                    <div class="metric-value display-6 fw-semibold">{{ $card['value'] }}</div>
                 </div>
             </div>
         @endforeach

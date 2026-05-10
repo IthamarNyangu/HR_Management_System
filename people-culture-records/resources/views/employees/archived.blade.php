@@ -11,20 +11,20 @@
 
 @section('content')
     <div class="bg-white border rounded-2 p-3">
-        <form method="GET" class="row g-2 mb-3">
+        <form method="GET" class="row g-2 mb-4">
             <div class="col-md-6 col-lg-4">
                 <input type="search" name="search" value="{{ request('search') }}" class="form-control" placeholder="Search archived employees">
             </div>
             <div class="col-auto">
-                <button type="submit" class="btn btn-outline-primary">Search</button>
+                <button type="submit" class="btn btn-primary-outline btn-md">Search</button>
             </div>
             <div class="col-auto">
-                <a href="{{ route('employees.index') }}" class="btn btn-outline-secondary">Active Register</a>
+                <a href="{{ route('employees.index') }}" class="btn btn-secondary btn-md">Active Register</a>
             </div>
         </form>
 
-        <div class="table-responsive">
-            <table class="table align-middle">
+        <div class="table-responsive data-table-wrap">
+            <table class="table table-hover align-middle data-table">
                 <thead>
                     <tr>
                         <th>Employee</th>
@@ -67,6 +67,8 @@
             </table>
         </div>
 
-        {{ $employees->links() }}
+        <div class="mt-3">
+            {{ $employees->links() }}
+        </div>
     </div>
 @endsection

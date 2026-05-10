@@ -9,7 +9,7 @@
 @endsection
 
 @section('page-actions')
-    <a href="{{ route('admin.users.create') }}" class="btn btn-primary">New User</a>
+    <a href="{{ route('admin.users.create') }}" class="btn btn-primary btn-md">New User</a>
 @endsection
 
 @section('content')
@@ -19,7 +19,7 @@
                 <input type="search" name="search" value="{{ request('search') }}" class="form-control" placeholder="Search name or email">
             </div>
             <div class="col-auto">
-                <button type="submit" class="btn btn-outline-primary">Search</button>
+                <button type="submit" class="btn btn-primary-outline btn-md">Search</button>
             </div>
         </form>
 

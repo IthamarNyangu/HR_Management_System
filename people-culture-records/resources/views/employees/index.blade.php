@@ -10,16 +10,16 @@
 
 @section('page-actions')
     <div class="d-flex gap-2">
-        <a href="{{ route('employees.archived') }}" class="btn btn-outline-secondary">Archived</a>
+        <a href="{{ route('employees.archived') }}" class="btn btn-secondary btn-md">Archived</a>
         @can('create', App\Models\Employee::class)
-            <a href="{{ route('employees.create') }}" class="btn btn-primary">New Employee</a>
+            <a href="{{ route('employees.create') }}" class="btn btn-primary btn-md">New Employee</a>
         @endcan
     </div>
 @endsection
 
 @section('content')
     <div class="bg-white border rounded-2 p-3">
-        <form method="GET" class="row g-2 mb-3">
+        <form method="GET" class="row g-2 mb-4">
             <div class="col-md-6 col-xl-3">
                 <input type="search" name="search" value="{{ request('search') }}" class="form-control" placeholder="Search employees">
             </div>
@@ -80,15 +80,15 @@
                 </select>
             </div>
             <div class="col-auto">
-                <button type="submit" class="btn btn-outline-primary">Filter</button>
+                <button type="submit" class="btn btn-primary-outline btn-md">Filter</button>
             </div>
             <div class="col-auto">
-                <a href="{{ route('employees.index') }}" class="btn btn-outline-secondary">Reset</a>
+                <a href="{{ route('employees.index') }}" class="btn btn-secondary btn-md">Reset</a>
             </div>
         </form>
 
-        <div class="table-responsive">
-            <table class="table align-middle">
+        <div class="table-responsive data-table-wrap">
+            <table class="table table-hover align-middle data-table">
                 <thead>
                     <tr>
                         <th>Employee</th>
@@ -117,7 +117,7 @@
                             <td class="text-end">
                                 <div class="d-inline-flex gap-2">
                                     @can('view', $employee)
-                                        <a href="{{ route('employees.show', $employee) }}" class="btn btn-sm btn-outline-secondary">View</a>
+                                        <a href="{{ route('employees.show', $employee) }}" class="btn btn-sm btn-secondary">View</a>
                                     @endcan
                                     @can('update', $employee)
                                         <a href="{{ route('employees.edit', $employee) }}" class="btn btn-sm btn-outline-primary">Edit</a>
@@ -141,6 +141,8 @@
             </table>
         </div>
 
-        {{ $employees->links() }}
+        <div class="mt-3">
+            {{ $employees->links() }}
+        </div>
     </div>
 @endsection

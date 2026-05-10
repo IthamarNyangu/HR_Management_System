@@ -9,7 +9,11 @@
         body { background: #eef2f7; min-height: 100vh; }
         .login-card { max-width: 440px; border: 1px solid #e1e6ef; border-radius: .5rem; }
         .login-logo { width: 148px; height: auto; }
-        .btn { display: inline-flex; align-items: center; justify-content: center; min-height: 2.5rem; font-weight: 500; text-align: center; }
+        .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 6px; font-size: 15px; font-weight: 500; line-height: 1; white-space: nowrap; cursor: pointer; border: 1px solid transparent; text-align: center; transition: background-color .15s ease, border-color .15s ease, color .15s ease, box-shadow .15s ease; }
+        .btn-md { height: 40px !important; padding: 0 16px !important; font-size: 15px !important; }
+        .btn-primary { background: #2563eb !important; border-color: #2563eb !important; color: #fff !important; }
+        .btn-primary:hover, .btn-primary:focus { background: #1d4ed8 !important; border-color: #1d4ed8 !important; color: #fff !important; }
+        .btn:focus-visible { outline: 2px solid transparent; outline-offset: 2px; box-shadow: 0 0 0 3px rgba(37, 99, 235, .28); }
     </style>
 </head>
 <body class="d-flex align-items-center">
@@ -45,7 +49,7 @@
                     <label for="remember" class="form-check-label">Remember me</label>
                 </div>
 
-                <button type="submit" class="btn btn-primary w-100">Login</button>
+                <button type="submit" class="btn btn-primary btn-md w-100">Login</button>
             </form>
         </div>
     </main>

@@ -10,7 +10,7 @@
 @endsection
 
 @section('page-actions')
-    <a href="{{ route('admin.master-data.create', $type) }}" class="btn btn-primary">New Record</a>
+    <a href="{{ route('admin.master-data.create', $type) }}" class="btn btn-primary btn-md">New Record</a>
 @endsection
 
 @section('content')
@@ -20,7 +20,7 @@
                 <input type="search" name="search" value="{{ request('search') }}" class="form-control" placeholder="Search name or code">
             </div>
             <div class="col-auto">
-                <button type="submit" class="btn btn-outline-primary">Search</button>
+                <button type="submit" class="btn btn-primary-outline btn-md">Search</button>
             </div>
         </form>
 
