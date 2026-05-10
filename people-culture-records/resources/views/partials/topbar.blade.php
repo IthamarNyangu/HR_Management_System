@@ -9,10 +9,11 @@
 
         <div class="dropdown">
             <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                {{ auth()->user()->name }}
+                {{ auth()->user()->name }} · {{ auth()->user()->province?->name ?? 'HQ' }}
             </button>
             <ul class="dropdown-menu dropdown-menu-end">
                 <li><span class="dropdown-item-text small text-muted">{{ auth()->user()->role?->name ?? 'No role assigned' }}</span></li>
+                <li><span class="dropdown-item-text small text-muted">Province: {{ auth()->user()->province?->name ?? 'HQ' }}</span></li>
                 <li><hr class="dropdown-divider"></li>
                 <li>
                     <form method="POST" action="{{ url('/sign-out') }}">
