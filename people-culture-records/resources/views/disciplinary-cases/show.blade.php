@@ -127,7 +127,7 @@
                 </div>
 
                 @can('uploadAttachment', $case)
-                    <form method="POST" action="{{ route('disciplinary-cases.attachments.store', $case) }}" enctype="multipart/form-data" class="row g-2 align-items-end mb-4">
+                    <form method="POST" action="{{ route('disciplinary-cases.attachments.store', $case) }}" enctype="multipart/form-data" class="row g-2 align-items-end mb-4" data-case-attachment-form>
                         @csrf
                         <div class="col-md-4">
                             <label for="document_type_id" class="form-label">Document Type</label>
@@ -147,9 +147,11 @@
                             @error('document')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
+                            <div class="d-none alert alert-danger py-2 px-3 mt-2 mb-0" data-upload-error role="alert"></div>
+                            <div class="d-none small text-success mt-2" data-upload-ready aria-live="polite"></div>
                         </div>
                         <div class="col-md-3">
-                            <button type="submit" class="btn btn-primary btn-md">Upload</button>
+                            <button type="submit" class="btn btn-primary btn-md" data-upload-submit>Upload</button>
                         </div>
                     </form>
                 @endcan
@@ -200,3 +202,78 @@
         </div>
     </div>
 @endsection
+
+@push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const form = document.querySelector('[data-case-attachment-form]');
+
+            if (!form) {
+                return;
+            }
+
+            const input = form.querySelector('#document');
+            const error = form.querySelector('[data-upload-error]');
+            const ready = form.querySelector('[data-upload-ready]');
+            const submit = form.querySelector('[data-upload-submit]');
+            const maxUploadSize = 10 * 1024 * 1024;
+
+            function formatFileSize(bytes) {
+                const units = ['bytes', 'KB', 'MB'];
+                let size = bytes || 0;
+                let unitIndex = 0;
+
+                while (size >= 1024 && unitIndex < units.length - 1) {
+                    size = size / 1024;
+                    unitIndex++;
+                }
+
+                return `${size.toFixed(unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
+            }
+
+            input?.addEventListener('change', function () {
+                const file = input.files[0];
+
+                error?.classList.add('d-none');
+                ready?.classList.add('d-none');
+                input.classList.remove('is-invalid');
+
+                if (!file) {
+                    return;
+                }
+
+                if (file.size > maxUploadSize) {
+                    input.value = '';
+                    input.classList.add('is-invalid');
+
+                    if (error) {
+                        error.textContent = `${file.name} is ${formatFileSize(file.size)}. Please choose a file smaller than 10 MB.`;
+                        error.classList.remove('d-none');
+                    }
+
+                    return;
+                }
+
+                if (ready) {
+                    ready.textContent = `${file.name} (${formatFileSize(file.size)}) is ready to upload.`;
+                    ready.classList.remove('d-none');
+                }
+            });
+
+            form.addEventListener('submit', function (event) {
+                const file = input?.files[0];
+
+                if (file && file.size > maxUploadSize) {
+                    event.preventDefault();
+                    input.dispatchEvent(new Event('change'));
+                    return;
+                }
+
+                if (submit) {
+                    submit.disabled = true;
+                    submit.innerHTML = '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span><span>Uploading...</span>';
+                }
+            });
+        });
+    </script>
+@endpush

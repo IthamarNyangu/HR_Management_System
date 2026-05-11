@@ -31,14 +31,10 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(DisciplinaryCase::class, DisciplinaryCasePolicy::class);
         Gate::policy(Employee::class, EmployeePolicy::class);
 
-        Gate::before(function (User $user) {
-            return $user->isAdmin() ? true : null;
-        });
-
         Gate::define('access-dashboard', fn (User $user) => $user->is_active);
 
         Gate::define('manage-master-data', function (User $user) {
-            return $user->is_active && $user->isHrManager();
+            return $user->is_active && ($user->isAdmin() || $user->isHrManager());
         });
 
         Gate::define('manage-users', function (User $user) {

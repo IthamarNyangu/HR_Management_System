@@ -154,6 +154,8 @@
                     @enderror
                 </div>
 
+                <div class="d-none alert alert-danger py-2 px-3 mt-3 mb-0" data-upload-error role="alert"></div>
+
                 <div class="d-none border rounded-2 bg-white p-3 mt-3" data-upload-preview aria-live="polite">
                     <div class="d-flex align-items-start justify-content-between gap-3">
                         <div class="d-flex align-items-start gap-3 min-w-0">
@@ -210,7 +212,9 @@
         const uploadFilename = form.querySelector('[data-upload-filename]');
         const uploadMeta = form.querySelector('[data-upload-meta]');
         const uploadClear = form.querySelector('[data-upload-clear]');
+        const uploadError = form.querySelector('[data-upload-error]');
         const submitButton = form.querySelector('[data-submit-button]');
+        const maxUploadSize = 10 * 1024 * 1024;
 
         function formatFileSize(bytes) {
             if (!bytes) {
@@ -234,19 +238,38 @@
                 return;
             }
 
+            uploadError?.classList.add('d-none');
+            uploadInput?.classList.remove('is-invalid');
             uploadFilename.textContent = file.name;
             uploadMeta.textContent = `${formatFileSize(file.size)} selected and ready to attach when you save this case.`;
             uploadPreview.classList.remove('d-none');
             uploadBox?.classList.add('border-primary');
         }
 
-        function clearUploadPreview() {
+        function showUploadError(file) {
             if (uploadInput) {
                 uploadInput.value = '';
+                uploadInput.classList.add('is-invalid');
             }
 
             uploadPreview?.classList.add('d-none');
             uploadBox?.classList.remove('border-primary');
+
+            if (uploadError) {
+                uploadError.textContent = `${file.name} is ${formatFileSize(file.size)}. Please choose a file smaller than 10 MB.`;
+                uploadError.classList.remove('d-none');
+            }
+        }
+
+        function clearUploadPreview() {
+            if (uploadInput) {
+                uploadInput.value = '';
+                uploadInput.classList.remove('is-invalid');
+            }
+
+            uploadPreview?.classList.add('d-none');
+            uploadBox?.classList.remove('border-primary');
+            uploadError?.classList.add('d-none');
         }
 
         function filterEmployees() {
@@ -323,6 +346,11 @@
             const file = uploadInput.files[0];
 
             if (file) {
+                if (file.size > maxUploadSize) {
+                    showUploadError(file);
+                    return;
+                }
+
                 showUploadPreview(file);
             } else {
                 clearUploadPreview();
