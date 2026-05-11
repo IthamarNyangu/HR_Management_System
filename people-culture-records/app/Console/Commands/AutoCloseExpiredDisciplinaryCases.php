@@ -6,6 +6,7 @@ use App\Models\CaseStatus;
 use App\Models\DisciplinaryCase;
 use App\Models\User;
 use App\Notifications\DisciplinaryCaseAutoClosedNotification;
+use App\Services\ActivityLogger;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Notification;
 
@@ -15,7 +16,7 @@ class AutoCloseExpiredDisciplinaryCases extends Command
 
     protected $description = 'Close active disciplinary cases where the expiry date has passed.';
 
-    public function handle(): int
+    public function handle(ActivityLogger $activity): int
     {
         $activeStatus = CaseStatus::where('code', 'ACTIVE')->orWhere('name', 'Active')->first();
         $closedStatus = CaseStatus::where('code', 'CLOSED')->orWhere('name', 'Closed')->first();
@@ -43,6 +44,14 @@ class AutoCloseExpiredDisciplinaryCases extends Command
                 'case_status_id' => $closedStatus->id,
                 'closed_at' => now(),
             ]);
+
+            $activity->log(
+                'case_auto_closed',
+                "System auto-closed disciplinary case {$case->reference_no}.",
+                $case,
+                user: null,
+                request: null,
+            );
 
             if ($recipients->isNotEmpty()) {
                 Notification::send($recipients, new DisciplinaryCaseAutoClosedNotification($case));

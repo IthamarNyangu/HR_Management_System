@@ -6,6 +6,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DisciplinaryCaseAttachmentController;
 use App\Http\Controllers\DisciplinaryCaseController;
 use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\NotificationController;
 use App\Support\MasterDataRegistry;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -28,6 +29,9 @@ Route::middleware(['auth', 'active'])->group(function () use ($masterDataTypes) 
     Route::get('/dashboard', DashboardController::class)
         ->middleware('can:access-dashboard')
         ->name('dashboard');
+
+    Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead'])
+        ->name('notifications.mark-all-read');
 
     Route::get('/employees/archived', [EmployeeController::class, 'archived'])->name('employees.archived');
     Route::patch('/employees/{employee}/archive', [EmployeeController::class, 'archive'])->name('employees.archive');

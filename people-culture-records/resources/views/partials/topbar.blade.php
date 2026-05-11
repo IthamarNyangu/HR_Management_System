@@ -22,8 +22,17 @@
                         </span>
                     @endif
                 </button>
-                <ul class="dropdown-menu dropdown-menu-end" style="min-width: 320px;">
-                    <li><h6 class="dropdown-header">Notifications</h6></li>
+                <ul class="dropdown-menu dropdown-menu-end" style="min-width: 340px;">
+                    <li class="d-flex justify-content-between align-items-center gap-2 px-3 py-2">
+                        <span class="fw-semibold small">Notifications</span>
+                        @if ($unreadNotificationCount > 0)
+                            <form method="POST" action="{{ route('notifications.mark-all-read') }}">
+                                @csrf
+                                <button type="submit" class="btn btn-sm btn-secondary">Mark all read</button>
+                            </form>
+                        @endif
+                    </li>
+                    <li><hr class="dropdown-divider my-0"></li>
                     @forelse ($unreadNotifications as $notification)
                         <li>
                             <a class="dropdown-item text-wrap small" href="{{ $notification->data['url'] ?? '#' }}">

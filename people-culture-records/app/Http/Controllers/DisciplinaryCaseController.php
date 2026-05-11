@@ -17,6 +17,7 @@ use App\Models\Province;
 use App\Models\User;
 use App\Notifications\DisciplinaryCaseApprovedNotification;
 use App\Notifications\DisciplinaryCaseSubmittedNotification;
+use App\Services\ActivityLogger;
 use App\Services\ReferenceNumberService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -77,7 +78,7 @@ class DisciplinaryCaseController extends Controller
         return view('disciplinary-cases.create', $this->formData($request) + compact('case'));
     }
 
-    public function store(StoreDisciplinaryCaseRequest $request, ReferenceNumberService $referenceNumbers): RedirectResponse
+    public function store(StoreDisciplinaryCaseRequest $request, ReferenceNumberService $referenceNumbers, ActivityLogger $activity): RedirectResponse
     {
         $case = DB::transaction(function () use ($request, $referenceNumbers) {
             $data = $this->caseData($request->validated());
@@ -94,8 +95,16 @@ class DisciplinaryCaseController extends Controller
         });
 
         if ($request->hasFile('supporting_document')) {
-            $this->storeInitialAttachment($request, $case);
+            $this->storeInitialAttachment($request, $case, $activity);
         }
+
+        $activity->log(
+            'case_created',
+            "{$request->user()->name} created disciplinary case {$case->reference_no}.",
+            $case,
+            user: $request->user(),
+            request: $request,
+        );
 
         return redirect()->route('disciplinary-cases.show', $case)->with('success', 'Disciplinary case created as draft.');
     }
@@ -119,7 +128,7 @@ class DisciplinaryCaseController extends Controller
         return view('disciplinary-cases.edit', $this->formData($request) + ['case' => $disciplinaryCase]);
     }
 
-    public function update(UpdateDisciplinaryCaseRequest $request, DisciplinaryCase $disciplinaryCase): RedirectResponse
+    public function update(UpdateDisciplinaryCaseRequest $request, DisciplinaryCase $disciplinaryCase, ActivityLogger $activity): RedirectResponse
     {
         $data = $this->caseData($request->validated());
         $data['updated_by'] = $request->user()->id;
@@ -131,10 +140,18 @@ class DisciplinaryCaseController extends Controller
 
         $disciplinaryCase->update($data);
 
+        $activity->log(
+            'case_updated',
+            "{$request->user()->name} updated disciplinary case {$disciplinaryCase->reference_no}.",
+            $disciplinaryCase,
+            user: $request->user(),
+            request: $request,
+        );
+
         return redirect()->route('disciplinary-cases.show', $disciplinaryCase)->with('success', 'Disciplinary case updated successfully.');
     }
 
-    public function submit(Request $request, DisciplinaryCase $disciplinaryCase): RedirectResponse
+    public function submit(Request $request, DisciplinaryCase $disciplinaryCase, ActivityLogger $activity): RedirectResponse
     {
         Gate::authorize('submit', $disciplinaryCase);
 
@@ -148,12 +165,20 @@ class DisciplinaryCaseController extends Controller
             'updated_by' => $request->user()->id,
         ]);
 
+        $activity->log(
+            'case_submitted',
+            "{$request->user()->name} submitted disciplinary case {$disciplinaryCase->reference_no}.",
+            $disciplinaryCase,
+            user: $request->user(),
+            request: $request,
+        );
+
         $this->notifyManagers(new DisciplinaryCaseSubmittedNotification($disciplinaryCase->fresh()));
 
         return redirect()->route('disciplinary-cases.show', $disciplinaryCase)->with('success', 'Disciplinary case submitted for approval.');
     }
 
-    public function approve(Request $request, DisciplinaryCase $disciplinaryCase): RedirectResponse
+    public function approve(Request $request, DisciplinaryCase $disciplinaryCase, ActivityLogger $activity): RedirectResponse
     {
         Gate::authorize('approve', $disciplinaryCase);
 
@@ -168,6 +193,14 @@ class DisciplinaryCaseController extends Controller
             'updated_by' => $request->user()->id,
         ]);
 
+        $activity->log(
+            'case_approved',
+            "{$request->user()->name} approved disciplinary case {$disciplinaryCase->reference_no}.",
+            $disciplinaryCase,
+            user: $request->user(),
+            request: $request,
+        );
+
         if ($disciplinaryCase->createdBy) {
             $disciplinaryCase->createdBy->notify(new DisciplinaryCaseApprovedNotification($disciplinaryCase->fresh()));
         }
@@ -175,7 +208,7 @@ class DisciplinaryCaseController extends Controller
         return redirect()->route('disciplinary-cases.show', $disciplinaryCase)->with('success', 'Disciplinary case approved and activated.');
     }
 
-    public function close(Request $request, DisciplinaryCase $disciplinaryCase): RedirectResponse
+    public function close(Request $request, DisciplinaryCase $disciplinaryCase, ActivityLogger $activity): RedirectResponse
     {
         Gate::authorize('close', $disciplinaryCase);
 
@@ -189,15 +222,31 @@ class DisciplinaryCaseController extends Controller
             'updated_by' => $request->user()->id,
         ]);
 
+        $activity->log(
+            'case_closed',
+            "{$request->user()->name} closed disciplinary case {$disciplinaryCase->reference_no}.",
+            $disciplinaryCase,
+            user: $request->user(),
+            request: $request,
+        );
+
         return redirect()->route('disciplinary-cases.show', $disciplinaryCase)->with('success', 'Disciplinary case closed successfully.');
     }
 
-    public function archive(Request $request, DisciplinaryCase $disciplinaryCase): RedirectResponse
+    public function archive(Request $request, DisciplinaryCase $disciplinaryCase, ActivityLogger $activity): RedirectResponse
     {
         Gate::authorize('archive', $disciplinaryCase);
 
         $disciplinaryCase->update(['archived_by' => $request->user()->id]);
         $disciplinaryCase->delete();
+
+        $activity->log(
+            'case_archived',
+            "{$request->user()->name} archived disciplinary case {$disciplinaryCase->reference_no}.",
+            $disciplinaryCase,
+            user: $request->user(),
+            request: $request,
+        );
 
         return redirect()->route('disciplinary-cases.index')->with('success', 'Disciplinary case archived successfully.');
     }
@@ -228,7 +277,7 @@ class DisciplinaryCaseController extends Controller
         return view('disciplinary-cases.archived', compact('cases'));
     }
 
-    public function restore(Request $request, int $id): RedirectResponse
+    public function restore(Request $request, int $id, ActivityLogger $activity): RedirectResponse
     {
         $disciplinaryCase = DisciplinaryCase::withTrashed()->findOrFail($id);
 
@@ -239,6 +288,14 @@ class DisciplinaryCaseController extends Controller
             'archived_by' => null,
             'updated_by' => $request->user()->id,
         ]);
+
+        $activity->log(
+            'case_restored',
+            "{$request->user()->name} restored disciplinary case {$disciplinaryCase->reference_no}.",
+            $disciplinaryCase,
+            user: $request->user(),
+            request: $request,
+        );
 
         return redirect()->route('disciplinary-cases.show', $disciplinaryCase)->with('success', 'Disciplinary case restored successfully.');
     }
@@ -357,7 +414,7 @@ class DisciplinaryCaseController extends Controller
         }
     }
 
-    private function storeInitialAttachment(StoreDisciplinaryCaseRequest $request, DisciplinaryCase $case): void
+    private function storeInitialAttachment(StoreDisciplinaryCaseRequest $request, DisciplinaryCase $case, ActivityLogger $activity): void
     {
         $file = $request->file('supporting_document');
 
@@ -367,7 +424,7 @@ class DisciplinaryCaseController extends Controller
 
         $path = $file->store("disciplinary-cases/{$case->id}", 'local');
 
-        $case->attachments()->create([
+        $attachment = $case->attachments()->create([
             'document_type_id' => null,
             'original_filename' => $file->getClientOriginalName(),
             'stored_filename' => basename($path),
@@ -376,5 +433,15 @@ class DisciplinaryCaseController extends Controller
             'file_size' => $file->getSize() ?: 0,
             'uploaded_by' => $request->user()->id,
         ]);
+
+        $attachment->setRelation('attachable', $case);
+
+        $activity->log(
+            'attachment_uploaded',
+            "{$request->user()->name} uploaded {$attachment->original_filename} to {$case->reference_no}.",
+            $attachment,
+            user: $request->user(),
+            request: $request,
+        );
     }
 }

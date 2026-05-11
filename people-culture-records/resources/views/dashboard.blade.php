@@ -1,22 +1,160 @@
 @extends('layouts.app')
 
 @section('title', 'Dashboard')
-@section('page-title', 'Dashboard')
+@section('hide-page-header', true)
 
 @section('content')
-    <div class="row g-3">
-        @foreach ($cards as $card)
-            <div class="col-sm-6 col-xl">
-                <div class="metric-card bg-white p-3 h-100">
-                    <div class="metric-label text-muted small">{{ $card['label'] }}</div>
-                    <div class="metric-value display-6 fw-semibold">{{ $card['value'] }}</div>
+    <div class="d-flex flex-column gap-4">
+        <section>
+            <div class="row row-cols-1 row-cols-md-2 row-cols-xl-4 g-3">
+                @foreach ($needsAttention as $card)
+                    <div class="col">
+                        <a href="{{ $card['url'] }}" class="text-decoration-none text-reset">
+                            <div class="dashboard-card dashboard-card-{{ $card['tone'] }} h-100">
+                                <div class="d-flex justify-content-between align-items-start gap-3">
+                                    <div>
+                                        <div class="dashboard-label">{{ $card['label'] }}</div>
+                                        <div class="dashboard-value">{{ $card['value'] }}</div>
+                                    </div>
+                                    <span class="dashboard-icon">
+                                        <i class="bi {{ $card['icon'] }}" aria-hidden="true"></i>
+                                    </span>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                @endforeach
+            </div>
+        </section>
+
+        <section class="bg-white border rounded-2 p-3">
+            <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
+                <div>
+                    <h2 class="h5 mb-1">Quick Actions</h2>
+                    <p class="text-muted small mb-0">Common HR actions based on your access.</p>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    @can('create', App\Models\Employee::class)
+                        <a href="{{ route('employees.create') }}" class="btn btn-primary btn-md">
+                            <i class="bi bi-person-plus" aria-hidden="true"></i>
+                            Add Employee
+                        </a>
+                    @endcan
+                    @can('create', App\Models\DisciplinaryCase::class)
+                        <a href="{{ route('disciplinary-cases.create') }}" class="btn btn-primary-outline btn-md">
+                            <i class="bi bi-shield-plus" aria-hidden="true"></i>
+                            Create Disciplinary Case
+                        </a>
+                    @endcan
+                    <a href="{{ $submittedStatus ? route('disciplinary-cases.index', ['case_status_id' => $submittedStatus->id]) : route('disciplinary-cases.index') }}" class="btn btn-secondary btn-md">Awaiting Approval</a>
+                    <a href="{{ route('disciplinary-cases.index', ['expiry_from' => today()->toDateString(), 'expiry_to' => today()->addDays(30)->toDateString()]) }}" class="btn btn-secondary btn-md">Expiring Cases</a>
+                    <a href="{{ route('disciplinary-cases.archived') }}" class="btn btn-secondary btn-md">Archived Records</a>
                 </div>
             </div>
-        @endforeach
-    </div>
+        </section>
 
-    <section class="bg-white border rounded-2 mt-4 p-4">
-        <h2 class="h5">Recent Activity</h2>
-        <p class="text-muted mb-0">No activity recorded yet.</p>
-    </section>
+        <div class="row g-4">
+            <div class="col-xl-5">
+                <section class="bg-white border rounded-2 p-3 h-100">
+                    <h2 class="h5 mb-3">People Overview</h2>
+                    <div class="row row-cols-1 row-cols-sm-3 g-3 mb-4">
+                        @foreach ($peopleOverview as $card)
+                            <div class="col">
+                                <div class="summary-tile h-100">
+                                    <div class="summary-label">{{ $card['label'] }}</div>
+                                    <div class="summary-value">{{ $card['value'] }}</div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+
+                    <h3 class="h6 mb-3">Employees by Province</h3>
+                    <div class="list-group list-group-flush">
+                        @forelse ($employeesByProvince as $province)
+                            <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                                <span>{{ $province->province_name }}</span>
+                                <span class="badge text-bg-light">{{ $province->total }}</span>
+                            </div>
+                        @empty
+                            <div class="text-muted small">No employee records available.</div>
+                        @endforelse
+                    </div>
+                </section>
+            </div>
+
+            <div class="col-xl-7">
+                <section class="bg-white border rounded-2 p-3 h-100">
+                    <h2 class="h5 mb-3">Disciplinary Case Overview</h2>
+                    <div class="row row-cols-1 row-cols-md-3 g-3 mb-4">
+                        @foreach ($caseOverview as $card)
+                            <div class="col">
+                                <div class="summary-tile h-100">
+                                    <div class="summary-label">{{ $card['label'] }}</div>
+                                    <div class="summary-value">{{ $card['value'] }}</div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <h3 class="h6 mb-3">Cases by Status</h3>
+                            <div class="list-group list-group-flush">
+                                @forelse ($casesByStatus as $row)
+                                    <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                                        <span>{{ $row->label }}</span>
+                                        <span class="badge text-bg-light">{{ $row->total }}</span>
+                                    </div>
+                                @empty
+                                    <div class="text-muted small">No case status data yet.</div>
+                                @endforelse
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h3 class="h6 mb-3">Cases by Offence Category</h3>
+                            <div class="list-group list-group-flush">
+                                @forelse ($casesByOffenceCategory as $row)
+                                    <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                                        <span>{{ $row->label }}</span>
+                                        <span class="badge text-bg-light">{{ $row->total }}</span>
+                                    </div>
+                                @empty
+                                    <div class="text-muted small">No offence category data yet.</div>
+                                @endforelse
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        <section class="bg-white border rounded-2 p-3">
+            <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
+                <div>
+                    <h2 class="h5 mb-1">Recent Activity</h2>
+                    <p class="text-muted small mb-0">Latest system history visible to your role and province.</p>
+                </div>
+            </div>
+
+            <div class="activity-list">
+                @forelse ($recentActivities as $activity)
+                    <div class="activity-item">
+                        <div class="activity-dot"></div>
+                        <div class="min-w-0">
+                            <div class="fw-semibold">{{ $activity->description }}</div>
+                            <div class="small text-muted">
+                                {{ $activity->actor_name }}
+                                @if ($activity->reference)
+                                    · {{ $activity->reference }}
+                                @endif
+                                · {{ $activity->created_at->diffForHumans() }}
+                            </div>
+                        </div>
+                    </div>
+                @empty
+                    <div class="text-muted small">No activity recorded yet.</div>
+                @endforelse
+            </div>
+        </section>
+    </div>
 @endsection

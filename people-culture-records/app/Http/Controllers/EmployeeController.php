@@ -12,6 +12,7 @@ use App\Models\Facility;
 use App\Models\JobTitle;
 use App\Models\Project;
 use App\Models\Province;
+use App\Services\ActivityLogger;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -64,7 +65,7 @@ class EmployeeController extends Controller
         return view('employees.create', $this->formData($request) + compact('employee'));
     }
 
-    public function store(StoreEmployeeRequest $request): RedirectResponse
+    public function store(StoreEmployeeRequest $request, ActivityLogger $activity): RedirectResponse
     {
         $data = $this->employeeData($request->validated());
         $data['created_by'] = $request->user()->id;
@@ -75,6 +76,14 @@ class EmployeeController extends Controller
         }
 
         $employee = Employee::create($data);
+
+        $activity->log(
+            'employee_created',
+            "{$request->user()->name} created employee {$employee->display_name}.",
+            $employee,
+            user: $request->user(),
+            request: $request,
+        );
 
         return redirect()->route('employees.show', $employee)->with('success', 'Employee created successfully.');
     }
@@ -112,7 +121,7 @@ class EmployeeController extends Controller
         return view('employees.edit', $this->formData($request) + compact('employee'));
     }
 
-    public function update(UpdateEmployeeRequest $request, Employee $employee): RedirectResponse
+    public function update(UpdateEmployeeRequest $request, Employee $employee, ActivityLogger $activity): RedirectResponse
     {
         $data = $this->employeeData($request->validated());
         $data['updated_by'] = $request->user()->id;
@@ -123,15 +132,31 @@ class EmployeeController extends Controller
 
         $employee->update($data);
 
+        $activity->log(
+            'employee_updated',
+            "{$request->user()->name} updated employee {$employee->display_name}.",
+            $employee,
+            user: $request->user(),
+            request: $request,
+        );
+
         return redirect()->route('employees.show', $employee)->with('success', 'Employee updated successfully.');
     }
 
-    public function archive(Request $request, Employee $employee): RedirectResponse
+    public function archive(Request $request, Employee $employee, ActivityLogger $activity): RedirectResponse
     {
         Gate::authorize('archive', $employee);
 
         $employee->update(['archived_by' => $request->user()->id]);
         $employee->delete();
+
+        $activity->log(
+            'employee_archived',
+            "{$request->user()->name} archived employee {$employee->display_name}.",
+            $employee,
+            user: $request->user(),
+            request: $request,
+        );
 
         return redirect()->route('employees.index')->with('success', 'Employee archived successfully.');
     }
@@ -159,7 +184,7 @@ class EmployeeController extends Controller
         return view('employees.archived', compact('employees'));
     }
 
-    public function restore(Request $request, int $id): RedirectResponse
+    public function restore(Request $request, int $id, ActivityLogger $activity): RedirectResponse
     {
         $employee = Employee::withTrashed()->findOrFail($id);
 
@@ -170,6 +195,14 @@ class EmployeeController extends Controller
             'archived_by' => null,
             'updated_by' => $request->user()->id,
         ]);
+
+        $activity->log(
+            'employee_restored',
+            "{$request->user()->name} restored employee {$employee->display_name}.",
+            $employee,
+            user: $request->user(),
+            request: $request,
+        );
 
         return redirect()->route('employees.show', $employee)->with('success', 'Employee restored successfully.');
     }

@@ -19,6 +19,21 @@
         .metric-card { border: 1px solid #e7eaf0; border-radius: .5rem; min-height: 9.5rem; display: flex; flex-direction: column; }
         .metric-label { min-height: 3rem; display: flex; align-items: flex-start; }
         .metric-value { margin-top: .25rem; line-height: 1; }
+        .dashboard-card { border: 1px solid #e1e7f0; border-radius: .5rem; padding: 1rem; background: #fff; min-height: 8.5rem; transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease; }
+        .dashboard-card:hover { border-color: #b8c7dd; box-shadow: 0 .6rem 1.4rem rgba(23, 32, 51, .08); transform: translateY(-1px); }
+        .dashboard-card-primary { border-left: 4px solid #2563eb; }
+        .dashboard-card-warning { border-left: 4px solid #d97706; background: #fffaf0; }
+        .dashboard-card-danger { border-left: 4px solid #dc2626; background: #fff7f7; }
+        .dashboard-card-success { border-left: 4px solid #15803d; }
+        .dashboard-label, .summary-label { color: #667085; font-size: .875rem; font-weight: 500; }
+        .dashboard-value { font-size: 2.25rem; font-weight: 700; line-height: 1.1; margin-top: .75rem; color: #111827; }
+        .dashboard-icon { width: 2.25rem; height: 2.25rem; border-radius: .5rem; display: inline-flex; align-items: center; justify-content: center; background: #f3f6fa; color: #344054; flex: 0 0 auto; }
+        .summary-tile { border: 1px solid #e7eaf0; border-radius: .5rem; padding: 1rem; background: #f8fafc; min-height: 6.5rem; }
+        .summary-value { font-size: 1.75rem; font-weight: 700; line-height: 1.1; margin-top: .5rem; color: #111827; }
+        .activity-list { display: grid; gap: .85rem; }
+        .activity-item { display: flex; gap: .85rem; align-items: flex-start; padding-bottom: .85rem; border-bottom: 1px solid #eef2f7; }
+        .activity-item:last-child { border-bottom: 0; padding-bottom: 0; }
+        .activity-dot { width: .65rem; height: .65rem; margin-top: .45rem; border-radius: 999px; background: #2563eb; flex: 0 0 .65rem; }
         .admin-card { border: 1px solid #e1e7f0; border-radius: .5rem; background: #fff; transition: border-color .16s ease, box-shadow .16s ease, transform .16s ease; }
         .admin-card:hover, .admin-card:focus-within { border-color: #b8c7dd; box-shadow: 0 .6rem 1.4rem rgba(23, 32, 51, .08); transform: translateY(-1px); }
         .admin-card-icon { width: 2.5rem; height: 2.5rem; border-radius: .5rem; display: inline-flex; align-items: center; justify-content: center; background: #eef4ff; color: #0d6efd; font-size: 1.15rem; flex: 0 0 auto; }
@@ -82,20 +97,23 @@
             @include('partials.topbar')
 
             <main class="container-fluid py-4 px-3 px-lg-4">
-                <div class="d-flex flex-column flex-md-row justify-content-between gap-2 mb-3">
-                    <div>
-                        <h1 class="h4 mb-1">@yield('page-title', 'Dashboard')</h1>
-                        @hasSection('breadcrumb')
-                            <nav aria-label="breadcrumb">
-                                <ol class="breadcrumb small mb-0">
-                                    @yield('breadcrumb')
-                                </ol>
-                            </nav>
-                        @endif
-                    </div>
+                @hasSection('hide-page-header')
+                @else
+                    <div class="d-flex flex-column flex-md-row justify-content-between gap-2 mb-3">
+                        <div>
+                            <h1 class="h4 mb-1">@yield('page-title', 'Dashboard')</h1>
+                            @hasSection('breadcrumb')
+                                <nav aria-label="breadcrumb">
+                                    <ol class="breadcrumb small mb-0">
+                                        @yield('breadcrumb')
+                                    </ol>
+                                </nav>
+                            @endif
+                        </div>
 
-                    @yield('page-actions')
-                </div>
+                        @yield('page-actions')
+                    </div>
+                @endif
 
                 @include('partials.flash')
 
