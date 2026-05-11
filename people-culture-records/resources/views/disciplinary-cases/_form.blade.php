@@ -132,24 +132,61 @@
         @enderror
     </div>
 
-    <div class="col-12">
+    <div class="col-lg-6">
         <label for="nature_of_offence" class="form-label">Nature of Offence</label>
-        <textarea id="nature_of_offence" name="nature_of_offence" rows="4" class="form-control @error('nature_of_offence') is-invalid @enderror" required>{{ old('nature_of_offence', $case->nature_of_offence) }}</textarea>
+        <textarea id="nature_of_offence" name="nature_of_offence" rows="5" class="form-control @error('nature_of_offence') is-invalid @enderror" required>{{ old('nature_of_offence', $case->nature_of_offence) }}</textarea>
         @error('nature_of_offence')
             <div class="invalid-feedback">{{ $message }}</div>
         @enderror
+
+        @unless ($case->exists)
+            <div class="border rounded-2 bg-light p-3 mt-3" data-upload-box>
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <i class="bi bi-paperclip text-primary" aria-hidden="true"></i>
+                    <div class="fw-semibold">Supporting Document</div>
+                </div>
+
+                <div>
+                    <label for="supporting_document" class="form-label">Upload File</label>
+                    <input id="supporting_document" name="supporting_document" type="file" class="form-control @error('supporting_document') is-invalid @enderror" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
+                    @error('supporting_document')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+
+                <div class="d-none border rounded-2 bg-white p-3 mt-3" data-upload-preview aria-live="polite">
+                    <div class="d-flex align-items-start justify-content-between gap-3">
+                        <div class="d-flex align-items-start gap-3 min-w-0">
+                            <div class="rounded-2 d-inline-flex align-items-center justify-content-center flex-shrink-0" style="width: 40px; height: 40px; background: #eef4ff; color: #2563eb;">
+                                <i class="bi bi-file-earmark-check" aria-hidden="true"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <div class="d-flex align-items-center gap-2 flex-wrap">
+                                    <span class="fw-semibold text-truncate" data-upload-filename></span>
+                                    <span class="badge text-bg-success">Attached</span>
+                                </div>
+                                <div class="small text-muted mt-1" data-upload-meta></div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-secondary" data-upload-clear>Remove</button>
+                    </div>
+                </div>
+
+                <div class="small text-muted mt-2">PDF, DOC, DOCX, JPG, JPEG, or PNG. Maximum 10 MB.</div>
+            </div>
+        @endunless
     </div>
 
-    <div class="col-12">
+    <div class="col-lg-6">
         <label for="comment" class="form-label">Comment</label>
-        <textarea id="comment" name="comment" rows="3" class="form-control @error('comment') is-invalid @enderror">{{ old('comment', $case->comment) }}</textarea>
+        <textarea id="comment" name="comment" rows="5" class="form-control @error('comment') is-invalid @enderror">{{ old('comment', $case->comment) }}</textarea>
         @error('comment')
             <div class="invalid-feedback">{{ $message }}</div>
         @enderror
     </div>
 
     <div class="col-12 d-flex gap-2">
-        <button type="submit" class="btn btn-primary btn-md">Save Case</button>
+        <button type="submit" class="btn btn-primary btn-md" data-submit-button>Save Case</button>
         <a href="{{ $case->exists ? route('disciplinary-cases.show', $case) : route('disciplinary-cases.index') }}" class="btn btn-secondary btn-md">Cancel</a>
     </div>
 </div>
@@ -167,6 +204,50 @@
         const district = form.querySelector('[data-district-select]');
         const facility = form.querySelector('[data-facility-select]');
         const project = form.querySelector('[data-project-select]');
+        const uploadBox = form.querySelector('[data-upload-box]');
+        const uploadInput = form.querySelector('#supporting_document');
+        const uploadPreview = form.querySelector('[data-upload-preview]');
+        const uploadFilename = form.querySelector('[data-upload-filename]');
+        const uploadMeta = form.querySelector('[data-upload-meta]');
+        const uploadClear = form.querySelector('[data-upload-clear]');
+        const submitButton = form.querySelector('[data-submit-button]');
+
+        function formatFileSize(bytes) {
+            if (!bytes) {
+                return '0 KB';
+            }
+
+            const units = ['bytes', 'KB', 'MB'];
+            let size = bytes;
+            let unitIndex = 0;
+
+            while (size >= 1024 && unitIndex < units.length - 1) {
+                size = size / 1024;
+                unitIndex++;
+            }
+
+            return `${size.toFixed(unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
+        }
+
+        function showUploadPreview(file) {
+            if (!uploadPreview || !uploadFilename || !uploadMeta) {
+                return;
+            }
+
+            uploadFilename.textContent = file.name;
+            uploadMeta.textContent = `${formatFileSize(file.size)} selected and ready to attach when you save this case.`;
+            uploadPreview.classList.remove('d-none');
+            uploadBox?.classList.add('border-primary');
+        }
+
+        function clearUploadPreview() {
+            if (uploadInput) {
+                uploadInput.value = '';
+            }
+
+            uploadPreview?.classList.add('d-none');
+            uploadBox?.classList.remove('border-primary');
+        }
 
         function filterEmployees() {
             const provinceId = province.value;
@@ -238,6 +319,24 @@
         province.addEventListener('change', filterDistricts);
         district.addEventListener('change', filterFacilities);
         employee.addEventListener('change', applyEmployeeDefaults);
+        uploadInput?.addEventListener('change', function () {
+            const file = uploadInput.files[0];
+
+            if (file) {
+                showUploadPreview(file);
+            } else {
+                clearUploadPreview();
+            }
+        });
+        uploadClear?.addEventListener('click', clearUploadPreview);
+        form.addEventListener('submit', function () {
+            if (!submitButton) {
+                return;
+            }
+
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span><span>Saving...</span>';
+        });
         filterDistricts();
         filterFacilities();
     });

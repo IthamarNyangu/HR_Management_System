@@ -11,7 +11,7 @@
 
 @section('content')
     <section class="bg-white border rounded-2 p-4">
-        <form method="POST" action="{{ route('disciplinary-cases.store') }}">
+        <form method="POST" action="{{ route('disciplinary-cases.store') }}" enctype="multipart/form-data">
             @csrf
             @include('disciplinary-cases._form')
         </form>

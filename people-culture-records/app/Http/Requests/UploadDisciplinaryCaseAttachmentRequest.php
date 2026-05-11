@@ -18,7 +18,7 @@ class UploadDisciplinaryCaseAttachmentRequest extends FormRequest
     {
         return [
             'document_type_id' => ['nullable', 'exists:document_types,id'],
-            'document' => ['required', 'file', 'mimes:pdf,doc,docx,jpg,jpeg,png', 'max:5120'],
+            'document' => ['required', 'file', 'mimes:pdf,doc,docx,jpg,jpeg,png', 'max:10240'],
         ];
     }
 }

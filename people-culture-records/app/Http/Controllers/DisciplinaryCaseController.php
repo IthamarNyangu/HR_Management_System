@@ -93,6 +93,10 @@ class DisciplinaryCaseController extends Controller
             return DisciplinaryCase::create($data);
         });
 
+        if ($request->hasFile('supporting_document')) {
+            $this->storeInitialAttachment($request, $case);
+        }
+
         return redirect()->route('disciplinary-cases.show', $case)->with('success', 'Disciplinary case created as draft.');
     }
 
@@ -351,5 +355,26 @@ class DisciplinaryCaseController extends Controller
         if ($recipients->isNotEmpty()) {
             Notification::send($recipients, $notification);
         }
+    }
+
+    private function storeInitialAttachment(StoreDisciplinaryCaseRequest $request, DisciplinaryCase $case): void
+    {
+        $file = $request->file('supporting_document');
+
+        if (! $file) {
+            return;
+        }
+
+        $path = $file->store("disciplinary-cases/{$case->id}", 'local');
+
+        $case->attachments()->create([
+            'document_type_id' => null,
+            'original_filename' => $file->getClientOriginalName(),
+            'stored_filename' => basename($path),
+            'file_path' => $path,
+            'mime_type' => $file->getMimeType(),
+            'file_size' => $file->getSize() ?: 0,
+            'uploaded_by' => $request->user()->id,
+        ]);
     }
 }

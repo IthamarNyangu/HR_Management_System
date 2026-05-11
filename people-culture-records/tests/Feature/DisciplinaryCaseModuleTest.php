@@ -234,6 +234,31 @@ class DisciplinaryCaseModuleTest extends TestCase
         ]);
     }
 
+    public function test_supporting_document_can_be_uploaded_while_creating_case(): void
+    {
+        Storage::fake('local');
+
+        $admin = $this->user($this->adminRole);
+
+        $this->actingAs($admin)
+            ->post(route('disciplinary-cases.store'), $this->casePayload([
+                'supporting_document' => UploadedFile::fake()->create('initial-letter.pdf', 20, 'application/pdf'),
+            ]))
+            ->assertRedirect();
+
+        $case = DisciplinaryCase::with('attachments')->firstOrFail();
+        $attachment = $case->attachments->first();
+
+        $this->assertNotNull($attachment);
+        $this->assertSame('initial-letter.pdf', $attachment->original_filename);
+        Storage::disk('local')->assertExists($attachment->file_path);
+
+        $this->actingAs($admin)
+            ->get(route('disciplinary-cases.show', $case))
+            ->assertOk()
+            ->assertSee('initial-letter.pdf');
+    }
+
     private function user(Role $role, ?Province $province = null): User
     {
         return User::factory()->create([

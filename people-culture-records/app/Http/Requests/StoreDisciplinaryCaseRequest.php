@@ -34,6 +34,7 @@ class StoreDisciplinaryCaseRequest extends FormRequest
             'effective_date' => ['required', 'date'],
             'expiry_date' => ['nullable', 'date', 'after_or_equal:effective_date'],
             'comment' => ['nullable', 'string'],
+            'supporting_document' => ['nullable', 'file', 'mimes:pdf,doc,docx,jpg,jpeg,png', 'max:10240'],
         ];
     }
 
