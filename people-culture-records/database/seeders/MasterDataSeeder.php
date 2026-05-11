@@ -54,6 +54,7 @@ class MasterDataSeeder extends Seeder
             ['name' => 'Submitted', 'code' => 'SUBMITTED'],
             ['name' => 'Active', 'code' => 'ACTIVE'],
             ['name' => 'Closed', 'code' => 'CLOSED'],
+            ['name' => 'Archived', 'code' => 'ARCHIVED'],
         ],
         PromotionType::class => [
             ['name' => 'Merit', 'code' => 'MERIT'],

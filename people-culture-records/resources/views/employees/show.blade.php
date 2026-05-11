@@ -67,9 +67,43 @@
                 <p class="mb-0 text-muted">{{ $employee->notes ?: 'No notes recorded.' }}</p>
             </section>
 
+            <section class="bg-white border rounded-2 p-4 mb-3">
+                <h2 class="h5">Disciplinary History</h2>
+                <div class="table-responsive data-table-wrap">
+                    <table class="table table-hover align-middle data-table">
+                        <thead>
+                            <tr>
+                                <th>Reference</th>
+                                <th>Offence</th>
+                                <th>Penalty</th>
+                                <th>Status</th>
+                                <th>Effective</th>
+                                <th>Expiry</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse ($disciplinaryCases as $case)
+                                <tr>
+                                    <td><a href="{{ route('disciplinary-cases.show', $case) }}">{{ $case->reference_no }}</a></td>
+                                    <td>{{ $case->offenceCategory?->name ?? '-' }}</td>
+                                    <td>{{ $case->penaltyType?->name ?? '-' }}</td>
+                                    <td><span class="badge text-bg-secondary">{{ $case->caseStatus?->name ?? '-' }}</span></td>
+                                    <td>{{ $case->effective_date?->format('d M Y') }}</td>
+                                    <td>{{ $case->expiry_date?->format('d M Y') ?? '-' }}</td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-4">No disciplinary history recorded.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
             <div class="row g-3">
-                @foreach (['Disciplinary history', 'Promotion history', 'Relocation history'] as $section)
-                    <div class="col-md-4">
+                @foreach (['Promotion history', 'Relocation history'] as $section)
+                    <div class="col-md-6">
                         <section class="bg-white border rounded-2 p-3 h-100">
                             <h3 class="h6">{{ $section }}</h3>
                             <p class="small text-muted mb-0">Coming in later phases.</p>

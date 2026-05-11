@@ -95,7 +95,14 @@ class EmployeeController extends Controller
             'updatedBy',
         ]);
 
-        return view('employees.show', compact('employee'));
+        $disciplinaryCases = $employee->disciplinaryCases()
+            ->with(['offenceCategory', 'penaltyType', 'caseStatus'])
+            ->visibleTo(request()->user())
+            ->latest()
+            ->take(5)
+            ->get();
+
+        return view('employees.show', compact('employee', 'disciplinaryCases'));
     }
 
     public function edit(Request $request, Employee $employee): View

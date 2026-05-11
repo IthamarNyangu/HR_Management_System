@@ -3,7 +3,9 @@
 namespace App\Providers;
 
 use App\Models\Employee;
+use App\Models\DisciplinaryCase;
 use App\Models\User;
+use App\Policies\DisciplinaryCasePolicy;
 use App\Policies\EmployeePolicy;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Gate;
@@ -26,6 +28,7 @@ class AppServiceProvider extends ServiceProvider
     {
         Paginator::useBootstrapFive();
 
+        Gate::policy(DisciplinaryCase::class, DisciplinaryCasePolicy::class);
         Gate::policy(Employee::class, EmployeePolicy::class);
 
         Gate::before(function (User $user) {

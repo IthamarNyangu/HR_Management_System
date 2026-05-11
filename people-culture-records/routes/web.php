@@ -3,6 +3,8 @@
 use App\Http\Controllers\Admin\MasterDataController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DisciplinaryCaseAttachmentController;
+use App\Http\Controllers\DisciplinaryCaseController;
 use App\Http\Controllers\EmployeeController;
 use App\Support\MasterDataRegistry;
 use Illuminate\Http\Request;
@@ -31,6 +33,19 @@ Route::middleware(['auth', 'active'])->group(function () use ($masterDataTypes) 
     Route::patch('/employees/{employee}/archive', [EmployeeController::class, 'archive'])->name('employees.archive');
     Route::patch('/employees/{id}/restore', [EmployeeController::class, 'restore'])->whereNumber('id')->name('employees.restore');
     Route::resource('employees', EmployeeController::class)->except(['destroy']);
+
+    Route::get('/disciplinary-cases/archived', [DisciplinaryCaseController::class, 'archived'])->name('disciplinary-cases.archived');
+    Route::patch('/disciplinary-cases/{disciplinary_case}/submit', [DisciplinaryCaseController::class, 'submit'])->name('disciplinary-cases.submit');
+    Route::patch('/disciplinary-cases/{disciplinary_case}/approve', [DisciplinaryCaseController::class, 'approve'])->name('disciplinary-cases.approve');
+    Route::patch('/disciplinary-cases/{disciplinary_case}/close', [DisciplinaryCaseController::class, 'close'])->name('disciplinary-cases.close');
+    Route::patch('/disciplinary-cases/{disciplinary_case}/archive', [DisciplinaryCaseController::class, 'archive'])->name('disciplinary-cases.archive');
+    Route::post('/disciplinary-cases/{disciplinary_case}/attachments', [DisciplinaryCaseAttachmentController::class, 'store'])->name('disciplinary-cases.attachments.store');
+    Route::get('/disciplinary-cases/{disciplinary_case}/attachments/{attachment}/download', [DisciplinaryCaseAttachmentController::class, 'download'])->name('disciplinary-cases.attachments.download');
+    Route::delete('/disciplinary-cases/{disciplinary_case}/attachments/{attachment}', [DisciplinaryCaseAttachmentController::class, 'delete'])->name('disciplinary-cases.attachments.delete');
+    Route::patch('/disciplinary-cases/{id}/restore', [DisciplinaryCaseController::class, 'restore'])->whereNumber('id')->name('disciplinary-cases.restore');
+    Route::resource('disciplinary-cases', DisciplinaryCaseController::class)
+        ->parameters(['disciplinary-cases' => 'disciplinary_case'])
+        ->except(['destroy']);
 
     Route::prefix('admin')->name('admin.')->group(function () use ($masterDataTypes) {
         Route::middleware('can:manage-master-data')->group(function () use ($masterDataTypes) {

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Employee extends Model
@@ -100,6 +101,11 @@ class Employee extends Model
     public function archivedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'archived_by');
+    }
+
+    public function disciplinaryCases(): HasMany
+    {
+        return $this->hasMany(DisciplinaryCase::class);
     }
 
     public function getFullNameAttribute(): string
