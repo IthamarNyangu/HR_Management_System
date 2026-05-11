@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Models\Employee;
 use App\Models\Role;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -11,6 +12,25 @@ class UpdateUserRequest extends FormRequest
     public function authorize(): bool
     {
         return $this->user()?->can('manage-users') ?? false;
+    }
+
+    protected function prepareForValidation(): void
+    {
+        if (! $this->filled('employee_id')) {
+            return;
+        }
+
+        $employee = Employee::find($this->input('employee_id'));
+
+        if (! $employee) {
+            return;
+        }
+
+        $this->merge([
+            'name' => $this->input('name') ?: $employee->full_name,
+            'email' => $this->input('email') ?: $employee->email,
+            'province_id' => $this->input('province_id') ?: $employee->province_id,
+        ]);
     }
 
     /**
@@ -27,6 +47,11 @@ class UpdateUserRequest extends FormRequest
                 Rule::unique('users', 'email')->ignore($this->route('user')?->id),
             ],
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
+            'employee_id' => [
+                'nullable',
+                'exists:employees,id',
+                Rule::unique('users', 'employee_id')->ignore($this->route('user')?->id),
+            ],
             'role_id' => ['required', 'exists:roles,id'],
             'province_id' => ['nullable', 'exists:provinces,id'],
             'is_active' => ['nullable', 'boolean'],
