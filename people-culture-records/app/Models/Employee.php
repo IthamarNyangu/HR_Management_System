@@ -114,6 +114,11 @@ class Employee extends Model
         return $this->hasMany(StaffPromotion::class);
     }
 
+    public function staffRelocations(): HasMany
+    {
+        return $this->hasMany(StaffRelocation::class);
+    }
+
     public function user(): HasOne
     {
         return $this->hasOne(User::class);

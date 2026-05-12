@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\MasterDataController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DisciplinaryCaseAttachmentController;
 use App\Http\Controllers\DisciplinaryCaseController;
@@ -9,6 +10,8 @@ use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\StaffPromotionAttachmentController;
 use App\Http\Controllers\StaffPromotionController;
+use App\Http\Controllers\StaffRelocationAttachmentController;
+use App\Http\Controllers\StaffRelocationController;
 use App\Support\MasterDataRegistry;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -31,6 +34,10 @@ Route::middleware(['auth', 'active'])->group(function () use ($masterDataTypes) 
     Route::get('/dashboard', DashboardController::class)
         ->middleware('can:access-dashboard')
         ->name('dashboard');
+
+    Route::get('/activity-logs', [ActivityLogController::class, 'index'])
+        ->middleware('can:access-dashboard')
+        ->name('activity-logs.index');
 
     Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead'])
         ->name('notifications.mark-all-read');
@@ -61,6 +68,16 @@ Route::middleware(['auth', 'active'])->group(function () use ($masterDataTypes) 
     Route::patch('/staff-promotions/{id}/restore', [StaffPromotionController::class, 'restore'])->whereNumber('id')->name('staff-promotions.restore');
     Route::resource('staff-promotions', StaffPromotionController::class)
         ->parameters(['staff-promotions' => 'staff_promotion'])
+        ->except(['destroy']);
+
+    Route::get('/staff-relocations/archived', [StaffRelocationController::class, 'archived'])->name('staff-relocations.archived');
+    Route::patch('/staff-relocations/{staff_relocation}/archive', [StaffRelocationController::class, 'archive'])->name('staff-relocations.archive');
+    Route::post('/staff-relocations/{staff_relocation}/attachments', [StaffRelocationAttachmentController::class, 'store'])->name('staff-relocations.attachments.store');
+    Route::get('/staff-relocations/{staff_relocation}/attachments/{attachment}/download', [StaffRelocationAttachmentController::class, 'download'])->name('staff-relocations.attachments.download');
+    Route::delete('/staff-relocations/{staff_relocation}/attachments/{attachment}', [StaffRelocationAttachmentController::class, 'delete'])->name('staff-relocations.attachments.delete');
+    Route::patch('/staff-relocations/{id}/restore', [StaffRelocationController::class, 'restore'])->whereNumber('id')->name('staff-relocations.restore');
+    Route::resource('staff-relocations', StaffRelocationController::class)
+        ->parameters(['staff-relocations' => 'staff_relocation'])
         ->except(['destroy']);
 
     Route::prefix('admin')->name('admin.')->group(function () use ($masterDataTypes) {

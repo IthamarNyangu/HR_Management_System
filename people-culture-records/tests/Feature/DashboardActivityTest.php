@@ -132,7 +132,65 @@ class DashboardActivityTest extends TestCase
         $this->actingAs($admin)
             ->get(route('dashboard'))
             ->assertOk()
-            ->assertSee('Admin approved disciplinary case DC-2026-1001.');
+            ->assertSee('Admin approved disciplinary case DC-2026-1001.')
+            ->assertSee($this->northern->name);
+    }
+
+    public function test_dashboard_recent_activity_shows_only_latest_three_items(): void
+    {
+        $admin = $this->user($this->adminRole);
+
+        foreach (range(1, 4) as $index) {
+            ActivityLog::create([
+                'user_id' => $admin->id,
+                'action' => 'employee_created',
+                'description' => "Activity {$index}",
+                'properties' => [
+                    'province_id' => $this->northern->id,
+                    'province_name' => $this->northern->name,
+                ],
+                'created_at' => now()->addSeconds($index),
+                'updated_at' => now()->addSeconds($index),
+            ]);
+        }
+
+        $this->actingAs($admin)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('Activity 4')
+            ->assertSee('Activity 3')
+            ->assertSee('Activity 2')
+            ->assertDontSee('Activity 1');
+    }
+
+    public function test_recent_activity_page_is_paginated_and_shows_older_records(): void
+    {
+        $admin = $this->user($this->adminRole);
+
+        foreach (range(1, 11) as $index) {
+            ActivityLog::create([
+                'user_id' => $admin->id,
+                'action' => 'employee_created',
+                'description' => sprintf('Paged Activity #%02d', $index),
+                'properties' => [
+                    'province_id' => $this->northern->id,
+                    'province_name' => $this->northern->name,
+                ],
+                'created_at' => now()->addSeconds($index),
+                'updated_at' => now()->addSeconds($index),
+            ]);
+        }
+
+        $this->actingAs($admin)
+            ->get(route('activity-logs.index'))
+            ->assertOk()
+            ->assertSee('Paged Activity #11')
+            ->assertDontSee('Paged Activity #01');
+
+        $this->actingAs($admin)
+            ->get(route('activity-logs.index', ['page' => 2]))
+            ->assertOk()
+            ->assertSee('Paged Activity #01');
     }
 
     public function test_viewer_cannot_see_activity_outside_assigned_province(): void
@@ -150,6 +208,11 @@ class DashboardActivityTest extends TestCase
 
         $this->actingAs($viewer)
             ->get(route('dashboard'))
+            ->assertOk()
+            ->assertDontSee('Created outside province case.');
+
+        $this->actingAs($viewer)
+            ->get(route('activity-logs.index'))
             ->assertOk()
             ->assertDontSee('Created outside province case.');
     }

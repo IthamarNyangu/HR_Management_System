@@ -5,10 +5,12 @@ namespace App\Providers;
 use App\Models\Employee;
 use App\Models\DisciplinaryCase;
 use App\Models\StaffPromotion;
+use App\Models\StaffRelocation;
 use App\Models\User;
 use App\Policies\DisciplinaryCasePolicy;
 use App\Policies\EmployeePolicy;
 use App\Policies\StaffPromotionPolicy;
+use App\Policies\StaffRelocationPolicy;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
@@ -33,6 +35,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(DisciplinaryCase::class, DisciplinaryCasePolicy::class);
         Gate::policy(Employee::class, EmployeePolicy::class);
         Gate::policy(StaffPromotion::class, StaffPromotionPolicy::class);
+        Gate::policy(StaffRelocation::class, StaffRelocationPolicy::class);
 
         Gate::define('access-dashboard', fn (User $user) => $user->is_active);
 

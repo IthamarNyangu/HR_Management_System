@@ -4,12 +4,12 @@
         ['label' => 'Employees', 'icon' => 'bi-people', 'route' => 'employees.index', 'active' => request()->routeIs('employees.*'), 'enabled' => auth()->user()->can('viewAny', App\Models\Employee::class)],
         ['label' => 'Disciplinary Cases', 'icon' => 'bi-shield-exclamation', 'route' => 'disciplinary-cases.index', 'active' => request()->routeIs('disciplinary-cases.*'), 'enabled' => auth()->user()->can('viewAny', App\Models\DisciplinaryCase::class)],
         ['label' => 'Staff Promotions', 'icon' => 'bi-graph-up-arrow', 'route' => 'staff-promotions.index', 'active' => request()->routeIs('staff-promotions.*'), 'enabled' => auth()->user()->can('viewAny', App\Models\StaffPromotion::class)],
-        ['label' => 'Staff Relocations', 'icon' => 'bi-geo-alt', 'route' => null, 'active' => false, 'enabled' => false],
+        ['label' => 'Staff Relocations', 'icon' => 'bi-geo-alt', 'route' => 'staff-relocations.index', 'active' => request()->routeIs('staff-relocations.*'), 'enabled' => auth()->user()->can('viewAny', App\Models\StaffRelocation::class)],
         ['label' => 'Reports', 'icon' => 'bi-bar-chart', 'route' => null, 'active' => false, 'enabled' => false],
         ['label' => 'Imports / Exports', 'icon' => 'bi-cloud-arrow-up', 'route' => null, 'active' => false, 'enabled' => false],
         ['label' => 'Admin Panel', 'icon' => 'bi-sliders', 'route' => 'admin.index', 'active' => request()->routeIs('admin.index') || request()->routeIs('admin.master-data.*'), 'enabled' => auth()->user()->can('manage-master-data')],
         ['label' => 'User Management', 'icon' => 'bi-person-gear', 'route' => 'admin.users.index', 'active' => request()->routeIs('admin.users.*'), 'enabled' => auth()->user()->can('manage-users')],
-        ['label' => 'Audit Logs', 'icon' => 'bi-clock-history', 'route' => null, 'active' => false, 'enabled' => false],
+        ['label' => 'Audit Logs', 'icon' => 'bi-clock-history', 'route' => 'activity-logs.index', 'active' => request()->routeIs('activity-logs.*'), 'enabled' => auth()->user()->is_active],
         ['label' => 'Archived Records', 'icon' => 'bi-archive', 'route' => null, 'active' => false, 'enabled' => false],
     ];
 @endphp

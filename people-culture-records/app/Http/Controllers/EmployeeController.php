@@ -12,6 +12,7 @@ use App\Models\Facility;
 use App\Models\JobTitle;
 use App\Models\Project;
 use App\Models\Province;
+use App\Models\StaffRelocation;
 use App\Services\ActivityLogger;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -118,7 +119,14 @@ class EmployeeController extends Controller
             ->take(5)
             ->get();
 
-        return view('employees.show', compact('employee', 'disciplinaryCases', 'staffPromotions'));
+        $staffRelocations = $employee->staffRelocations()
+            ->with(['fromProvince', 'fromDistrict', 'fromFacility', 'toProvince', 'toDistrict', 'toFacility', 'relocationReason'])
+            ->visibleTo(request()->user())
+            ->latest('effective_date')
+            ->take(5)
+            ->get();
+
+        return view('employees.show', compact('employee', 'disciplinaryCases', 'staffPromotions', 'staffRelocations'));
     }
 
     public function edit(Request $request, Employee $employee): View

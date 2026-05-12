@@ -8,6 +8,7 @@ use App\Models\DisciplinaryCase;
 use App\Models\Employee;
 use App\Models\EmploymentStatus;
 use App\Models\StaffPromotion;
+use App\Models\StaffRelocation;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 
@@ -19,6 +20,7 @@ class DashboardController extends Controller
         $employeeQuery = Employee::query()->visibleTo($user);
         $caseQuery = DisciplinaryCase::query()->visibleTo($user);
         $promotionQuery = StaffPromotion::query()->visibleTo($user);
+        $relocationQuery = StaffRelocation::query()->visibleTo($user);
 
         $activeEmploymentStatus = EmploymentStatus::where('code', 'ACTIVE')->orWhere('name', 'Active')->first();
         $submittedStatus = $this->caseStatus('SUBMITTED');
@@ -105,11 +107,24 @@ class DashboardController extends Controller
             ->take(5)
             ->get();
 
+        $relocationOverview = [
+            ['label' => 'Relocations This Year', 'value' => (clone $relocationQuery)->whereYear('effective_date', now()->year)->count()],
+            ['label' => 'Relocations This Month', 'value' => (clone $relocationQuery)->whereYear('effective_date', now()->year)->whereMonth('effective_date', now()->month)->count()],
+            ['label' => 'Relocation Amount This Year', 'value' => number_format((float) ((clone $relocationQuery)->whereYear('effective_date', now()->year)->sum('relocation_amount') ?? 0), 2)],
+        ];
+
+        $latestRelocations = StaffRelocation::query()
+            ->visibleTo($user)
+            ->with(['employee', 'fromProvince', 'toProvince'])
+            ->latest('effective_date')
+            ->take(5)
+            ->get();
+
         $recentActivities = ActivityLog::query()
             ->with('user')
             ->visibleTo($user)
             ->latest()
-            ->take(10)
+            ->take(3)
             ->get();
 
         return view('dashboard', compact(
@@ -121,6 +136,8 @@ class DashboardController extends Controller
             'casesByOffenceCategory',
             'promotionOverview',
             'latestPromotions',
+            'relocationOverview',
+            'latestRelocations',
             'recentActivities',
             'submittedStatus',
             'activeCaseStatus',

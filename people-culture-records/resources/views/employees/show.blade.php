@@ -135,9 +135,38 @@
                 </div>
             </section>
 
-            <section class="bg-white border rounded-2 p-3">
-                <h3 class="h6">Relocation history</h3>
-                <p class="small text-muted mb-0">Coming in later phases.</p>
+            <section class="bg-white border rounded-2 p-4">
+                <h2 class="h5">Relocation History</h2>
+                <div class="table-responsive data-table-wrap">
+                    <table class="table table-hover align-middle data-table">
+                        <thead>
+                            <tr>
+                                <th>Reference</th>
+                                <th>From</th>
+                                <th>To</th>
+                                <th>Reason</th>
+                                <th>Effective Date</th>
+                                <th>Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse ($staffRelocations as $relocation)
+                                <tr>
+                                    <td><a href="{{ route('staff-relocations.show', $relocation) }}">{{ $relocation->reference_no }}</a></td>
+                                    <td>{{ $relocation->fromProvince?->name ?? '-' }}{{ $relocation->fromDistrict ? ' - '.$relocation->fromDistrict->name : '' }}</td>
+                                    <td>{{ $relocation->toProvince?->name ?? '-' }}{{ $relocation->toDistrict ? ' - '.$relocation->toDistrict->name : '' }}</td>
+                                    <td>{{ $relocation->relocationReason?->name ?? '-' }}</td>
+                                    <td>{{ $relocation->effective_date?->format('d M Y') }}</td>
+                                    <td>{{ $relocation->relocation_amount !== null ? number_format((float) $relocation->relocation_amount, 2) : '-' }}</td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-4">No relocation history recorded.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
             </section>
         </div>
     </div>
