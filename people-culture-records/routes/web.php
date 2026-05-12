@@ -7,6 +7,8 @@ use App\Http\Controllers\DisciplinaryCaseAttachmentController;
 use App\Http\Controllers\DisciplinaryCaseController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\StaffPromotionAttachmentController;
+use App\Http\Controllers\StaffPromotionController;
 use App\Support\MasterDataRegistry;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -49,6 +51,16 @@ Route::middleware(['auth', 'active'])->group(function () use ($masterDataTypes) 
     Route::patch('/disciplinary-cases/{id}/restore', [DisciplinaryCaseController::class, 'restore'])->whereNumber('id')->name('disciplinary-cases.restore');
     Route::resource('disciplinary-cases', DisciplinaryCaseController::class)
         ->parameters(['disciplinary-cases' => 'disciplinary_case'])
+        ->except(['destroy']);
+
+    Route::get('/staff-promotions/archived', [StaffPromotionController::class, 'archived'])->name('staff-promotions.archived');
+    Route::patch('/staff-promotions/{staff_promotion}/archive', [StaffPromotionController::class, 'archive'])->name('staff-promotions.archive');
+    Route::post('/staff-promotions/{staff_promotion}/attachments', [StaffPromotionAttachmentController::class, 'store'])->name('staff-promotions.attachments.store');
+    Route::get('/staff-promotions/{staff_promotion}/attachments/{attachment}/download', [StaffPromotionAttachmentController::class, 'download'])->name('staff-promotions.attachments.download');
+    Route::delete('/staff-promotions/{staff_promotion}/attachments/{attachment}', [StaffPromotionAttachmentController::class, 'delete'])->name('staff-promotions.attachments.delete');
+    Route::patch('/staff-promotions/{id}/restore', [StaffPromotionController::class, 'restore'])->whereNumber('id')->name('staff-promotions.restore');
+    Route::resource('staff-promotions', StaffPromotionController::class)
+        ->parameters(['staff-promotions' => 'staff_promotion'])
         ->except(['destroy']);
 
     Route::prefix('admin')->name('admin.')->group(function () use ($masterDataTypes) {

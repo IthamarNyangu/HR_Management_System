@@ -111,7 +111,14 @@ class EmployeeController extends Controller
             ->take(5)
             ->get();
 
-        return view('employees.show', compact('employee', 'disciplinaryCases'));
+        $staffPromotions = $employee->staffPromotions()
+            ->with(['oldJobTitle', 'newJobTitle', 'promotionType'])
+            ->visibleTo(request()->user())
+            ->latest('promotion_date')
+            ->take(5)
+            ->get();
+
+        return view('employees.show', compact('employee', 'disciplinaryCases', 'staffPromotions'));
     }
 
     public function edit(Request $request, Employee $employee): View

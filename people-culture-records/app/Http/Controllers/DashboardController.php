@@ -7,6 +7,7 @@ use App\Models\CaseStatus;
 use App\Models\DisciplinaryCase;
 use App\Models\Employee;
 use App\Models\EmploymentStatus;
+use App\Models\StaffPromotion;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 
@@ -17,6 +18,7 @@ class DashboardController extends Controller
         $user = $request->user();
         $employeeQuery = Employee::query()->visibleTo($user);
         $caseQuery = DisciplinaryCase::query()->visibleTo($user);
+        $promotionQuery = StaffPromotion::query()->visibleTo($user);
 
         $activeEmploymentStatus = EmploymentStatus::where('code', 'ACTIVE')->orWhere('name', 'Active')->first();
         $submittedStatus = $this->caseStatus('SUBMITTED');
@@ -91,6 +93,18 @@ class DashboardController extends Controller
             ->limit(5)
             ->get();
 
+        $promotionOverview = [
+            ['label' => 'Promotions This Year', 'value' => (clone $promotionQuery)->whereYear('promotion_date', now()->year)->count()],
+            ['label' => 'Promotions This Month', 'value' => (clone $promotionQuery)->whereYear('promotion_date', now()->year)->whereMonth('promotion_date', now()->month)->count()],
+        ];
+
+        $latestPromotions = StaffPromotion::query()
+            ->visibleTo($user)
+            ->with(['employee', 'oldJobTitle', 'newJobTitle'])
+            ->latest('promotion_date')
+            ->take(5)
+            ->get();
+
         $recentActivities = ActivityLog::query()
             ->with('user')
             ->visibleTo($user)
@@ -105,6 +119,8 @@ class DashboardController extends Controller
             'caseOverview',
             'casesByStatus',
             'casesByOffenceCategory',
+            'promotionOverview',
+            'latestPromotions',
             'recentActivities',
             'submittedStatus',
             'activeCaseStatus',

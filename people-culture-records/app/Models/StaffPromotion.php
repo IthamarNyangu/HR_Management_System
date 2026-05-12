@@ -5,11 +5,10 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Employee extends Model
+class StaffPromotion extends Model
 {
     use SoftDeletes;
 
@@ -17,56 +16,44 @@ class Employee extends Model
      * @var list<string>
      */
     protected $fillable = [
-        'employee_no',
-        'first_name',
-        'last_name',
-        'gender',
-        'date_of_birth',
-        'national_id',
-        'email',
-        'phone',
-        'project_id',
-        'department_id',
-        'job_title_id',
+        'reference_no',
+        'employee_id',
         'province_id',
         'district_id',
         'facility_id',
-        'employment_status_id',
-        'hire_date',
-        'supervisor_name',
-        'notes',
+        'project_id',
+        'department_id',
+        'old_job_title_id',
+        'new_job_title_id',
+        'promotion_type_id',
+        'promotion_date',
+        'effective_date',
+        'comment',
+        'update_employee_job_title',
         'created_by',
         'updated_by',
         'archived_by',
     ];
 
     protected $appends = [
-        'full_name',
         'display_name',
+        'promotion_year',
+        'promotion_month',
     ];
 
     protected function casts(): array
     {
         return [
-            'date_of_birth' => 'date',
-            'hire_date' => 'date',
+            'promotion_date' => 'date',
+            'effective_date' => 'date',
+            'update_employee_job_title' => 'boolean',
             'deleted_at' => 'datetime',
         ];
     }
 
-    public function project(): BelongsTo
+    public function employee(): BelongsTo
     {
-        return $this->belongsTo(Project::class);
-    }
-
-    public function department(): BelongsTo
-    {
-        return $this->belongsTo(Department::class);
-    }
-
-    public function jobTitle(): BelongsTo
-    {
-        return $this->belongsTo(JobTitle::class);
+        return $this->belongsTo(Employee::class);
     }
 
     public function province(): BelongsTo
@@ -84,9 +71,29 @@ class Employee extends Model
         return $this->belongsTo(Facility::class);
     }
 
-    public function employmentStatus(): BelongsTo
+    public function project(): BelongsTo
     {
-        return $this->belongsTo(EmploymentStatus::class);
+        return $this->belongsTo(Project::class);
+    }
+
+    public function department(): BelongsTo
+    {
+        return $this->belongsTo(Department::class);
+    }
+
+    public function oldJobTitle(): BelongsTo
+    {
+        return $this->belongsTo(JobTitle::class, 'old_job_title_id');
+    }
+
+    public function newJobTitle(): BelongsTo
+    {
+        return $this->belongsTo(JobTitle::class, 'new_job_title_id');
+    }
+
+    public function promotionType(): BelongsTo
+    {
+        return $this->belongsTo(PromotionType::class);
     }
 
     public function createdBy(): BelongsTo
@@ -104,29 +111,24 @@ class Employee extends Model
         return $this->belongsTo(User::class, 'archived_by');
     }
 
-    public function disciplinaryCases(): HasMany
+    public function attachments(): MorphMany
     {
-        return $this->hasMany(DisciplinaryCase::class);
-    }
-
-    public function staffPromotions(): HasMany
-    {
-        return $this->hasMany(StaffPromotion::class);
-    }
-
-    public function user(): HasOne
-    {
-        return $this->hasOne(User::class);
-    }
-
-    public function getFullNameAttribute(): string
-    {
-        return trim("{$this->first_name} {$this->last_name}");
+        return $this->morphMany(Attachment::class, 'attachable');
     }
 
     public function getDisplayNameAttribute(): string
     {
-        return "{$this->employee_no} - {$this->full_name}";
+        return trim($this->reference_no.' - '.$this->employee?->display_name);
+    }
+
+    public function getPromotionYearAttribute(): ?int
+    {
+        return $this->promotion_date?->year;
+    }
+
+    public function getPromotionMonthAttribute(): ?int
+    {
+        return $this->promotion_date?->month;
     }
 
     public function scopeVisibleTo(Builder $query, User $user): Builder

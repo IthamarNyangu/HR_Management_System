@@ -46,6 +46,12 @@
                             Create Disciplinary Case
                         </a>
                     @endcan
+                    @can('create', App\Models\StaffPromotion::class)
+                        <a href="{{ route('staff-promotions.create') }}" class="btn btn-primary-outline btn-md">
+                            <i class="bi bi-graph-up-arrow" aria-hidden="true"></i>
+                            Add Promotion
+                        </a>
+                    @endcan
                     <a href="{{ $submittedStatus ? route('disciplinary-cases.index', ['case_status_id' => $submittedStatus->id]) : route('disciplinary-cases.index') }}" class="btn btn-secondary btn-md">Awaiting Approval</a>
                     <a href="{{ route('disciplinary-cases.index', ['expiry_from' => today()->toDateString(), 'expiry_to' => today()->addDays(30)->toDateString()]) }}" class="btn btn-secondary btn-md">Expiring Cases</a>
                     <a href="{{ route('disciplinary-cases.archived') }}" class="btn btn-secondary btn-md">Archived Records</a>
@@ -129,6 +135,40 @@
         </div>
 
         <section class="bg-white border rounded-2 p-3">
+            <div class="d-flex flex-column flex-lg-row justify-content-between gap-4">
+                <div class="flex-grow-1">
+                    <h2 class="h5 mb-3">HR Movement</h2>
+                    <div class="row row-cols-1 row-cols-sm-2 g-3">
+                        @foreach ($promotionOverview as $card)
+                            <div class="col">
+                                <div class="summary-tile h-100">
+                                    <div class="summary-label">{{ $card['label'] }}</div>
+                                    <div class="summary-value">{{ $card['value'] }}</div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+                <div class="flex-grow-1">
+                    <h3 class="h6 mb-3">Latest Promotions</h3>
+                    <div class="list-group list-group-flush">
+                        @forelse ($latestPromotions as $promotion)
+                            <a href="{{ route('staff-promotions.show', $promotion) }}" class="list-group-item px-0 d-flex justify-content-between align-items-start gap-3 text-decoration-none">
+                                <span>
+                                    <span class="fw-semibold">{{ $promotion->reference_no }}</span>
+                                    <span class="d-block small text-muted">{{ $promotion->employee?->display_name }} - {{ $promotion->oldJobTitle?->name ?? '-' }} to {{ $promotion->newJobTitle?->name ?? '-' }}</span>
+                                </span>
+                                <span class="badge text-bg-light">{{ $promotion->promotion_date?->format('d M') }}</span>
+                            </a>
+                        @empty
+                            <div class="text-muted small">No promotions recorded yet.</div>
+                        @endforelse
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="bg-white border rounded-2 p-3">
             <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
                 <div>
                     <h2 class="h5 mb-1">Recent Activity</h2>
@@ -145,9 +185,9 @@
                             <div class="small text-muted">
                                 {{ $activity->actor_name }}
                                 @if ($activity->reference)
-                                    · {{ $activity->reference }}
+                                    - {{ $activity->reference }}
                                 @endif
-                                · {{ $activity->created_at->diffForHumans() }}
+                                - {{ $activity->created_at->diffForHumans() }}
                             </div>
                         </div>
                     </div>

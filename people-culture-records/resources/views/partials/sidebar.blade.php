@@ -3,7 +3,7 @@
         ['label' => 'Dashboard', 'icon' => 'bi-speedometer2', 'route' => 'dashboard', 'active' => request()->routeIs('dashboard'), 'enabled' => true],
         ['label' => 'Employees', 'icon' => 'bi-people', 'route' => 'employees.index', 'active' => request()->routeIs('employees.*'), 'enabled' => auth()->user()->can('viewAny', App\Models\Employee::class)],
         ['label' => 'Disciplinary Cases', 'icon' => 'bi-shield-exclamation', 'route' => 'disciplinary-cases.index', 'active' => request()->routeIs('disciplinary-cases.*'), 'enabled' => auth()->user()->can('viewAny', App\Models\DisciplinaryCase::class)],
-        ['label' => 'Staff Promotions', 'icon' => 'bi-graph-up-arrow', 'route' => null, 'active' => false, 'enabled' => false],
+        ['label' => 'Staff Promotions', 'icon' => 'bi-graph-up-arrow', 'route' => 'staff-promotions.index', 'active' => request()->routeIs('staff-promotions.*'), 'enabled' => auth()->user()->can('viewAny', App\Models\StaffPromotion::class)],
         ['label' => 'Staff Relocations', 'icon' => 'bi-geo-alt', 'route' => null, 'active' => false, 'enabled' => false],
         ['label' => 'Reports', 'icon' => 'bi-bar-chart', 'route' => null, 'active' => false, 'enabled' => false],
         ['label' => 'Imports / Exports', 'icon' => 'bi-cloud-arrow-up', 'route' => null, 'active' => false, 'enabled' => false],

@@ -101,16 +101,44 @@
                 </div>
             </section>
 
-            <div class="row g-3">
-                @foreach (['Promotion history', 'Relocation history'] as $section)
-                    <div class="col-md-6">
-                        <section class="bg-white border rounded-2 p-3 h-100">
-                            <h3 class="h6">{{ $section }}</h3>
-                            <p class="small text-muted mb-0">Coming in later phases.</p>
-                        </section>
-                    </div>
-                @endforeach
-            </div>
+            <section class="bg-white border rounded-2 p-4 mb-3">
+                <h2 class="h5">Promotion History</h2>
+                <div class="table-responsive data-table-wrap">
+                    <table class="table table-hover align-middle data-table">
+                        <thead>
+                            <tr>
+                                <th>Reference</th>
+                                <th>Old Job Title</th>
+                                <th>New Job Title</th>
+                                <th>Type</th>
+                                <th>Promotion Date</th>
+                                <th>Effective Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse ($staffPromotions as $promotion)
+                                <tr>
+                                    <td><a href="{{ route('staff-promotions.show', $promotion) }}">{{ $promotion->reference_no }}</a></td>
+                                    <td>{{ $promotion->oldJobTitle?->name ?? '-' }}</td>
+                                    <td>{{ $promotion->newJobTitle?->name ?? '-' }}</td>
+                                    <td>{{ $promotion->promotionType?->name ?? '-' }}</td>
+                                    <td>{{ $promotion->promotion_date?->format('d M Y') }}</td>
+                                    <td>{{ $promotion->effective_date?->format('d M Y') ?? '-' }}</td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-4">No promotion history recorded.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="bg-white border rounded-2 p-3">
+                <h3 class="h6">Relocation history</h3>
+                <p class="small text-muted mb-0">Coming in later phases.</p>
+            </section>
         </div>
     </div>
 @endsection

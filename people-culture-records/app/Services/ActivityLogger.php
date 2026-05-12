@@ -6,6 +6,7 @@ use App\Models\ActivityLog;
 use App\Models\Attachment;
 use App\Models\DisciplinaryCase;
 use App\Models\Employee;
+use App\Models\StaffPromotion;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
@@ -68,7 +69,19 @@ class ActivityLogger
                 $properties['province_id'] = $subject->attachable->province_id;
             }
 
+            if ($subject->attachable instanceof StaffPromotion) {
+                $properties['reference_no'] = $subject->attachable->reference_no;
+                $properties['province_id'] = $subject->attachable->province_id;
+            }
+
             return $properties;
+        }
+
+        if ($subject instanceof StaffPromotion) {
+            return [
+                'reference_no' => $subject->reference_no,
+                'province_id' => $subject->province_id,
+            ];
         }
 
         if ($subject instanceof User) {
