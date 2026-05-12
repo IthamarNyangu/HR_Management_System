@@ -28,8 +28,8 @@ class StaffPromotion extends Model
         'promotion_type_id',
         'promotion_date',
         'effective_date',
+        'job_title_applied_at',
         'comment',
-        'update_employee_job_title',
         'created_by',
         'updated_by',
         'archived_by',
@@ -46,7 +46,7 @@ class StaffPromotion extends Model
         return [
             'promotion_date' => 'date',
             'effective_date' => 'date',
-            'update_employee_job_title' => 'boolean',
+            'job_title_applied_at' => 'datetime',
             'deleted_at' => 'datetime',
         ];
     }
@@ -129,6 +129,11 @@ class StaffPromotion extends Model
     public function getPromotionMonthAttribute(): ?int
     {
         return $this->promotion_date?->month;
+    }
+
+    public function getApplicationDateAttribute()
+    {
+        return $this->effective_date ?? $this->promotion_date;
     }
 
     public function scopeVisibleTo(Builder $query, User $user): Builder

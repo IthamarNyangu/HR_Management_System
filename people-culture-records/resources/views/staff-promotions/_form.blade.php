@@ -152,6 +152,7 @@
     <div class="col-md-6">
         <label for="effective_date" class="form-label">Effective Date</label>
         <input id="effective_date" name="effective_date" type="date" class="form-control @error('effective_date') is-invalid @enderror" value="{{ old('effective_date', $promotion->effective_date?->format('Y-m-d')) }}">
+        <div class="form-text">If this date is today or earlier, the employee profile will update automatically. If it is in the future, the new title will be applied automatically on that date.</div>
         @error('effective_date')
             <div class="invalid-feedback">{{ $message }}</div>
         @enderror
@@ -166,13 +167,7 @@
     </div>
 
     <div class="col-lg-6">
-        <div class="border rounded-2 p-3 mb-3">
-            <div class="form-check">
-                <input id="update_employee_job_title" name="update_employee_job_title" type="checkbox" class="form-check-input" value="1" @checked(old('update_employee_job_title', false))>
-                <label for="update_employee_job_title" class="form-check-label fw-semibold">Update employee current job title</label>
-            </div>
-            <div class="small text-muted mt-2">Only tick this if the employee's current profile should change to the new job title. The promotion history will be saved either way.</div>
-        </div>
+        
 
         <div class="border rounded-2 bg-light p-3" data-upload-box>
             <div class="d-flex align-items-center gap-2 mb-3">

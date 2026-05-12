@@ -54,7 +54,6 @@ class UpdateStaffPromotionRequest extends FormRequest
             'promotion_date' => ['required', 'date'],
             'effective_date' => ['nullable', 'date'],
             'comment' => ['nullable', 'string'],
-            'update_employee_job_title' => ['nullable', 'boolean'],
             'supporting_document' => ['nullable', 'file', 'mimes:pdf,doc,docx,jpg,jpeg,png', 'max:10240'],
         ];
     }

@@ -14,6 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withCommands([
         \App\Console\Commands\AutoCloseExpiredDisciplinaryCases::class,
+        \App\Console\Commands\ApplyEffectiveStaffPromotions::class,
     ])
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([

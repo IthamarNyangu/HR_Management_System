@@ -59,7 +59,7 @@
                     <div class="col-md-6"><strong>Promotion Type:</strong> {{ $promotion->promotionType?->name ?? '-' }}</div>
                     <div class="col-md-6"><strong>Promotion Date:</strong> {{ $promotion->promotion_date?->format('d M Y') }}</div>
                     <div class="col-md-6"><strong>Effective Date:</strong> {{ $promotion->effective_date?->format('d M Y') ?? '-' }}</div>
-                    <div class="col-md-6"><strong>Updated Current Job Title:</strong> {{ $promotion->update_employee_job_title ? 'Yes' : 'No' }}</div>
+                    <div class="col-md-6"><strong>Applied To Employee Profile:</strong> {{ $promotion->job_title_applied_at?->format('d M Y H:i') ?? 'Scheduled / pending' }}</div>
                     <div class="col-md-6"><strong>Created By:</strong> {{ $promotion->createdBy?->name ?? '-' }}</div>
                     <div class="col-md-6"><strong>Updated By:</strong> {{ $promotion->updatedBy?->name ?? '-' }}</div>
                 </div>

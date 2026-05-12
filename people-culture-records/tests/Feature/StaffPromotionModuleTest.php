@@ -157,12 +157,10 @@ class StaffPromotionModuleTest extends TestCase
         $this->assertSame($this->oldTitle->id, $promotion->old_job_title_id);
     }
 
-    public function test_creating_promotion_can_update_employee_current_job_title_when_selected(): void
+    public function test_creating_promotion_updates_employee_current_job_title_when_effective_today(): void
     {
         $this->actingAs($this->user($this->adminRole))
-            ->post(route('staff-promotions.store'), $this->promotionPayload([
-                'update_employee_job_title' => '1',
-            ]))
+            ->post(route('staff-promotions.store'), $this->promotionPayload())
             ->assertRedirect();
 
         $this->assertDatabaseHas('employees', [
@@ -173,17 +171,65 @@ class StaffPromotionModuleTest extends TestCase
         $this->assertDatabaseHas('activity_logs', [
             'action' => 'employee_job_title_updated_from_promotion',
         ]);
+
+        $this->assertDatabaseMissing('staff_promotions', [
+            'employee_id' => $this->northernEmployee->id,
+            'job_title_applied_at' => null,
+        ]);
     }
 
-    public function test_creating_promotion_does_not_update_employee_current_job_title_when_not_selected(): void
+    public function test_future_dated_promotion_waits_for_command_before_updating_employee_job_title(): void
     {
         $this->actingAs($this->user($this->adminRole))
-            ->post(route('staff-promotions.store'), $this->promotionPayload())
+            ->post(route('staff-promotions.store'), $this->promotionPayload([
+                'effective_date' => now()->addDays(7)->toDateString(),
+            ]))
             ->assertRedirect();
 
         $this->assertDatabaseHas('employees', [
             'id' => $this->northernEmployee->id,
             'job_title_id' => $this->oldTitle->id,
+        ]);
+
+        $promotion = StaffPromotion::firstOrFail();
+
+        $this->assertNull($promotion->job_title_applied_at);
+
+        $this->travel(7)->days();
+
+        $this->artisan('promotions:apply-effective')
+            ->expectsOutput('Processed 1 due staff promotion(s).')
+            ->assertExitCode(0);
+
+        $this->assertDatabaseHas('employees', [
+            'id' => $this->northernEmployee->id,
+            'job_title_id' => $this->newTitle->id,
+        ]);
+
+        $this->assertNotNull($promotion->fresh()->job_title_applied_at);
+    }
+
+    public function test_editing_an_already_applied_old_promotion_does_not_overwrite_employee_current_job_title_again(): void
+    {
+        $promotion = $this->promotion([
+            'job_title_applied_at' => now()->subDay(),
+        ]);
+
+        $this->northernEmployee->update([
+            'job_title_id' => $this->newTitle->id,
+        ]);
+
+        $laterTitle = JobTitle::create(['name' => 'Senior HR Officer', 'code' => 'SHRO', 'is_active' => true]);
+
+        $this->actingAs($this->user($this->adminRole))
+            ->put(route('staff-promotions.update', $promotion), $this->promotionPayload([
+                'new_job_title_id' => $laterTitle->id,
+            ]))
+            ->assertRedirect(route('staff-promotions.show', $promotion));
+
+        $this->assertDatabaseHas('employees', [
+            'id' => $this->northernEmployee->id,
+            'job_title_id' => $this->newTitle->id,
         ]);
     }
 

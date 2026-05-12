@@ -15,6 +15,7 @@ use App\Models\Province;
 use App\Models\StaffPromotion;
 use App\Services\ActivityLogger;
 use App\Services\ReferenceNumberService;
+use App\Services\StaffPromotionApplicationService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -73,14 +74,18 @@ class StaffPromotionController extends Controller
         return view('staff-promotions.create', $this->formData($request) + compact('promotion'));
     }
 
-    public function store(StoreStaffPromotionRequest $request, ReferenceNumberService $referenceNumbers, ActivityLogger $activity): RedirectResponse
+    public function store(
+        StoreStaffPromotionRequest $request,
+        ReferenceNumberService $referenceNumbers,
+        ActivityLogger $activity,
+        StaffPromotionApplicationService $promotionApplications,
+    ): RedirectResponse
     {
         $promotion = DB::transaction(function () use ($request, $referenceNumbers) {
             $data = $this->promotionData($request->validated());
             $data['reference_no'] = $referenceNumbers->generate('PROM', 'staff_promotions');
             $data['created_by'] = $request->user()->id;
             $data['updated_by'] = $request->user()->id;
-            $data['update_employee_job_title'] = $request->boolean('update_employee_job_title');
 
             if ($request->user()->hasRole('HR Officer')) {
                 $data['province_id'] = $request->user()->province_id;
@@ -89,7 +94,7 @@ class StaffPromotionController extends Controller
             return StaffPromotion::create($data);
         });
 
-        $this->maybeUpdateEmployeeJobTitle($request, $promotion, $activity);
+        $promotionApplications->applyForPromotion($promotion, $activity, $request->user(), $request);
 
         if ($request->hasFile('supporting_document')) {
             $this->storeInitialAttachment($request, $promotion, $activity);
@@ -124,11 +129,15 @@ class StaffPromotionController extends Controller
         return view('staff-promotions.edit', $this->formData($request) + ['promotion' => $staffPromotion]);
     }
 
-    public function update(UpdateStaffPromotionRequest $request, StaffPromotion $staffPromotion, ActivityLogger $activity): RedirectResponse
+    public function update(
+        UpdateStaffPromotionRequest $request,
+        StaffPromotion $staffPromotion,
+        ActivityLogger $activity,
+        StaffPromotionApplicationService $promotionApplications,
+    ): RedirectResponse
     {
         $data = $this->promotionData($request->validated());
         $data['updated_by'] = $request->user()->id;
-        $data['update_employee_job_title'] = $request->boolean('update_employee_job_title');
 
         if ($request->user()->hasRole('HR Officer')) {
             $data['province_id'] = $request->user()->province_id;
@@ -136,7 +145,7 @@ class StaffPromotionController extends Controller
 
         $staffPromotion->update($data);
 
-        $this->maybeUpdateEmployeeJobTitle($request, $staffPromotion->fresh(), $activity);
+        $promotionApplications->applyForPromotion($staffPromotion->fresh(), $activity, $request->user(), $request);
 
         if ($request->hasFile('supporting_document')) {
             $this->storeInitialAttachment($request, $staffPromotion->fresh(), $activity);
@@ -290,37 +299,11 @@ class StaffPromotionController extends Controller
             'promotion_date',
             'effective_date',
             'comment',
-            'update_employee_job_title',
+            'job_title_applied_at',
             'created_by',
             'updated_by',
             'archived_by',
         ]);
-    }
-
-    private function maybeUpdateEmployeeJobTitle(Request $request, StaffPromotion $promotion, ActivityLogger $activity): void
-    {
-        if (! $request->boolean('update_employee_job_title')) {
-            return;
-        }
-
-        $employee = $promotion->employee()->first();
-
-        if (! $employee || (int) $employee->job_title_id === (int) $promotion->new_job_title_id) {
-            return;
-        }
-
-        $employee->update([
-            'job_title_id' => $promotion->new_job_title_id,
-            'updated_by' => $request->user()->id,
-        ]);
-
-        $activity->log(
-            'employee_job_title_updated_from_promotion',
-            "{$request->user()->name} updated {$employee->display_name}'s current job title from promotion {$promotion->reference_no}.",
-            $promotion,
-            user: $request->user(),
-            request: $request,
-        );
     }
 
     private function storeInitialAttachment(Request $request, StaffPromotion $promotion, ActivityLogger $activity): void
