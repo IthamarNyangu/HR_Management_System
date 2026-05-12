@@ -65,7 +65,7 @@
                     <div class="col-md-6"><strong>Relocation Reason:</strong> {{ $relocation->relocationReason?->name ?? '-' }}</div>
                     <div class="col-md-6"><strong>Effective Date:</strong> {{ $relocation->effective_date?->format('d M Y') }}</div>
                     <div class="col-md-6"><strong>Relocation Amount:</strong> {{ $relocation->relocation_amount !== null ? number_format((float) $relocation->relocation_amount, 2) : '-' }}</div>
-                    <div class="col-md-6"><strong>Employee Profile Updated:</strong> {{ $relocation->update_employee_location ? 'Yes, when this record was saved.' : 'No' }}</div>
+                    <div class="col-md-6"><strong>Applied To Employee Profile:</strong> {{ $relocation->location_applied_at?->format('d M Y H:i') ?? 'Scheduled / pending' }}</div>
                 </div>
             </section>
 

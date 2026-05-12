@@ -12,7 +12,7 @@
 
 @section('content')
     <div class="bg-white border rounded-2 p-4">
-        <form method="POST" action="{{ route('staff-relocations.update', $relocation) }}" enctype="multipart/form-data" data-confirm="true" data-confirm-title="Save relocation changes?" data-confirm-message="You are about to update this relocation record. Employee current location will only change if the checkbox is selected. Do you want to continue?" data-confirm-button="Save changes">
+        <form method="POST" action="{{ route('staff-relocations.update', $relocation) }}" enctype="multipart/form-data" data-confirm="true" data-confirm-title="Save relocation changes?" data-confirm-message="You are about to update this relocation record. Already-applied historical relocations will not re-update the employee profile. Do you want to continue?" data-confirm-button="Save changes">
             @csrf
             @method('PUT')
             @include('staff-relocations._form')

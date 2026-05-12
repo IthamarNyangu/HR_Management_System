@@ -11,7 +11,7 @@
 
 @section('content')
     <div class="bg-white border rounded-2 p-4">
-        <form method="POST" action="{{ route('staff-relocations.store') }}" enctype="multipart/form-data" data-confirm="true" data-confirm-title="Create relocation?" data-confirm-message="This relocation will be added to the employee's movement history. Current employee location will only change if the checkbox is selected. Do you want to continue?" data-confirm-button="Create relocation">
+        <form method="POST" action="{{ route('staff-relocations.store') }}" enctype="multipart/form-data" data-confirm="true" data-confirm-title="Create relocation?" data-confirm-message="This relocation will be added to the employee's movement history. If the effective date is today or earlier, the employee profile will update automatically. Do you want to continue?" data-confirm-button="Create relocation">
             @csrf
             @include('staff-relocations._form')
         </form>

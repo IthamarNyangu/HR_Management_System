@@ -29,6 +29,7 @@ class StaffRelocation extends Model
         'to_facility_id',
         'relocation_reason_id',
         'effective_date',
+        'location_applied_at',
         'relocation_amount',
         'comment',
         'update_employee_location',
@@ -49,6 +50,7 @@ class StaffRelocation extends Model
     {
         return [
             'effective_date' => 'date',
+            'location_applied_at' => 'datetime',
             'relocation_amount' => 'decimal:2',
             'update_employee_location' => 'boolean',
             'deleted_at' => 'datetime',

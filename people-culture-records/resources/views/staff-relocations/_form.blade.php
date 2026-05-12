@@ -189,7 +189,7 @@
         @enderror
     </div>
 
-    <div class="col-md-4">
+    <div class="col-md-8">
         <label for="relocation_amount" class="form-label">Relocation Amount</label>
         <input id="relocation_amount" name="relocation_amount" type="number" step="0.01" min="0" class="form-control @error('relocation_amount') is-invalid @enderror" value="{{ old('relocation_amount', $relocation->relocation_amount) }}">
         @error('relocation_amount')
@@ -197,13 +197,7 @@
         @enderror
     </div>
 
-    <div class="col-md-4">
-        <div class="form-check mt-md-4 pt-md-2">
-            <input id="update_employee_location" name="update_employee_location" type="checkbox" value="1" class="form-check-input" @checked(old('update_employee_location', $relocation->update_employee_location))>
-            <label for="update_employee_location" class="form-check-label">Update employee current location now</label>
-            <div class="form-text">If checked, the employee profile will move to the selected destination after this record is saved.</div>
-        </div>
-    </div>
+    
 
     <div class="col-lg-6">
         <label for="comment" class="form-label">Comment</label>

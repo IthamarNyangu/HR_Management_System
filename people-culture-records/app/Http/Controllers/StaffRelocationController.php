@@ -15,6 +15,7 @@ use App\Models\RelocationReason;
 use App\Models\StaffRelocation;
 use App\Services\ActivityLogger;
 use App\Services\ReferenceNumberService;
+use App\Services\StaffRelocationApplicationService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -77,23 +78,25 @@ class StaffRelocationController extends Controller
         return view('staff-relocations.create', $this->formData($request) + compact('relocation'));
     }
 
-    public function store(StoreStaffRelocationRequest $request, ReferenceNumberService $referenceNumbers, ActivityLogger $activity): RedirectResponse
+    public function store(
+        StoreStaffRelocationRequest $request,
+        ReferenceNumberService $referenceNumbers,
+        ActivityLogger $activity,
+        StaffRelocationApplicationService $relocationApplications,
+    ): RedirectResponse
     {
-        $relocation = DB::transaction(function () use ($request, $referenceNumbers, $activity) {
+        $relocation = DB::transaction(function () use ($request, $referenceNumbers) {
             $data = $this->relocationData($request->validated());
             $data['reference_no'] = $referenceNumbers->generate('REL', 'staff_relocations');
             $data['created_by'] = $request->user()->id;
             $data['updated_by'] = $request->user()->id;
-            $data['update_employee_location'] = $request->boolean('update_employee_location');
 
-            $relocation = StaffRelocation::create($data);
-
-            $this->maybeUpdateEmployeeLocation($request, $relocation, $activity);
-
-            return $relocation;
+            return StaffRelocation::create($data);
         });
 
         $relocation->loadMissing(['employee', 'fromProvince', 'fromFacility', 'toProvince', 'toFacility']);
+
+        $relocationApplications->applyForRelocation($relocation, $activity, $request->user(), $request);
 
         if ($request->hasFile('supporting_document')) {
             $this->storeInitialAttachment($request, $relocation, $activity);
@@ -128,19 +131,23 @@ class StaffRelocationController extends Controller
         return view('staff-relocations.edit', $this->formData($request) + ['relocation' => $staffRelocation]);
     }
 
-    public function update(UpdateStaffRelocationRequest $request, StaffRelocation $staffRelocation, ActivityLogger $activity): RedirectResponse
+    public function update(
+        UpdateStaffRelocationRequest $request,
+        StaffRelocation $staffRelocation,
+        ActivityLogger $activity,
+        StaffRelocationApplicationService $relocationApplications,
+    ): RedirectResponse
     {
-        DB::transaction(function () use ($request, $staffRelocation, $activity) {
+        DB::transaction(function () use ($request, $staffRelocation) {
             $data = $this->relocationData($request->validated());
             $data['updated_by'] = $request->user()->id;
-            $data['update_employee_location'] = $request->boolean('update_employee_location');
 
             $staffRelocation->update($data);
-
-            $this->maybeUpdateEmployeeLocation($request, $staffRelocation->fresh(), $activity);
         });
 
         $staffRelocation->loadMissing(['employee', 'fromProvince', 'fromFacility', 'toProvince', 'toFacility']);
+
+        $relocationApplications->applyForRelocation($staffRelocation->fresh(), $activity, $request->user(), $request);
 
         if ($request->hasFile('supporting_document')) {
             $this->storeInitialAttachment($request, $staffRelocation->fresh(), $activity);
@@ -301,51 +308,13 @@ class StaffRelocationController extends Controller
             'to_facility_id',
             'relocation_reason_id',
             'effective_date',
+            'location_applied_at',
             'relocation_amount',
             'comment',
-            'update_employee_location',
             'created_by',
             'updated_by',
             'archived_by',
         ]);
-    }
-
-    private function maybeUpdateEmployeeLocation(Request $request, StaffRelocation $relocation, ActivityLogger $activity): void
-    {
-        if (! $request->boolean('update_employee_location')) {
-            return;
-        }
-
-        $employee = $relocation->employee()->first();
-
-        if (! $employee) {
-            return;
-        }
-
-        $changed = (int) $employee->province_id !== (int) $relocation->to_province_id
-            || (int) $employee->district_id !== (int) $relocation->to_district_id
-            || (int) ($employee->facility_id ?? 0) !== (int) ($relocation->to_facility_id ?? 0);
-
-        if (! $changed) {
-            return;
-        }
-
-        $relocation->loadMissing(['employee', 'fromProvince', 'fromFacility', 'toProvince', 'toFacility']);
-
-        $employee->update([
-            'province_id' => $relocation->to_province_id,
-            'district_id' => $relocation->to_district_id,
-            'facility_id' => $relocation->to_facility_id,
-            'updated_by' => $request->user()->id,
-        ]);
-
-        $activity->log(
-            'employee_location_updated_from_relocation',
-            "{$request->user()->name} updated {$employee->display_name}'s current location from staff relocation {$relocation->reference_no}.",
-            $relocation,
-            user: $request->user(),
-            request: $request,
-        );
     }
 
     private function storeInitialAttachment(Request $request, StaffRelocation $relocation, ActivityLogger $activity): void

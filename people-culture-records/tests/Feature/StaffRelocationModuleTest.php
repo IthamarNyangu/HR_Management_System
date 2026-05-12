@@ -252,12 +252,10 @@ class StaffRelocationModuleTest extends TestCase
         $this->assertSame($this->peopleCulture->id, $relocation->department_id);
     }
 
-    public function test_update_employee_location_updates_employee_current_location_only_when_checked(): void
+    public function test_current_or_past_effective_relocation_updates_employee_current_location_automatically(): void
     {
         $this->actingAs($this->user($this->adminRole))
-            ->post(route('staff-relocations.store'), $this->relocationPayload([
-                'update_employee_location' => '1',
-            ]))
+            ->post(route('staff-relocations.store'), $this->relocationPayload())
             ->assertRedirect();
 
         $this->assertDatabaseHas('employees', [
@@ -270,13 +268,18 @@ class StaffRelocationModuleTest extends TestCase
         $this->assertDatabaseHas('activity_logs', [
             'action' => 'employee_location_updated_from_relocation',
         ]);
+
+        $this->assertDatabaseMissing('staff_relocations', [
+            'employee_id' => $this->northernEmployee->id,
+            'location_applied_at' => null,
+        ]);
     }
 
-    public function test_unchecked_update_employee_location_does_not_update_employee_current_location(): void
+    public function test_future_dated_relocation_waits_for_command_before_updating_employee_location(): void
     {
         $this->actingAs($this->user($this->adminRole))
             ->post(route('staff-relocations.store'), $this->relocationPayload([
-                'update_employee_location' => '0',
+                'effective_date' => now()->addDays(7)->toDateString(),
             ]))
             ->assertRedirect();
 
@@ -285,6 +288,53 @@ class StaffRelocationModuleTest extends TestCase
             'province_id' => $this->northern->id,
             'district_id' => $this->kasama->id,
             'facility_id' => $this->kasamaFacility->id,
+        ]);
+
+        $relocation = StaffRelocation::firstOrFail();
+
+        $this->assertNull($relocation->location_applied_at);
+
+        $this->travel(7)->days();
+
+        $this->artisan('relocations:apply-effective')
+            ->expectsOutput('Processed 1 due staff relocation(s).')
+            ->assertExitCode(0);
+
+        $this->assertDatabaseHas('employees', [
+            'id' => $this->northernEmployee->id,
+            'province_id' => $this->luapula->id,
+            'district_id' => $this->mansa->id,
+            'facility_id' => $this->mansaFacility->id,
+        ]);
+
+        $this->assertNotNull($relocation->fresh()->location_applied_at);
+    }
+
+    public function test_editing_an_already_applied_old_relocation_does_not_overwrite_employee_current_location_again(): void
+    {
+        $relocation = $this->relocation([
+            'location_applied_at' => now()->subDay(),
+        ]);
+
+        $this->northernEmployee->update([
+            'province_id' => $this->luapula->id,
+            'district_id' => $this->mansa->id,
+            'facility_id' => $this->mansaFacility->id,
+        ]);
+
+        $this->actingAs($this->user($this->adminRole))
+            ->put(route('staff-relocations.update', $relocation), $this->relocationPayload([
+                'to_province_id' => $this->muchinga->id,
+                'to_district_id' => $this->chinsali->id,
+                'to_facility_id' => $this->chinsaliFacility->id,
+            ]))
+            ->assertRedirect(route('staff-relocations.show', $relocation));
+
+        $this->assertDatabaseHas('employees', [
+            'id' => $this->northernEmployee->id,
+            'province_id' => $this->luapula->id,
+            'district_id' => $this->mansa->id,
+            'facility_id' => $this->mansaFacility->id,
         ]);
     }
 

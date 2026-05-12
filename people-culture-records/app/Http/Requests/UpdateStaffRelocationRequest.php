@@ -56,7 +56,6 @@ class UpdateStaffRelocationRequest extends FormRequest
             'effective_date' => ['required', 'date'],
             'relocation_amount' => ['nullable', 'numeric', 'min:0'],
             'comment' => ['nullable', 'string'],
-            'update_employee_location' => ['nullable', 'boolean'],
             'supporting_document' => ['nullable', 'file', 'mimes:pdf,doc,docx,jpg,jpeg,png', 'max:10240'],
         ];
     }

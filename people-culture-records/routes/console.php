@@ -10,3 +10,4 @@ Artisan::command('inspire', function () {
 
 Schedule::command('disciplinary:auto-close-expired')->daily();
 Schedule::command('promotions:apply-effective')->daily();
+Schedule::command('relocations:apply-effective')->daily();
