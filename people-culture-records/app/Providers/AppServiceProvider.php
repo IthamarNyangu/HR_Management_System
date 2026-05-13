@@ -46,5 +46,13 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('manage-users', function (User $user) {
             return $user->is_active && $user->isAdmin();
         });
+
+        Gate::define('view-reports', function (User $user) {
+            return $user->is_active && ($user->isAdmin() || $user->isHrManager() || $user->hasRole('HR Officer') || $user->hasRole('Viewer'));
+        });
+
+        Gate::define('export-reports', function (User $user) {
+            return $user->is_active && ($user->isAdmin() || $user->isHrManager() || $user->hasRole('HR Officer') || $user->hasRole('Viewer'));
+        });
     }
 }

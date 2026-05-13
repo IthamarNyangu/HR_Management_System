@@ -58,6 +58,12 @@
                             Add Relocation
                         </a>
                     @endcan
+                    @can('view-reports')
+                        <a href="{{ route('reports.index') }}" class="btn btn-secondary btn-md">
+                            <i class="bi bi-file-earmark-spreadsheet" aria-hidden="true"></i>
+                            View Reports
+                        </a>
+                    @endcan
                     <a href="{{ $submittedStatus ? route('disciplinary-cases.index', ['case_status_id' => $submittedStatus->id]) : route('disciplinary-cases.index') }}" class="btn btn-secondary btn-md">Awaiting Approval</a>
                     <a href="{{ route('disciplinary-cases.index', ['expiry_from' => today()->toDateString(), 'expiry_to' => today()->addDays(30)->toDateString()]) }}" class="btn btn-secondary btn-md">Expiring Cases</a>
                     <a href="{{ route('disciplinary-cases.archived') }}" class="btn btn-secondary btn-md">Archived Records</a>

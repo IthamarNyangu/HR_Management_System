@@ -8,6 +8,8 @@ use App\Http\Controllers\DisciplinaryCaseAttachmentController;
 use App\Http\Controllers\DisciplinaryCaseController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\ReportController;
+use App\Http\Controllers\ReportExportController;
 use App\Http\Controllers\StaffPromotionAttachmentController;
 use App\Http\Controllers\StaffPromotionController;
 use App\Http\Controllers\StaffRelocationAttachmentController;
@@ -41,6 +43,29 @@ Route::middleware(['auth', 'active'])->group(function () use ($masterDataTypes) 
 
     Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead'])
         ->name('notifications.mark-all-read');
+
+    Route::prefix('reports')->name('reports.')->middleware('can:view-reports')->group(function () {
+        Route::get('/', [ReportController::class, 'index'])->name('index');
+        Route::get('/employees', [ReportController::class, 'employees'])->name('employees');
+        Route::get('/disciplinary-cases', [ReportController::class, 'disciplinaryCases'])->name('disciplinary-cases');
+        Route::get('/promotions', [ReportController::class, 'promotions'])->name('promotions');
+        Route::get('/relocations', [ReportController::class, 'relocations'])->name('relocations');
+        Route::get('/expiring-cases', [ReportController::class, 'expiringCases'])->name('expiring-cases');
+        Route::get('/archived-records', [ReportController::class, 'archivedRecords'])->name('archived-records');
+
+        Route::get('/employees/export/excel', [ReportExportController::class, 'employeesExcel'])->middleware('can:export-reports')->name('employees.export.excel');
+        Route::get('/employees/export/pdf', [ReportExportController::class, 'employeesPdf'])->middleware('can:export-reports')->name('employees.export.pdf');
+        Route::get('/disciplinary-cases/export/excel', [ReportExportController::class, 'disciplinaryCasesExcel'])->middleware('can:export-reports')->name('disciplinary-cases.export.excel');
+        Route::get('/disciplinary-cases/export/pdf', [ReportExportController::class, 'disciplinaryCasesPdf'])->middleware('can:export-reports')->name('disciplinary-cases.export.pdf');
+        Route::get('/promotions/export/excel', [ReportExportController::class, 'promotionsExcel'])->middleware('can:export-reports')->name('promotions.export.excel');
+        Route::get('/promotions/export/pdf', [ReportExportController::class, 'promotionsPdf'])->middleware('can:export-reports')->name('promotions.export.pdf');
+        Route::get('/relocations/export/excel', [ReportExportController::class, 'relocationsExcel'])->middleware('can:export-reports')->name('relocations.export.excel');
+        Route::get('/relocations/export/pdf', [ReportExportController::class, 'relocationsPdf'])->middleware('can:export-reports')->name('relocations.export.pdf');
+        Route::get('/expiring-cases/export/excel', [ReportExportController::class, 'expiringCasesExcel'])->middleware('can:export-reports')->name('expiring-cases.export.excel');
+        Route::get('/expiring-cases/export/pdf', [ReportExportController::class, 'expiringCasesPdf'])->middleware('can:export-reports')->name('expiring-cases.export.pdf');
+        Route::get('/archived-records/export/excel', [ReportExportController::class, 'archivedRecordsExcel'])->middleware('can:export-reports')->name('archived-records.export.excel');
+        Route::get('/archived-records/export/pdf', [ReportExportController::class, 'archivedRecordsPdf'])->middleware('can:export-reports')->name('archived-records.export.pdf');
+    });
 
     Route::get('/employees/archived', [EmployeeController::class, 'archived'])->name('employees.archived');
     Route::patch('/employees/{employee}/archive', [EmployeeController::class, 'archive'])->name('employees.archive');
