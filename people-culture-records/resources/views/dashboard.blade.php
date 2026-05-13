@@ -64,6 +64,18 @@
                             View Reports
                         </a>
                     @endcan
+                    @can('import-employees')
+                        <a href="{{ route('imports.employees.create') }}" class="btn btn-secondary btn-md">
+                            <i class="bi bi-cloud-arrow-up" aria-hidden="true"></i>
+                            Import Employees
+                        </a>
+                    @endcan
+                    @can('view-imports')
+                        <a href="{{ route('imports.index') }}" class="btn btn-secondary btn-md">
+                            <i class="bi bi-clock-history" aria-hidden="true"></i>
+                            Import History
+                        </a>
+                    @endcan
                     <a href="{{ $submittedStatus ? route('disciplinary-cases.index', ['case_status_id' => $submittedStatus->id]) : route('disciplinary-cases.index') }}" class="btn btn-secondary btn-md">Awaiting Approval</a>
                     <a href="{{ route('disciplinary-cases.index', ['expiry_from' => today()->toDateString(), 'expiry_to' => today()->addDays(30)->toDateString()]) }}" class="btn btn-secondary btn-md">Expiring Cases</a>
                     <a href="{{ route('disciplinary-cases.archived') }}" class="btn btn-secondary btn-md">Archived Records</a>

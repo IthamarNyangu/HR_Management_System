@@ -7,6 +7,8 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DisciplinaryCaseAttachmentController;
 use App\Http\Controllers\DisciplinaryCaseController;
 use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\EmployeeImportController;
+use App\Http\Controllers\ImportController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ReportExportController;
@@ -43,6 +45,19 @@ Route::middleware(['auth', 'active'])->group(function () use ($masterDataTypes) 
 
     Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead'])
         ->name('notifications.mark-all-read');
+
+    Route::prefix('imports')->name('imports.')->middleware('can:view-imports')->group(function () {
+        Route::get('/', [ImportController::class, 'index'])->name('index');
+        Route::get('/batches/{importBatch}', [ImportController::class, 'showBatch'])->name('batches.show');
+
+        Route::middleware('can:import-employees')->group(function () {
+            Route::get('/employees', [EmployeeImportController::class, 'create'])->name('employees.create');
+            Route::post('/employees/upload', [EmployeeImportController::class, 'upload'])->name('employees.upload');
+            Route::get('/employees/{importBatch}/preview', [EmployeeImportController::class, 'preview'])->name('employees.preview');
+            Route::post('/employees/{importBatch}/confirm', [EmployeeImportController::class, 'confirm'])->name('employees.confirm');
+            Route::patch('/employees/{importBatch}/cancel', [EmployeeImportController::class, 'cancel'])->name('employees.cancel');
+        });
+    });
 
     Route::prefix('reports')->name('reports.')->middleware('can:view-reports')->group(function () {
         Route::get('/', [ReportController::class, 'index'])->name('index');
