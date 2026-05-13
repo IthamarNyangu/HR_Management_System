@@ -12,6 +12,7 @@ use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Maatwebsite\Excel\Facades\Excel;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Tests\TestCase;
@@ -63,7 +64,19 @@ class EmployeeImportTest extends TestCase
             ->get(route('imports.employees.create'))
             ->assertOk()
             ->assertSee('Employee Import')
-            ->assertSee('Upload and Preview');
+            ->assertSee('Upload and Preview')
+            ->assertSee('Download Employee Import Template');
+    }
+
+    public function test_employee_import_template_can_be_downloaded(): void
+    {
+        Excel::fake();
+
+        $this->actingAs($this->user($this->adminRole))
+            ->get(route('imports.employees.template'))
+            ->assertOk();
+
+        Excel::assertDownloaded('employee-import-template.xlsx');
     }
 
     public function test_upload_rejects_invalid_file_type(): void
@@ -101,6 +114,35 @@ class EmployeeImportTest extends TestCase
             'import_batch_id' => $batch->id,
             'status' => 'valid',
         ]);
+    }
+
+    public function test_empty_rows_are_ignored(): void
+    {
+        $batch = $this->uploadRows([
+            $this->row(['employee_no' => 'EMP-002A']),
+            [],
+        ]);
+
+        $this->assertSame(1, $batch->fresh()->total_rows);
+        $this->assertSame(1, $batch->rows()->count());
+    }
+
+    public function test_multiple_sheet_workbook_processes_employees_import_sheet_only(): void
+    {
+        $admin = $this->user($this->adminRole);
+
+        $this->actingAs($admin)
+            ->post(route('imports.employees.upload'), [
+                'file' => $this->multiSheetEmployeeFile([$this->row(['employee_no' => 'EMP-002B'])]),
+            ])
+            ->assertRedirect();
+
+        $batch = ImportBatch::latest('id')->firstOrFail();
+
+        $this->assertSame(1, $batch->total_rows);
+        $this->assertSame(1, $batch->valid_rows);
+        $this->assertSame('EMP-002B', $batch->rows()->firstOrFail()->normalized_data['employee_no']);
+        $this->assertContains('Workbook has multiple sheets. Only the Employees_Import sheet was processed.', $batch->error_summary['_workbook_warnings']);
     }
 
     public function test_missing_required_fields_mark_row_invalid(): void
@@ -231,6 +273,19 @@ class EmployeeImportTest extends TestCase
         $this->assertDatabaseHas('activity_logs', ['action' => 'import_completed', 'user_id' => $admin->id]);
     }
 
+    public function test_error_report_can_be_downloaded_for_invalid_or_duplicate_rows(): void
+    {
+        $batch = $this->uploadRows([$this->row(['employee_no' => 'EMP-013', 'first_name' => ''])]);
+
+        Excel::fake();
+
+        $this->actingAs($this->user($this->adminRole))
+            ->get(route('imports.employees.errors', $batch))
+            ->assertOk();
+
+        Excel::assertDownloaded("employee-import-errors-{$batch->reference_no}.xlsx");
+    }
+
     private function uploadRows(array $rows, ?User $user = null): ImportBatch
     {
         $user ??= $this->user($this->adminRole);
@@ -267,6 +322,7 @@ class EmployeeImportTest extends TestCase
     {
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Employees_Import');
         $headings = ['employee_no', 'first_name', 'last_name', 'email', 'province', 'district'];
 
         foreach ($headings as $columnIndex => $heading) {
@@ -285,6 +341,43 @@ class EmployeeImportTest extends TestCase
         return new UploadedFile(
             $path,
             'employees.xlsx',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            null,
+            true
+        );
+    }
+
+    /**
+     * @param list<array<string, mixed>> $rows
+     */
+    private function multiSheetEmployeeFile(array $rows): UploadedFile
+    {
+        $spreadsheet = new Spreadsheet();
+        $readme = $spreadsheet->getActiveSheet();
+        $readme->setTitle('README');
+        $readme->setCellValue('A1', 'This sheet should not be processed.');
+
+        $sheet = $spreadsheet->createSheet();
+        $sheet->setTitle('Employees_Import');
+        $headings = ['employee_no', 'first_name', 'last_name', 'email', 'province', 'district'];
+
+        foreach ($headings as $columnIndex => $heading) {
+            $sheet->setCellValue([$columnIndex + 1, 1], $heading);
+        }
+
+        foreach ($rows as $rowIndex => $row) {
+            foreach ($headings as $columnIndex => $heading) {
+                $sheet->setCellValue([$columnIndex + 1, $rowIndex + 2], $row[$heading] ?? null);
+            }
+        }
+
+        $spreadsheet->setActiveSheetIndex(1);
+        $path = sys_get_temp_dir().DIRECTORY_SEPARATOR.uniqid('employees_multisheet_', true).'.xlsx';
+        (new Xlsx($spreadsheet))->save($path);
+
+        return new UploadedFile(
+            $path,
+            'employees-multisheet.xlsx',
             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             null,
             true

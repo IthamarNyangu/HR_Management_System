@@ -52,8 +52,10 @@ Route::middleware(['auth', 'active'])->group(function () use ($masterDataTypes) 
 
         Route::middleware('can:import-employees')->group(function () {
             Route::get('/employees', [EmployeeImportController::class, 'create'])->name('employees.create');
+            Route::get('/employees/template', [EmployeeImportController::class, 'template'])->name('employees.template');
             Route::post('/employees/upload', [EmployeeImportController::class, 'upload'])->name('employees.upload');
             Route::get('/employees/{importBatch}/preview', [EmployeeImportController::class, 'preview'])->name('employees.preview');
+            Route::get('/employees/{importBatch}/errors', [EmployeeImportController::class, 'errors'])->name('employees.errors');
             Route::post('/employees/{importBatch}/confirm', [EmployeeImportController::class, 'confirm'])->name('employees.confirm');
             Route::patch('/employees/{importBatch}/cancel', [EmployeeImportController::class, 'cancel'])->name('employees.cancel');
         });

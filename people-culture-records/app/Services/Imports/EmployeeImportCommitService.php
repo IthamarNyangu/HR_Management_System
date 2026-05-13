@@ -6,6 +6,7 @@ use App\Models\Employee;
 use App\Models\ImportBatch;
 use App\Models\User;
 use App\Services\ActivityLogger;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 
 class EmployeeImportCommitService
@@ -37,7 +38,26 @@ class EmployeeImportCommitService
             foreach ($validRows as $row) {
                 $data = $row->normalized_data ?? [];
 
-                Employee::create(array_merge($data, [
+                Employee::create(array_merge(Arr::only($data, [
+                    'employee_no',
+                    'first_name',
+                    'last_name',
+                    'gender',
+                    'date_of_birth',
+                    'national_id',
+                    'email',
+                    'phone',
+                    'project_id',
+                    'department_id',
+                    'job_title_id',
+                    'province_id',
+                    'district_id',
+                    'facility_id',
+                    'employment_status_id',
+                    'hire_date',
+                    'supervisor_name',
+                    'notes',
+                ]), [
                     'created_by' => $user->id,
                     'updated_by' => $user->id,
                 ]));

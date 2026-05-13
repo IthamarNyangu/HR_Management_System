@@ -18,4 +18,12 @@
         <div class="col"><div class="summary-tile h-100"><div class="summary-label">Duplicate Rows</div><div class="summary-value text-warning">{{ $batch->duplicate_rows }}</div></div></div>
         <div class="col"><div class="summary-tile h-100"><div class="summary-label">Imported Rows</div><div class="summary-value">{{ $batch->imported_rows }}</div></div></div>
     </div>
+
+    @if (($batch->error_summary['_workbook_warnings'] ?? []) !== [])
+        <div class="alert alert-warning small mb-0 mt-3">
+            @foreach ($batch->error_summary['_workbook_warnings'] as $warning)
+                <div>{{ $warning }}</div>
+            @endforeach
+        </div>
+    @endif
 </section>

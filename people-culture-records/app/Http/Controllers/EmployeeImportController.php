@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\EmployeeImportErrorReportExport;
+use App\Exports\EmployeeImportTemplateExport;
 use App\Http\Requests\UploadEmployeeImportRequest;
 use App\Models\ImportBatch;
 use App\Services\ActivityLogger;
@@ -10,6 +12,8 @@ use App\Services\Imports\EmployeeImportPreviewService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Maatwebsite\Excel\Facades\Excel;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Throwable;
 
 class EmployeeImportController extends Controller
@@ -17,6 +21,11 @@ class EmployeeImportController extends Controller
     public function create(): View
     {
         return view('imports.employees.create');
+    }
+
+    public function template(): BinaryFileResponse
+    {
+        return Excel::download(new EmployeeImportTemplateExport(), 'employee-import-template.xlsx');
     }
 
     public function upload(UploadEmployeeImportRequest $request, EmployeeImportPreviewService $previewService): RedirectResponse
@@ -100,6 +109,17 @@ class EmployeeImportController extends Controller
         return redirect()
             ->route('imports.index')
             ->with('success', 'Import batch cancelled.');
+    }
+
+    public function errors(Request $request, ImportBatch $importBatch): BinaryFileResponse
+    {
+        $this->ensureEmployeeImport($importBatch);
+        $this->authorizeBatchAccess($request, $importBatch);
+
+        return Excel::download(
+            new EmployeeImportErrorReportExport($importBatch),
+            "employee-import-errors-{$importBatch->reference_no}.xlsx"
+        );
     }
 
     private function ensureEmployeeImport(ImportBatch $importBatch): void

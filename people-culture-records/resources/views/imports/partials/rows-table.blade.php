@@ -35,14 +35,15 @@
                             <div class="small text-muted">{{ $data['email'] ?? '-' }}</div>
                         </td>
                         <td>
-                            <div>Province ID: {{ $data['province_id'] ?? '-' }}</div>
-                            <div class="small text-muted">District ID: {{ $data['district_id'] ?? '-' }}</div>
-                            <div class="small text-muted">Facility ID: {{ $data['facility_id'] ?? '-' }}</div>
+                            <div>{{ $data['province_name'] ?? '-' }}</div>
+                            <div class="small text-muted">{{ $data['district_name'] ?? '-' }}</div>
+                            <div class="small text-muted">{{ $data['facility_name'] ?? '-' }}</div>
                         </td>
                         <td>
-                            <div>Job Title ID: {{ $data['job_title_id'] ?? '-' }}</div>
-                            <div class="small text-muted">Department ID: {{ $data['department_id'] ?? '-' }}</div>
-                            <div class="small text-muted">Project ID: {{ $data['project_id'] ?? '-' }}</div>
+                            <div>{{ $data['job_title_name'] ?? '-' }}</div>
+                            <div class="small text-muted">{{ $data['department_name'] ?? '-' }}</div>
+                            <div class="small text-muted">{{ $data['project_name'] ?? '-' }}</div>
+                            <div class="small text-muted">{{ $data['employment_status_name'] ?? '-' }}</div>
                         </td>
                         <td>
                             @if ($errors !== [])

@@ -2,7 +2,6 @@
 
 namespace App\Services\Imports;
 
-use App\Imports\EmployeesPreviewImport;
 use App\Models\Department;
 use App\Models\District;
 use App\Models\Employee;
@@ -19,8 +18,11 @@ use Carbon\Carbon;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+use RuntimeException;
 use Throwable;
 
 class EmployeeImportPreviewService
@@ -61,10 +63,7 @@ class EmployeeImportPreviewService
         $batch = null;
 
         try {
-            $import = new EmployeesPreviewImport();
-            Excel::import($import, $path, 'local');
-
-            $rawRows = $this->nonEmptyRows($import->rows);
+            [$rawRows, $workbookWarnings] = $this->readRows($path);
             $normalizedRows = $rawRows->map(fn (array $row) => $this->normalizeRow($row));
             $employeeNumbers = $normalizedRows
                 ->pluck('employee_no')
@@ -79,7 +78,7 @@ class EmployeeImportPreviewService
 
             $lookups = $this->lookups();
 
-            return DB::transaction(function () use ($file, $path, $user, $rawRows, $normalizedRows, $fileDuplicateNumbers, $existingEmployees, $lookups, &$batch) {
+            return DB::transaction(function () use ($file, $path, $user, $rawRows, $normalizedRows, $fileDuplicateNumbers, $existingEmployees, $lookups, $workbookWarnings, &$batch) {
                 $batch = ImportBatch::create([
                     'reference_no' => $this->referenceNumberService->generate('IMP', 'import_batches'),
                     'import_type' => 'employees',
@@ -118,8 +117,8 @@ class EmployeeImportPreviewService
                     }
 
                     $batch->rows()->create([
-                        'row_number' => $index + 2,
-                        'raw_data' => $rawRow,
+                        'row_number' => $rawRow['_row_number'] ?? ($index + 2),
+                        'raw_data' => collect($rawRow)->except('_row_number')->all(),
                         'normalized_data' => $normalizedData,
                         'status' => $status,
                         'errors' => $errors === [] ? null : $errors,
@@ -133,7 +132,7 @@ class EmployeeImportPreviewService
                     'valid_rows' => $counts['valid'],
                     'invalid_rows' => $counts['invalid'],
                     'duplicate_rows' => $counts['duplicate'],
-                    'error_summary' => $errorSummary === [] ? null : $errorSummary,
+                    'error_summary' => $this->buildErrorSummary($errorSummary, $workbookWarnings),
                 ]);
 
                 $this->activityLogger->log(
@@ -165,14 +164,65 @@ class EmployeeImportPreviewService
     }
 
     /**
-     * @param Collection<int, mixed> $rows
+     * @return array{0: Collection<int, array<string, mixed>>, 1: list<string>}
+     */
+    private function readRows(string $path): array
+    {
+        $absolutePath = Storage::disk('local')->path($path);
+        $reader = IOFactory::createReaderForFile($absolutePath);
+        $reader->setReadDataOnly(true);
+        $spreadsheet = $reader->load($absolutePath);
+        $sheetNames = $spreadsheet->getSheetNames();
+        $warnings = [];
+
+        if (count($sheetNames) > 1) {
+            if (! in_array('Employees_Import', $sheetNames, true)) {
+                throw new RuntimeException('Workbook has multiple sheets but no Employees_Import sheet. Please use the employee import template or rename the employee sheet to Employees_Import.');
+            }
+
+            $worksheet = $spreadsheet->getSheetByName('Employees_Import');
+            $warnings[] = 'Workbook has multiple sheets. Only the Employees_Import sheet was processed.';
+        } else {
+            $worksheet = $spreadsheet->getSheet(0);
+        }
+
+        return [$this->nonEmptyRowsFromWorksheet($worksheet), $warnings];
+    }
+
+    /**
      * @return Collection<int, array<string, mixed>>
      */
-    private function nonEmptyRows(Collection $rows): Collection
+    private function nonEmptyRowsFromWorksheet(Worksheet $worksheet): Collection
     {
-        return $rows
-            ->map(fn ($row) => collect($row)->mapWithKeys(fn ($value, $key) => [$this->normalizeKey((string) $key) => is_string($value) ? trim($value) : $value])->all())
-            ->filter(fn (array $row) => collect($row)->filter(fn ($value) => $value !== null && $value !== '')->isNotEmpty())
+        $sheetRows = $worksheet->toArray(null, true, true, true);
+        $headingRow = array_shift($sheetRows) ?? [];
+        $headings = [];
+
+        foreach ($headingRow as $column => $heading) {
+            $normalizedHeading = $this->normalizeKey((string) $heading);
+
+            if ($normalizedHeading !== '') {
+                $headings[$column] = $normalizedHeading;
+            }
+        }
+
+        return collect($sheetRows)
+            ->map(function (array $row, int $index) use ($headings) {
+                $normalized = ['_row_number' => $index + 2];
+
+                foreach ($headings as $column => $heading) {
+                    $value = $row[$column] ?? null;
+                    $normalized[$heading] = is_string($value) ? trim($value) : $value;
+                }
+
+                return $normalized;
+            })
+            ->filter(function (array $row) {
+                return collect($row)
+                    ->except('_row_number')
+                    ->filter(fn ($value) => $value !== null && $value !== '')
+                    ->isNotEmpty();
+            })
             ->values();
     }
 
@@ -300,12 +350,19 @@ class EmployeeImportPreviewService
             'email' => $normalized['email'],
             'phone' => $normalized['phone'],
             'project_id' => $project?->id,
+            'project_name' => $project?->name,
             'department_id' => $department?->id,
+            'department_name' => $department?->name,
             'job_title_id' => $jobTitle?->id,
+            'job_title_name' => $jobTitle?->name,
             'province_id' => $province?->id,
+            'province_name' => $province?->name,
             'district_id' => $district?->id,
+            'district_name' => $district?->name,
             'facility_id' => $facility?->id,
+            'facility_name' => $facility?->name,
             'employment_status_id' => $employmentStatus?->id,
+            'employment_status_name' => $employmentStatus?->name,
             'hire_date' => $hireDate,
             'supervisor_name' => $normalized['supervisor_name'],
             'notes' => $normalized['notes'],
@@ -402,5 +459,21 @@ class EmployeeImportPreviewService
             'province_id' => $user->province_id,
             'province_name' => $user->province?->name,
         ];
+    }
+
+    /**
+     * @param array<string, int> $errorSummary
+     * @param list<string> $workbookWarnings
+     * @return array<string, mixed>|null
+     */
+    private function buildErrorSummary(array $errorSummary, array $workbookWarnings): ?array
+    {
+        $summary = $errorSummary;
+
+        if ($workbookWarnings !== []) {
+            $summary['_workbook_warnings'] = $workbookWarnings;
+        }
+
+        return $summary === [] ? null : $summary;
     }
 }
