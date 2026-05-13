@@ -172,7 +172,7 @@
         <div class="border rounded-2 bg-light p-3" data-upload-box>
             <div class="d-flex align-items-center gap-2 mb-3">
                 <i class="bi bi-paperclip text-primary" aria-hidden="true"></i>
-                <div class="fw-semibold">Promotion Document</div>
+                <div class="fw-semibold">Promotion Supporting Document</div>
             </div>
             <label for="supporting_document" class="form-label">Upload File</label>
             <input id="supporting_document" name="supporting_document" type="file" class="form-control @error('supporting_document') is-invalid @enderror" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">

@@ -4,6 +4,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Login - {{ config('app.name') }}</title>
+    <link rel="icon" type="image/png" href="{{ asset('images/RTCZ.png') }}">
+    <link rel="shortcut icon" type="image/png" href="{{ asset('images/RTCZ.png') }}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body { background: #eef2f7; min-height: 100vh; }

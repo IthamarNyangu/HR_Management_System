@@ -189,7 +189,7 @@
         @enderror
     </div>
 
-    <div class="col-md-8">
+    <div class="col-md-4">
         <label for="relocation_amount" class="form-label">Relocation Amount</label>
         <input id="relocation_amount" name="relocation_amount" type="number" step="0.01" min="0" class="form-control @error('relocation_amount') is-invalid @enderror" value="{{ old('relocation_amount', $relocation->relocation_amount) }}">
         @error('relocation_amount')
@@ -211,7 +211,7 @@
         <div class="border rounded-2 bg-light p-3" data-upload-box>
             <div class="d-flex align-items-center gap-2 mb-3">
                 <i class="bi bi-paperclip text-primary" aria-hidden="true"></i>
-                <div class="fw-semibold">Relocation Document</div>
+                <div class="fw-semibold">Relocation Supporting Document</div>
             </div>
             <label for="supporting_document" class="form-label">Upload File</label>
             <input id="supporting_document" name="supporting_document" type="file" class="form-control @error('supporting_document') is-invalid @enderror" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
