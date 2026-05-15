@@ -91,7 +91,8 @@
             <table class="table table-hover align-middle data-table">
                 <thead>
                     <tr>
-                        <th>Employee</th>
+                        <th>Employee ID</th>
+                        <th>Employee Name</th>
                         <th>Province</th>
                         <th>District</th>
                         <th>Facility</th>
@@ -104,10 +105,8 @@
                 <tbody>
                     @forelse ($employees as $employee)
                         <tr>
-                            <td>
-                                <div class="fw-semibold">{{ $employee->full_name }}</div>
-                                <div class="small text-muted">{{ $employee->employee_no }}</div>
-                            </td>
+                            <td class="fw-semibold">{{ $employee->employee_no }}</td>
+                            <td>{{ $employee->full_name }}</td>
                             <td>{{ $employee->province?->name }}</td>
                             <td>{{ $employee->district?->name }}</td>
                             <td>{{ $employee->facility?->name ?? '-' }}</td>
@@ -134,7 +133,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="text-center text-muted py-4">No employees found.</td>
+                            <td colspan="9" class="text-center text-muted py-4">No employees found.</td>
                         </tr>
                     @endforelse
                 </tbody>
