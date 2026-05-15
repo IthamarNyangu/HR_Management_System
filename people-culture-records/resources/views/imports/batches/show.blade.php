@@ -11,5 +11,5 @@
 
 @section('content')
     @include('imports.partials.batch-summary', ['batch' => $importBatch])
-    @include('imports.partials.rows-table', ['rows' => $rows])
+    @include('imports.partials.rows-table', ['rows' => $rows, 'batch' => $importBatch])
 @endsection

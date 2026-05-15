@@ -23,7 +23,20 @@
                 </div>
             </a>
         </div>
-        @foreach (['Disciplinary Cases Import', 'Staff Promotions Import', 'Staff Relocations Import'] as $title)
+        <div class="col-md-6 col-xl-3">
+            <a href="{{ route('imports.disciplinary-cases.create') }}" class="text-decoration-none text-reset">
+                <div class="admin-card h-100 p-3">
+                    <div class="d-flex align-items-start gap-3">
+                        <span class="admin-card-icon"><i class="bi bi-shield-exclamation" aria-hidden="true"></i></span>
+                        <div>
+                            <h2 class="h5 mb-1">Disciplinary Cases Import</h2>
+                            <p class="text-muted mb-0">Upload, preview, validate, and confirm disciplinary cases.</p>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        @foreach (['Staff Promotions Import', 'Staff Relocations Import'] as $title)
             <div class="col-md-6 col-xl-3">
                 <div class="admin-card h-100 p-3 opacity-75">
                     <div class="d-flex align-items-start gap-3">

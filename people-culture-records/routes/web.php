@@ -6,6 +6,7 @@ use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DisciplinaryCaseAttachmentController;
 use App\Http\Controllers\DisciplinaryCaseController;
+use App\Http\Controllers\DisciplinaryCaseImportController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\EmployeeImportController;
 use App\Http\Controllers\ImportController;
@@ -58,6 +59,16 @@ Route::middleware(['auth', 'active'])->group(function () use ($masterDataTypes) 
             Route::get('/employees/{importBatch}/errors', [EmployeeImportController::class, 'errors'])->name('employees.errors');
             Route::post('/employees/{importBatch}/confirm', [EmployeeImportController::class, 'confirm'])->name('employees.confirm');
             Route::patch('/employees/{importBatch}/cancel', [EmployeeImportController::class, 'cancel'])->name('employees.cancel');
+        });
+
+        Route::middleware('can:import-disciplinary-cases')->group(function () {
+            Route::get('/disciplinary-cases', [DisciplinaryCaseImportController::class, 'create'])->name('disciplinary-cases.create');
+            Route::get('/disciplinary-cases/template', [DisciplinaryCaseImportController::class, 'template'])->name('disciplinary-cases.template');
+            Route::post('/disciplinary-cases/upload', [DisciplinaryCaseImportController::class, 'upload'])->name('disciplinary-cases.upload');
+            Route::get('/disciplinary-cases/{importBatch}/preview', [DisciplinaryCaseImportController::class, 'preview'])->name('disciplinary-cases.preview');
+            Route::get('/disciplinary-cases/{importBatch}/errors', [DisciplinaryCaseImportController::class, 'errors'])->name('disciplinary-cases.errors');
+            Route::post('/disciplinary-cases/{importBatch}/confirm', [DisciplinaryCaseImportController::class, 'confirm'])->name('disciplinary-cases.confirm');
+            Route::patch('/disciplinary-cases/{importBatch}/cancel', [DisciplinaryCaseImportController::class, 'cancel'])->name('disciplinary-cases.cancel');
         });
     });
 

@@ -62,5 +62,9 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('import-employees', function (User $user) {
             return $user->is_active && ($user->isAdmin() || $user->isHrManager() || $user->hasRole('HR Officer'));
         });
+
+        Gate::define('import-disciplinary-cases', function (User $user) {
+            return $user->is_active && ($user->isAdmin() || $user->isHrManager() || $user->hasRole('HR Officer'));
+        });
     }
 }
