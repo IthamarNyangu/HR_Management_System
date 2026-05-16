@@ -5,7 +5,7 @@
         ['label' => 'Disciplinary Cases', 'icon' => 'bi-shield-exclamation', 'route' => 'disciplinary-cases.index', 'active' => request()->routeIs('disciplinary-cases.*'), 'enabled' => auth()->user()->can('viewAny', App\Models\DisciplinaryCase::class)],
         ['label' => 'Staff Promotions', 'icon' => 'bi-graph-up-arrow', 'route' => 'staff-promotions.index', 'active' => request()->routeIs('staff-promotions.*'), 'enabled' => auth()->user()->can('viewAny', App\Models\StaffPromotion::class)],
         ['label' => 'Staff Relocations', 'icon' => 'bi-geo-alt', 'route' => 'staff-relocations.index', 'active' => request()->routeIs('staff-relocations.*'), 'enabled' => auth()->user()->can('viewAny', App\Models\StaffRelocation::class)],
-        ['label' => 'Reports', 'icon' => 'bi-bar-chart', 'route' => 'reports.index', 'active' => request()->routeIs('reports.*'), 'enabled' => auth()->user()->can('view-reports')],
+        ['label' => 'Reports & Exports', 'icon' => 'bi-bar-chart', 'route' => 'reports.index', 'active' => request()->routeIs('reports.*'), 'enabled' => auth()->user()->can('view-reports')],
         ['label' => 'Imports', 'icon' => 'bi-cloud-arrow-up', 'route' => 'imports.index', 'active' => request()->routeIs('imports.*'), 'enabled' => auth()->user()->can('view-imports')],
         ['label' => 'Admin Panel', 'icon' => 'bi-sliders', 'route' => 'admin.index', 'active' => request()->routeIs('admin.index') || request()->routeIs('admin.master-data.*'), 'enabled' => auth()->user()->can('manage-master-data')],
         ['label' => 'User Management', 'icon' => 'bi-person-gear', 'route' => 'admin.users.index', 'active' => request()->routeIs('admin.users.*'), 'enabled' => auth()->user()->can('manage-users')],

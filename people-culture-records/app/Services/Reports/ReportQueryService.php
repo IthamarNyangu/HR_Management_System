@@ -63,7 +63,6 @@ class ReportQueryService
                     'reference_no' => 'Reference No',
                     'employee_no' => 'Employee No',
                     'employee_name' => 'Employee Name',
-                    'project' => 'Project',
                     'province' => 'Province',
                     'district' => 'District',
                     'facility' => 'Facility',
@@ -186,7 +185,7 @@ class ReportQueryService
     /**
      * @param array<string, mixed> $filters
      */
-    public function paginate(string $type, User $user, array $filters = [], int $perPage = 15): LengthAwarePaginator
+    public function paginate(string $type, User $user, array $filters = [], int $perPage = 5): LengthAwarePaginator
     {
         $rows = $this->rows($type, $user, $filters)->values();
         $page = Paginator::resolveCurrentPage();
