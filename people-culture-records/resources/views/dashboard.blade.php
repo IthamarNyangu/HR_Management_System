@@ -31,7 +31,6 @@
             <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
                 <div>
                     <h2 class="h5 mb-1">Quick Actions</h2>
-                    <p class="text-muted small mb-0">Common HR actions based on your access.</p>
                 </div>
                 <div class="d-flex flex-wrap gap-2">
                     @can('create', App\Models\Employee::class)

@@ -4,17 +4,17 @@
 
 <div class="d-flex flex-column gap-3">
     <section class="bg-white border rounded-2 p-3">
-        <form method="GET" class="row g-2 align-items-end">
+        <form method="GET" class="row g-2 align-items-center">
             @if (in_array($type, ['employees', 'disciplinary-cases', 'promotions', 'relocations', 'archived-records'], true))
                 <div class="col-md-6 col-xl-3">
-                    <label class="form-label" for="search">Search</label>
-                    <input id="search" name="search" type="search" value="{{ request('search') }}" class="form-control" placeholder="Reference, employee, name, email">
+                    <label class="visually-hidden" for="search">Search</label>
+                    <input id="search" name="search" type="search" value="{{ request('search') }}" class="form-control" placeholder="Ref no., employee, name, email">
                 </div>
             @endif
 
             @if ($type === 'archived-records')
                 <div class="col-md-6 col-xl-2">
-                    <label class="form-label" for="module">Module</label>
+                    <label class="visually-hidden" for="module">Module</label>
                     <select id="module" name="module" class="form-select">
                         <option value="">All modules</option>
                         <option value="employees" @selected(request('module') === 'employees')>Employees</option>
@@ -27,7 +27,7 @@
 
             @if (in_array($type, ['employees', 'disciplinary-cases', 'promotions', 'expiring-cases', 'archived-records'], true))
                 <div class="col-md-6 col-xl-2">
-                    <label class="form-label" for="province_id">Province</label>
+                    <label class="visually-hidden" for="province_id">Province</label>
                     <select id="province_id" name="province_id" class="form-select">
                         <option value="">All provinces</option>
                         @foreach ($options['provinces'] as $province)
@@ -39,7 +39,7 @@
 
             @if ($type === 'relocations')
                 <div class="col-md-6 col-xl-2">
-                    <label class="form-label" for="from_province_id">From Province</label>
+                    <label class="visually-hidden" for="from_province_id">From Province</label>
                     <select id="from_province_id" name="from_province_id" class="form-select">
                         <option value="">All from provinces</option>
                         @foreach ($options['provinces'] as $province)
@@ -48,7 +48,7 @@
                     </select>
                 </div>
                 <div class="col-md-6 col-xl-2">
-                    <label class="form-label" for="to_province_id">To Province</label>
+                    <label class="visually-hidden" for="to_province_id">To Province</label>
                     <select id="to_province_id" name="to_province_id" class="form-select">
                         <option value="">All to provinces</option>
                         @foreach ($options['provinces'] as $province)
@@ -60,7 +60,7 @@
 
             @if (in_array($type, ['employees', 'disciplinary-cases', 'promotions', 'expiring-cases'], true))
                 <div class="col-md-6 col-xl-2">
-                    <label class="form-label" for="district_id">District</label>
+                    <label class="visually-hidden" for="district_id">District</label>
                     <select id="district_id" name="district_id" class="form-select">
                         <option value="">All districts</option>
                         @foreach ($options['districts'] as $district)
@@ -69,7 +69,7 @@
                     </select>
                 </div>
                 <div class="col-md-6 col-xl-2">
-                    <label class="form-label" for="facility_id">Facility</label>
+                    <label class="visually-hidden" for="facility_id">Facility</label>
                     <select id="facility_id" name="facility_id" class="form-select">
                         <option value="">All facilities</option>
                         @foreach ($options['facilities'] as $facility)
@@ -81,7 +81,7 @@
 
             @if ($type === 'relocations')
                 <div class="col-md-6 col-xl-2">
-                    <label class="form-label" for="from_district_id">From District</label>
+                    <label class="visually-hidden" for="from_district_id">From District</label>
                     <select id="from_district_id" name="from_district_id" class="form-select">
                         <option value="">All from districts</option>
                         @foreach ($options['districts'] as $district)
@@ -90,7 +90,7 @@
                     </select>
                 </div>
                 <div class="col-md-6 col-xl-2">
-                    <label class="form-label" for="to_district_id">To District</label>
+                    <label class="visually-hidden" for="to_district_id">To District</label>
                     <select id="to_district_id" name="to_district_id" class="form-select">
                         <option value="">All to districts</option>
                         @foreach ($options['districts'] as $district)
@@ -102,7 +102,7 @@
 
             @if (in_array($type, ['employees', 'disciplinary-cases', 'promotions', 'relocations'], true))
                 <div class="col-md-6 col-xl-2">
-                    <label class="form-label" for="project_id">Project</label>
+                    <label class="visually-hidden" for="project_id">Project</label>
                     <select id="project_id" name="project_id" class="form-select">
                         <option value="">All projects</option>
                         @foreach ($options['projects'] as $project)
@@ -114,7 +114,7 @@
 
             @if (in_array($type, ['employees', 'promotions', 'relocations'], true))
                 <div class="col-md-6 col-xl-2">
-                    <label class="form-label" for="department_id">Department</label>
+                    <label class="visually-hidden" for="department_id">Department</label>
                     <select id="department_id" name="department_id" class="form-select">
                         <option value="">All departments</option>
                         @foreach ($options['departments'] as $department)
@@ -126,7 +126,7 @@
 
             @if ($type === 'employees')
                 <div class="col-md-6 col-xl-2">
-                    <label class="form-label" for="job_title_id">Job Title</label>
+                    <label class="visually-hidden" for="job_title_id">Job Title</label>
                     <select id="job_title_id" name="job_title_id" class="form-select">
                         <option value="">All job titles</option>
                         @foreach ($options['jobTitles'] as $jobTitle)
@@ -135,7 +135,7 @@
                     </select>
                 </div>
                 <div class="col-md-6 col-xl-2">
-                    <label class="form-label" for="employment_status_id">Status</label>
+                    <label class="visually-hidden" for="employment_status_id">Status</label>
                     <select id="employment_status_id" name="employment_status_id" class="form-select">
                         <option value="">All statuses</option>
                         @foreach ($options['employmentStatuses'] as $status)
@@ -147,7 +147,7 @@
 
             @if (in_array($type, ['disciplinary-cases', 'expiring-cases'], true))
                 <div class="col-md-6 col-xl-2">
-                    <label class="form-label" for="offence_category_id">Offence</label>
+                    <label class="visually-hidden" for="offence_category_id">Offence</label>
                     <select id="offence_category_id" name="offence_category_id" class="form-select">
                         <option value="">All offences</option>
                         @foreach ($options['offenceCategories'] as $category)
@@ -156,7 +156,7 @@
                     </select>
                 </div>
                 <div class="col-md-6 col-xl-2">
-                    <label class="form-label" for="penalty_type_id">Penalty</label>
+                    <label class="visually-hidden" for="penalty_type_id">Penalty</label>
                     <select id="penalty_type_id" name="penalty_type_id" class="form-select">
                         <option value="">All penalties</option>
                         @foreach ($options['penaltyTypes'] as $penalty)
@@ -168,7 +168,7 @@
 
             @if ($type === 'disciplinary-cases')
                 <div class="col-md-6 col-xl-2">
-                    <label class="form-label" for="case_status_id">Status</label>
+                    <label class="visually-hidden" for="case_status_id">Status</label>
                     <select id="case_status_id" name="case_status_id" class="form-select">
                         <option value="">All statuses</option>
                         @foreach ($options['caseStatuses'] as $status)
@@ -180,7 +180,7 @@
 
             @if ($type === 'promotions')
                 <div class="col-md-6 col-xl-2">
-                    <label class="form-label" for="old_job_title_id">Old Title</label>
+                    <label class="visually-hidden" for="old_job_title_id">Old Title</label>
                     <select id="old_job_title_id" name="old_job_title_id" class="form-select">
                         <option value="">All old titles</option>
                         @foreach ($options['jobTitles'] as $jobTitle)
@@ -189,7 +189,7 @@
                     </select>
                 </div>
                 <div class="col-md-6 col-xl-2">
-                    <label class="form-label" for="new_job_title_id">New Title</label>
+                    <label class="visually-hidden" for="new_job_title_id">New Title</label>
                     <select id="new_job_title_id" name="new_job_title_id" class="form-select">
                         <option value="">All new titles</option>
                         @foreach ($options['jobTitles'] as $jobTitle)
@@ -198,7 +198,7 @@
                     </select>
                 </div>
                 <div class="col-md-6 col-xl-2">
-                    <label class="form-label" for="promotion_type_id">Type</label>
+                    <label class="visually-hidden" for="promotion_type_id">Type</label>
                     <select id="promotion_type_id" name="promotion_type_id" class="form-select">
                         <option value="">All types</option>
                         @foreach ($options['promotionTypes'] as $promotionType)
@@ -210,7 +210,7 @@
 
             @if ($type === 'relocations')
                 <div class="col-md-6 col-xl-2">
-                    <label class="form-label" for="job_title_id">Job Title</label>
+                    <label class="visually-hidden" for="job_title_id">Job Title</label>
                     <select id="job_title_id" name="job_title_id" class="form-select">
                         <option value="">All job titles</option>
                         @foreach ($options['jobTitles'] as $jobTitle)
@@ -219,7 +219,7 @@
                     </select>
                 </div>
                 <div class="col-md-6 col-xl-2">
-                    <label class="form-label" for="relocation_reason_id">Reason</label>
+                    <label class="visually-hidden" for="relocation_reason_id">Reason</label>
                     <select id="relocation_reason_id" name="relocation_reason_id" class="form-select">
                         <option value="">All reasons</option>
                         @foreach ($options['relocationReasons'] as $reason)
@@ -231,70 +231,70 @@
 
             @if ($type === 'promotions')
                 <div class="col-md-6 col-xl-2">
-                    <label class="form-label" for="promotion_from">Promotion From</label>
+                    <label class="visually-hidden" for="promotion_from">Promotion From</label>
                     <input id="promotion_from" name="promotion_from" type="date" value="{{ request('promotion_from') }}" class="form-control">
                 </div>
                 <div class="col-md-6 col-xl-2">
-                    <label class="form-label" for="promotion_to">Promotion To</label>
+                    <label class="visually-hidden" for="promotion_to">Promotion To</label>
                     <input id="promotion_to" name="promotion_to" type="date" value="{{ request('promotion_to') }}" class="form-control">
                 </div>
             @endif
 
             @if (in_array($type, ['disciplinary-cases'], true))
                 <div class="col-md-6 col-xl-2">
-                    <label class="form-label" for="effective_from">Effective From</label>
+                    <label class="visually-hidden" for="effective_from">Effective From</label>
                     <input id="effective_from" name="effective_from" type="date" value="{{ request('effective_from') }}" class="form-control">
                 </div>
                 <div class="col-md-6 col-xl-2">
-                    <label class="form-label" for="effective_to">Effective To</label>
+                    <label class="visually-hidden" for="effective_to">Effective To</label>
                     <input id="effective_to" name="effective_to" type="date" value="{{ request('effective_to') }}" class="form-control">
                 </div>
             @endif
 
             @if (in_array($type, ['disciplinary-cases', 'expiring-cases'], true))
                 <div class="col-md-6 col-xl-2">
-                    <label class="form-label" for="expiry_from">Expiry From</label>
+                    <label class="visually-hidden" for="expiry_from">Expiry From</label>
                     <input id="expiry_from" name="expiry_from" type="date" value="{{ request('expiry_from') }}" class="form-control">
                 </div>
                 <div class="col-md-6 col-xl-2">
-                    <label class="form-label" for="expiry_to">Expiry To</label>
+                    <label class="visually-hidden" for="expiry_to">Expiry To</label>
                     <input id="expiry_to" name="expiry_to" type="date" value="{{ request('expiry_to') }}" class="form-control">
                 </div>
             @endif
 
             @if ($type === 'relocations')
                 <div class="col-md-6 col-xl-2">
-                    <label class="form-label" for="effective_from">Effective From</label>
+                    <label class="visually-hidden" for="effective_from">Effective From</label>
                     <input id="effective_from" name="effective_from" type="date" value="{{ request('effective_from') }}" class="form-control">
                 </div>
                 <div class="col-md-6 col-xl-2">
-                    <label class="form-label" for="effective_to">Effective To</label>
+                    <label class="visually-hidden" for="effective_to">Effective To</label>
                     <input id="effective_to" name="effective_to" type="date" value="{{ request('effective_to') }}" class="form-control">
                 </div>
                 <div class="col-md-6 col-xl-2">
-                    <label class="form-label" for="relocation_amount_min">Amount Min</label>
-                    <input id="relocation_amount_min" name="relocation_amount_min" type="number" min="0" step="0.01" value="{{ request('relocation_amount_min') }}" class="form-control">
+                    <label class="visually-hidden" for="relocation_amount_min">Amount Min</label>
+                    <input id="relocation_amount_min" name="relocation_amount_min" type="number" min="0" step="0.01" value="{{ request('relocation_amount_min') }}" class="form-control" placeholder="Amount min">
                 </div>
                 <div class="col-md-6 col-xl-2">
-                    <label class="form-label" for="relocation_amount_max">Amount Max</label>
-                    <input id="relocation_amount_max" name="relocation_amount_max" type="number" min="0" step="0.01" value="{{ request('relocation_amount_max') }}" class="form-control">
+                    <label class="visually-hidden" for="relocation_amount_max">Amount Max</label>
+                    <input id="relocation_amount_max" name="relocation_amount_max" type="number" min="0" step="0.01" value="{{ request('relocation_amount_max') }}" class="form-control" placeholder="Amount max">
                 </div>
             @endif
 
             @if (in_array($type, ['promotions', 'relocations'], true))
                 <div class="col-md-6 col-xl-2">
-                    <label class="form-label" for="year">Year</label>
-                    <input id="year" name="year" type="number" min="2000" max="2100" value="{{ request('year') }}" class="form-control">
+                    <label class="visually-hidden" for="year">Year</label>
+                    <input id="year" name="year" type="number" min="2000" max="2100" value="{{ request('year') }}" class="form-control" placeholder="Year">
                 </div>
             @endif
 
             @if ($type === 'archived-records')
                 <div class="col-md-6 col-xl-2">
-                    <label class="form-label" for="archived_from">Archived From</label>
+                    <label class="visually-hidden" for="archived_from">Archived From</label>
                     <input id="archived_from" name="archived_from" type="date" value="{{ request('archived_from') }}" class="form-control">
                 </div>
                 <div class="col-md-6 col-xl-2">
-                    <label class="form-label" for="archived_to">Archived To</label>
+                    <label class="visually-hidden" for="archived_to">Archived To</label>
                     <input id="archived_to" name="archived_to" type="date" value="{{ request('archived_to') }}" class="form-control">
                 </div>
             @endif
