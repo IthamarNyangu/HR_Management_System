@@ -10,6 +10,8 @@ use App\Models\EmploymentStatus;
 use App\Models\Facility;
 use App\Models\JobTitle;
 use App\Models\OffenceCategory;
+use App\Models\AppointmentStatus;
+use App\Models\AppointmentType;
 use App\Models\PenaltyType;
 use App\Models\Project;
 use App\Models\PromotionType;
@@ -38,6 +40,8 @@ class MasterDataRegistry
             'case-statuses' => ['label' => 'Case Statuses', 'icon' => 'bi-list-check', 'model' => CaseStatus::class],
             'promotion-types' => ['label' => 'Promotion Types', 'icon' => 'bi-graph-up-arrow', 'model' => PromotionType::class],
             'relocation-reasons' => ['label' => 'Relocation Reasons', 'icon' => 'bi-signpost-split', 'model' => RelocationReason::class],
+            'appointment-types' => ['label' => 'Appointment Types', 'icon' => 'bi-person-lines-fill', 'model' => AppointmentType::class],
+            'appointment-statuses' => ['label' => 'Appointment Statuses', 'icon' => 'bi-calendar-check', 'model' => AppointmentStatus::class],
             'document-types' => ['label' => 'Document Types', 'icon' => 'bi-files', 'model' => DocumentType::class],
         ];
     }

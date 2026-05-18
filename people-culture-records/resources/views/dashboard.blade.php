@@ -57,6 +57,12 @@
                             Add Relocation
                         </a>
                     @endcan
+                    @can('create', App\Models\TemporaryAppointment::class)
+                        <a href="{{ route('temporary-appointments.create') }}" class="btn btn-primary-outline btn-md">
+                            <i class="bi bi-calendar-event" aria-hidden="true"></i>
+                            Add Temporary Appointment
+                        </a>
+                    @endcan
                     @can('view-reports')
                         <a href="{{ route('reports.index') }}" class="btn btn-secondary btn-md">
                             <i class="bi bi-file-earmark-spreadsheet" aria-hidden="true"></i>
@@ -178,9 +184,17 @@
                                 </div>
                             </div>
                         @endforeach
+                        @foreach ($temporaryAppointmentOverview as $card)
+                            <div class="col">
+                                <div class="summary-tile h-100">
+                                    <div class="summary-label">{{ $card['label'] }}</div>
+                                    <div class="summary-value">{{ $card['value'] }}</div>
+                                </div>
+                            </div>
+                        @endforeach
                     </div>
                 </div>
-                <div class="col-xl-3">
+                <div class="col-xl-2">
                     <h3 class="h6 mb-3">Latest Promotions</h3>
                     <div class="list-group list-group-flush">
                         @forelse ($latestPromotions as $promotion)
@@ -196,7 +210,7 @@
                         @endforelse
                     </div>
                 </div>
-                <div class="col-xl-3">
+                <div class="col-xl-2">
                     <h3 class="h6 mb-3">Latest Relocations</h3>
                     <div class="list-group list-group-flush">
                         @forelse ($latestRelocations as $relocation)
@@ -209,6 +223,22 @@
                             </a>
                         @empty
                             <div class="text-muted small">No relocations recorded yet.</div>
+                        @endforelse
+                    </div>
+                </div>
+                <div class="col-xl-2">
+                    <h3 class="h6 mb-3">Latest Appointments</h3>
+                    <div class="list-group list-group-flush">
+                        @forelse ($latestTemporaryAppointments as $appointment)
+                            <a href="{{ route('temporary-appointments.show', $appointment) }}" class="list-group-item px-0 d-flex justify-content-between align-items-start gap-3 text-decoration-none">
+                                <span>
+                                    <span class="fw-semibold">{{ $appointment->reference_no }}</span>
+                                    <span class="d-block small text-muted">{{ $appointment->employee?->display_name }} - {{ $appointment->temporaryJobTitle?->name ?? '-' }}</span>
+                                </span>
+                                <span class="badge text-bg-light">{{ $appointment->end_date?->format('d M') }}</span>
+                            </a>
+                        @empty
+                            <div class="text-muted small">No temporary appointments recorded yet.</div>
                         @endforelse
                     </div>
                 </div>

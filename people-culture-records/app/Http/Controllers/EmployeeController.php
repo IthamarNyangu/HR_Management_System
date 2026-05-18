@@ -13,6 +13,7 @@ use App\Models\JobTitle;
 use App\Models\Project;
 use App\Models\Province;
 use App\Models\StaffRelocation;
+use App\Models\TemporaryAppointment;
 use App\Services\ActivityLogger;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -126,7 +127,23 @@ class EmployeeController extends Controller
             ->take(5)
             ->get();
 
-        return view('employees.show', compact('employee', 'disciplinaryCases', 'staffPromotions', 'staffRelocations'));
+        $temporaryAppointments = $employee->temporaryAppointments()
+            ->with(['temporaryJobTitle', 'appointmentType', 'appointmentStatus'])
+            ->visibleTo(request()->user())
+            ->latest('start_date')
+            ->take(5)
+            ->get();
+
+        $activeTemporaryAppointment = $employee->temporaryAppointments()
+            ->with(['temporaryJobTitle', 'appointmentStatus'])
+            ->visibleTo(request()->user())
+            ->whereHas('appointmentStatus', fn ($query) => $query->where('code', 'ACTIVE'))
+            ->whereDate('start_date', '<=', today())
+            ->whereDate('end_date', '>=', today())
+            ->orderBy('end_date')
+            ->first();
+
+        return view('employees.show', compact('employee', 'disciplinaryCases', 'staffPromotions', 'staffRelocations', 'temporaryAppointments', 'activeTemporaryAppointment'));
     }
 
     public function edit(Request $request, Employee $employee): View

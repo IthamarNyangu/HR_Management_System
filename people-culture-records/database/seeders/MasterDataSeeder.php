@@ -8,6 +8,8 @@ use App\Models\DocumentType;
 use App\Models\EmploymentStatus;
 use App\Models\JobTitle;
 use App\Models\OffenceCategory;
+use App\Models\AppointmentStatus;
+use App\Models\AppointmentType;
 use App\Models\PenaltyType;
 use App\Models\Project;
 use App\Models\PromotionType;
@@ -63,6 +65,20 @@ class MasterDataSeeder extends Seeder
         RelocationReason::class => [
             ['name' => 'Operational Need', 'code' => 'OPS'],
             ['name' => 'Employee Request', 'code' => 'REQ'],
+        ],
+        AppointmentStatus::class => [
+            ['name' => 'Draft', 'code' => 'DRAFT'],
+            ['name' => 'Upcoming', 'code' => 'UPCOMING'],
+            ['name' => 'Active', 'code' => 'ACTIVE'],
+            ['name' => 'Completed', 'code' => 'COMPLETED'],
+            ['name' => 'Cancelled', 'code' => 'CANCELLED'],
+        ],
+        AppointmentType::class => [
+            ['name' => 'Acting Appointment', 'code' => 'ACTING'],
+            ['name' => 'Temporary Assignment', 'code' => 'TEMP_ASSIGN'],
+            ['name' => 'Secondment', 'code' => 'SECOND'],
+            ['name' => 'Interim Appointment', 'code' => 'INTERIM'],
+            ['name' => 'Short-term Appointment', 'code' => 'SHORT_TERM'],
         ],
         DocumentType::class => [
             ['name' => 'Letter', 'code' => 'LETTER'],

@@ -8,6 +8,7 @@ use App\Models\DisciplinaryCase;
 use App\Models\Employee;
 use App\Models\StaffPromotion;
 use App\Models\StaffRelocation;
+use App\Models\TemporaryAppointment;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
@@ -99,6 +100,14 @@ class ActivityLogger
                 $properties['to_facility_name'] = $subject->attachable->toFacility?->name;
             }
 
+            if ($subject->attachable instanceof TemporaryAppointment) {
+                $properties['reference_no'] = $subject->attachable->reference_no;
+                $properties['province_id'] = $subject->attachable->province_id;
+                $properties['province_name'] = $subject->attachable->province?->name;
+                $properties['facility_id'] = $subject->attachable->facility_id;
+                $properties['facility_name'] = $subject->attachable->facility?->name;
+            }
+
             return $properties;
         }
 
@@ -123,6 +132,16 @@ class ActivityLogger
                 'to_province_name' => $subject->toProvince?->name,
                 'to_facility_id' => $subject->to_facility_id,
                 'to_facility_name' => $subject->toFacility?->name,
+            ];
+        }
+
+        if ($subject instanceof TemporaryAppointment) {
+            return [
+                'reference_no' => $subject->reference_no,
+                'province_id' => $subject->province_id,
+                'province_name' => $subject->province?->name,
+                'facility_id' => $subject->facility_id,
+                'facility_name' => $subject->facility?->name,
             ];
         }
 

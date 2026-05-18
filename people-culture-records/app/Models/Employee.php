@@ -119,6 +119,11 @@ class Employee extends Model
         return $this->hasMany(StaffRelocation::class);
     }
 
+    public function temporaryAppointments(): HasMany
+    {
+        return $this->hasMany(TemporaryAppointment::class);
+    }
+
     public function user(): HasOne
     {
         return $this->hasOne(User::class);

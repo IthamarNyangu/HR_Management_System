@@ -18,6 +18,8 @@ use App\Http\Controllers\StaffPromotionAttachmentController;
 use App\Http\Controllers\StaffPromotionController;
 use App\Http\Controllers\StaffRelocationAttachmentController;
 use App\Http\Controllers\StaffRelocationController;
+use App\Http\Controllers\TemporaryAppointmentAttachmentController;
+use App\Http\Controllers\TemporaryAppointmentController;
 use App\Support\MasterDataRegistry;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -133,6 +135,17 @@ Route::middleware(['auth', 'active'])->group(function () use ($masterDataTypes) 
     Route::patch('/staff-relocations/{id}/restore', [StaffRelocationController::class, 'restore'])->whereNumber('id')->name('staff-relocations.restore');
     Route::resource('staff-relocations', StaffRelocationController::class)
         ->parameters(['staff-relocations' => 'staff_relocation'])
+        ->except(['destroy']);
+
+    Route::get('/temporary-appointments/archived', [TemporaryAppointmentController::class, 'archived'])->name('temporary-appointments.archived');
+    Route::patch('/temporary-appointments/{temporary_appointment}/archive', [TemporaryAppointmentController::class, 'archive'])->name('temporary-appointments.archive');
+    Route::patch('/temporary-appointments/{temporary_appointment}/extend', [TemporaryAppointmentController::class, 'extend'])->name('temporary-appointments.extend');
+    Route::post('/temporary-appointments/{temporary_appointment}/attachments', [TemporaryAppointmentAttachmentController::class, 'store'])->name('temporary-appointments.attachments.store');
+    Route::get('/temporary-appointments/{temporary_appointment}/attachments/{attachment}/download', [TemporaryAppointmentAttachmentController::class, 'download'])->name('temporary-appointments.attachments.download');
+    Route::delete('/temporary-appointments/{temporary_appointment}/attachments/{attachment}', [TemporaryAppointmentAttachmentController::class, 'delete'])->name('temporary-appointments.attachments.delete');
+    Route::patch('/temporary-appointments/{id}/restore', [TemporaryAppointmentController::class, 'restore'])->whereNumber('id')->name('temporary-appointments.restore');
+    Route::resource('temporary-appointments', TemporaryAppointmentController::class)
+        ->parameters(['temporary-appointments' => 'temporary_appointment'])
         ->except(['destroy']);
 
     Route::prefix('admin')->name('admin.')->group(function () use ($masterDataTypes) {

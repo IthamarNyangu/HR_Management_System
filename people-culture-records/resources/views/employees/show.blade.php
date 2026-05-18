@@ -41,6 +41,15 @@
         <div class="col-lg-8">
             <section class="bg-white border rounded-2 p-4 mb-3">
                 <h2 class="h5">Employment Details</h2>
+                @if ($activeTemporaryAppointment)
+                    <div class="alert alert-info py-2 mb-3">
+                        Active Temporary Appointment:
+                        <a href="{{ route('temporary-appointments.show', $activeTemporaryAppointment) }}" class="alert-link">
+                            {{ $activeTemporaryAppointment->temporaryJobTitle?->name }}
+                        </a>
+                        until {{ $activeTemporaryAppointment->end_date?->format('d M Y') }}.
+                    </div>
+                @endif
                 <div class="row">
                     <div class="col-md-6"><strong>Project:</strong> {{ $employee->project?->name ?? '-' }}</div>
                     <div class="col-md-6"><strong>Department:</strong> {{ $employee->department?->name ?? '-' }}</div>
@@ -162,6 +171,43 @@
                             @empty
                                 <tr>
                                     <td colspan="6" class="text-center text-muted py-4">No relocation history recorded.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="bg-white border rounded-2 p-4 mt-3">
+                <h2 class="h5">Temporary Appointment History</h2>
+                <div class="table-responsive data-table-wrap">
+                    <table class="table table-hover align-middle data-table">
+                        <thead>
+                            <tr>
+                                <th>Reference</th>
+                                <th>Temporary Job Title</th>
+                                <th>Type</th>
+                                <th>Start Date</th>
+                                <th>End Date</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse ($temporaryAppointments as $appointment)
+                                <tr>
+                                    <td><a href="{{ route('temporary-appointments.show', $appointment) }}">{{ $appointment->reference_no }}</a></td>
+                                    <td>{{ $appointment->temporaryJobTitle?->name ?? '-' }}</td>
+                                    <td>{{ $appointment->appointmentType?->name ?? '-' }}</td>
+                                    <td>{{ $appointment->start_date?->format('d M Y') }}</td>
+                                    <td>{{ $appointment->end_date?->format('d M Y') }}</td>
+                                    <td>
+                                        <span class="badge text-bg-secondary">{{ $appointment->appointmentStatus?->name ?? '-' }}</span>
+                                        <div class="small text-muted">{{ $appointment->date_status_label }}</div>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-4">No temporary appointment history recorded.</td>
                                 </tr>
                             @endforelse
                         </tbody>

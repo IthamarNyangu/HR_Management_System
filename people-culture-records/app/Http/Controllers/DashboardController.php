@@ -9,6 +9,8 @@ use App\Models\Employee;
 use App\Models\EmploymentStatus;
 use App\Models\StaffPromotion;
 use App\Models\StaffRelocation;
+use App\Models\AppointmentStatus;
+use App\Models\TemporaryAppointment;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 
@@ -21,11 +23,14 @@ class DashboardController extends Controller
         $caseQuery = DisciplinaryCase::query()->visibleTo($user);
         $promotionQuery = StaffPromotion::query()->visibleTo($user);
         $relocationQuery = StaffRelocation::query()->visibleTo($user);
+        $appointmentQuery = TemporaryAppointment::query()->visibleTo($user);
 
         $activeEmploymentStatus = EmploymentStatus::where('code', 'ACTIVE')->orWhere('name', 'Active')->first();
         $submittedStatus = $this->caseStatus('SUBMITTED');
         $activeCaseStatus = $this->caseStatus('ACTIVE');
         $closedCaseStatus = $this->caseStatus('CLOSED');
+        $activeAppointmentStatus = $this->appointmentStatus('ACTIVE');
+        $completedAppointmentStatus = $this->appointmentStatus('COMPLETED');
 
         $needsAttention = [
             [
@@ -55,6 +60,20 @@ class DashboardController extends Controller
                 'tone' => 'success',
                 'icon' => 'bi-shield-check',
                 'url' => $activeCaseStatus ? route('disciplinary-cases.index', ['case_status_id' => $activeCaseStatus->id]) : route('disciplinary-cases.index'),
+            ],
+            [
+                'label' => 'Appointments Ending Soon',
+                'value' => $activeAppointmentStatus ? (clone $appointmentQuery)->where('appointment_status_id', $activeAppointmentStatus->id)->whereBetween('end_date', [today(), today()->addDays(30)])->count() : 0,
+                'tone' => 'warning',
+                'icon' => 'bi-calendar-event',
+                'url' => route('temporary-appointments.index', ['ending_soon' => 1]),
+            ],
+            [
+                'label' => 'Expired Appointments',
+                'value' => $activeAppointmentStatus ? (clone $appointmentQuery)->where('appointment_status_id', $activeAppointmentStatus->id)->whereDate('end_date', '<', today())->count() : 0,
+                'tone' => 'danger',
+                'icon' => 'bi-calendar-x',
+                'url' => route('temporary-appointments.index', ['expired' => 1]),
             ],
         ];
 
@@ -113,6 +132,18 @@ class DashboardController extends Controller
             ['label' => 'Relocation Amount This Year', 'value' => number_format((float) ((clone $relocationQuery)->whereYear('effective_date', now()->year)->sum('relocation_amount') ?? 0), 2)],
         ];
 
+        $temporaryAppointmentOverview = [
+            ['label' => 'Active Temporary Appointments', 'value' => $activeAppointmentStatus ? (clone $appointmentQuery)->where('appointment_status_id', $activeAppointmentStatus->id)->count() : 0],
+            ['label' => 'Appointments Ending This Month', 'value' => $activeAppointmentStatus ? (clone $appointmentQuery)->where('appointment_status_id', $activeAppointmentStatus->id)->whereYear('end_date', now()->year)->whereMonth('end_date', now()->month)->count() : 0],
+        ];
+
+        $latestTemporaryAppointments = TemporaryAppointment::query()
+            ->visibleTo($user)
+            ->with(['employee', 'temporaryJobTitle'])
+            ->latest('start_date')
+            ->take(5)
+            ->get();
+
         $latestRelocations = StaffRelocation::query()
             ->visibleTo($user)
             ->with(['employee', 'fromProvince', 'toProvince'])
@@ -138,6 +169,8 @@ class DashboardController extends Controller
             'latestPromotions',
             'relocationOverview',
             'latestRelocations',
+            'temporaryAppointmentOverview',
+            'latestTemporaryAppointments',
             'recentActivities',
             'submittedStatus',
             'activeCaseStatus',
@@ -147,5 +180,10 @@ class DashboardController extends Controller
     private function caseStatus(string $code): ?CaseStatus
     {
         return CaseStatus::where('code', $code)->orWhere('name', ucfirst(strtolower($code)))->first();
+    }
+
+    private function appointmentStatus(string $code): ?AppointmentStatus
+    {
+        return AppointmentStatus::where('code', $code)->orWhere('name', ucfirst(strtolower($code)))->first();
     }
 }
