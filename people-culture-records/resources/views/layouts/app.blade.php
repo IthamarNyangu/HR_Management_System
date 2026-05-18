@@ -8,14 +8,35 @@
     <link rel="shortcut icon" type="image/png" href="{{ asset('images/RTCZ.png') }}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <script>
+        (function () {
+            try {
+                if (localStorage.getItem('sidebar-state') === 'collapsed') {
+                    document.documentElement.dataset.sidebar = 'collapsed';
+                }
+            } catch (error) {
+                document.documentElement.dataset.sidebar = 'expanded';
+            }
+        })();
+    </script>
     <style>
+        :root { --sidebar-expanded-width: 280px; --sidebar-collapsed-width: 84px; }
         body { background: #f5f7fb; }
         .app-shell { min-height: 100vh; }
-        .sidebar { width: 280px; min-width: 280px; flex: 0 0 280px; background: #172033; color: #fff; }
+        .sidebar { width: var(--sidebar-expanded-width); min-width: var(--sidebar-expanded-width); flex: 0 0 var(--sidebar-expanded-width); background: #172033; color: #fff; transition: width .18s ease, min-width .18s ease, flex-basis .18s ease; }
+        .sidebar-header { min-height: 3rem; }
+        .sidebar-brand-text, .sidebar-label { min-width: 0; opacity: 1; transition: opacity .12s ease, width .18s ease; }
+        .sidebar-toggle { flex: 0 0 auto; }
         .sidebar .nav-link { color: rgba(255,255,255,.78); border-radius: .375rem; white-space: nowrap; display: flex; align-items: center; gap: .75rem; }
         .sidebar .nav-link:hover, .sidebar .nav-link.active { background: rgba(255,255,255,.1); color: #fff; }
         .sidebar .nav-link.disabled { color: rgba(255,255,255,.35); }
         .nav-icon { width: 1.25rem; text-align: center; font-size: 1rem; flex: 0 0 1.25rem; }
+        html[data-sidebar="collapsed"] .sidebar { width: var(--sidebar-collapsed-width); min-width: var(--sidebar-collapsed-width); flex-basis: var(--sidebar-collapsed-width); }
+        html[data-sidebar="collapsed"] .sidebar { padding-left: .75rem !important; padding-right: .75rem !important; }
+        html[data-sidebar="collapsed"] .sidebar-header { justify-content: center; }
+        html[data-sidebar="collapsed"] .sidebar-brand-text, html[data-sidebar="collapsed"] .sidebar-label { width: 0; opacity: 0; overflow: hidden; pointer-events: none; }
+        html[data-sidebar="collapsed"] .sidebar .nav-link { justify-content: center; gap: 0; padding-left: .75rem; padding-right: .75rem; }
+        html[data-sidebar="collapsed"] .sidebar .nav-link.disabled { justify-content: center; }
         .topbar { background: #fff; border-bottom: 1px solid #e7eaf0; }
         .content-wrap { min-width: 0; }
         .metric-card { border: 1px solid #e7eaf0; border-radius: .5rem; min-height: 9.5rem; display: flex; flex-direction: column; }
@@ -88,6 +109,11 @@
         @media (max-width: 991.98px) {
             .sidebar { width: 100%; min-width: 100%; flex-basis: auto; }
             .sidebar .nav-link { white-space: normal; }
+            html[data-sidebar="collapsed"] .sidebar { width: 100%; min-width: 100%; flex-basis: auto; }
+            html[data-sidebar="collapsed"] .sidebar { padding-left: 1rem !important; padding-right: 1rem !important; }
+            html[data-sidebar="collapsed"] .sidebar-header { justify-content: flex-start; }
+            html[data-sidebar="collapsed"] .sidebar-brand-text, html[data-sidebar="collapsed"] .sidebar-label { width: auto; opacity: 1; overflow: visible; pointer-events: auto; }
+            html[data-sidebar="collapsed"] .sidebar .nav-link { justify-content: flex-start; gap: .75rem; padding-left: 1rem; padding-right: 1rem; }
         }
     </style>
 </head>
@@ -162,6 +188,37 @@
                     form.submit();
                 }
             });
+
+            const sidebarToggle = document.getElementById('sidebarToggle');
+
+            if (sidebarToggle) {
+                const sidebarToggleIcon = sidebarToggle.querySelector('.bi');
+                const setSidebarState = function (state) {
+                    document.documentElement.dataset.sidebar = state;
+                    sidebarToggle.setAttribute('aria-expanded', state === 'expanded' ? 'true' : 'false');
+                    sidebarToggle.setAttribute('title', state === 'expanded' ? 'Collapse sidebar' : 'Expand sidebar');
+                    sidebarToggle.setAttribute('aria-label', state === 'expanded' ? 'Collapse sidebar' : 'Expand sidebar');
+
+                    if (sidebarToggleIcon) {
+                        sidebarToggleIcon.classList.toggle('bi-chevron-left', state === 'expanded');
+                        sidebarToggleIcon.classList.toggle('bi-chevron-right', state === 'collapsed');
+                    }
+
+                    try {
+                        localStorage.setItem('sidebar-state', state);
+                    } catch (error) {
+                        // Ignore storage errors; the toggle still works for this page.
+                    }
+                };
+
+                const currentState = document.documentElement.dataset.sidebar === 'collapsed' ? 'collapsed' : 'expanded';
+                setSidebarState(currentState);
+
+                sidebarToggle.addEventListener('click', function () {
+                    const nextState = document.documentElement.dataset.sidebar === 'collapsed' ? 'expanded' : 'collapsed';
+                    setSidebarState(nextState);
+                });
+            }
         });
     </script>
     @stack('scripts')

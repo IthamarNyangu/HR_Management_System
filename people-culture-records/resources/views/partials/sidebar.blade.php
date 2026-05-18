@@ -15,24 +15,27 @@
 @endphp
 
 <aside class="sidebar p-3 d-lg-block">
-    <div class="d-flex align-items-center gap-3 mb-4">
-        <div class="min-w-0">
+    <div class="sidebar-header d-flex align-items-center justify-content-between gap-2 mb-4">
+        <div class="sidebar-brand-text min-w-0">
             <div class="fw-bold">People & Culture</div>
             <div class="small text-white-50">Records Management</div>
         </div>
+        <button id="sidebarToggle" type="button" class="btn btn-sm btn-secondary sidebar-toggle d-none d-lg-inline-flex" aria-expanded="true" aria-label="Collapse sidebar" title="Collapse sidebar">
+            <i class="bi bi-chevron-left" aria-hidden="true"></i>
+        </button>
     </div>
 
     <nav class="nav flex-column gap-1">
         @foreach ($items as $item)
             @if ($item['enabled'] && $item['route'])
-                <a class="nav-link {{ $item['active'] ? 'active' : '' }}" href="{{ route($item['route']) }}">
+                <a class="nav-link {{ $item['active'] ? 'active' : '' }}" href="{{ route($item['route']) }}" title="{{ $item['label'] }}">
                     <i class="bi {{ $item['icon'] }} nav-icon" aria-hidden="true"></i>
-                    <span>{{ $item['label'] }}</span>
+                    <span class="sidebar-label">{{ $item['label'] }}</span>
                 </a>
             @else
-                <span class="nav-link disabled">
+                <span class="nav-link disabled" title="{{ $item['label'] }}">
                     <i class="bi {{ $item['icon'] }} nav-icon" aria-hidden="true"></i>
-                    <span>{{ $item['label'] }}</span>
+                    <span class="sidebar-label">{{ $item['label'] }}</span>
                 </span>
             @endif
         @endforeach
