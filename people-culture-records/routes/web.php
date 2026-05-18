@@ -7,6 +7,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DisciplinaryCaseAttachmentController;
 use App\Http\Controllers\DisciplinaryCaseController;
 use App\Http\Controllers\DisciplinaryCaseImportController;
+use App\Http\Controllers\EmployeeBulkActionController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\EmployeeImportController;
 use App\Http\Controllers\ImportController;
@@ -96,6 +97,7 @@ Route::middleware(['auth', 'active'])->group(function () use ($masterDataTypes) 
     });
 
     Route::get('/employees/archived', [EmployeeController::class, 'archived'])->name('employees.archived');
+    Route::post('/employees/bulk-action', [EmployeeBulkActionController::class, 'handle'])->name('employees.bulk-action');
     Route::patch('/employees/{employee}/archive', [EmployeeController::class, 'archive'])->name('employees.archive');
     Route::patch('/employees/{id}/restore', [EmployeeController::class, 'restore'])->whereNumber('id')->name('employees.restore');
     Route::resource('employees', EmployeeController::class)->except(['destroy']);

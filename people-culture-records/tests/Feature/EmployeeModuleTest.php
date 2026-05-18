@@ -4,7 +4,11 @@ namespace Tests\Feature;
 
 use App\Models\District;
 use App\Models\Employee;
+use App\Models\EmploymentStatus;
+use App\Models\ActivityLog;
+use App\Models\Department;
 use App\Models\Province;
+use App\Models\Project;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -83,6 +87,13 @@ class EmployeeModuleTest extends TestCase
         $this->actingAs($viewer)->get(route('employees.create'))->assertForbidden();
         $this->actingAs($viewer)->get(route('employees.edit', $employee))->assertForbidden();
         $this->actingAs($viewer)->patch(route('employees.archive', $employee))->assertForbidden();
+        $this->actingAs($viewer)
+            ->post(route('employees.bulk-action'), [
+                'employee_ids' => [$employee->id],
+                'action' => 'assign_supervisor',
+                'supervisor_name' => 'Mary Banda',
+            ])
+            ->assertForbidden();
     }
 
     public function test_employee_creation_works(): void
@@ -146,6 +157,176 @@ class EmployeeModuleTest extends TestCase
             'deleted_at' => null,
             'archived_by' => null,
         ]);
+    }
+
+    public function test_admin_can_bulk_change_employment_status(): void
+    {
+        $admin = $this->user($this->adminRole);
+        $status = EmploymentStatus::create(['name' => 'Separated', 'code' => 'SEP', 'is_active' => true]);
+        $employees = [
+            $this->employee(['province_id' => $this->northern->id, 'district_id' => $this->kasama->id]),
+            $this->employee(['province_id' => $this->luapula->id, 'district_id' => $this->mansa->id]),
+        ];
+
+        $this->actingAs($admin)
+            ->post(route('employees.bulk-action'), [
+                'employee_ids' => collect($employees)->pluck('id')->all(),
+                'action' => 'change_employment_status',
+                'employment_status_id' => $status->id,
+            ])
+            ->assertRedirect(route('employees.index'));
+
+        foreach ($employees as $employee) {
+            $this->assertDatabaseHas('employees', [
+                'id' => $employee->id,
+                'employment_status_id' => $status->id,
+                'updated_by' => $admin->id,
+            ]);
+        }
+    }
+
+    public function test_hr_manager_can_bulk_update_employees(): void
+    {
+        $manager = $this->user($this->managerRole);
+        $department = Department::create(['name' => 'People and Culture', 'code' => 'PC', 'is_active' => true]);
+        $employee = $this->employee(['province_id' => $this->northern->id, 'district_id' => $this->kasama->id]);
+
+        $this->actingAs($manager)
+            ->post(route('employees.bulk-action'), [
+                'employee_ids' => [$employee->id],
+                'action' => 'change_department',
+                'department_id' => $department->id,
+            ])
+            ->assertRedirect(route('employees.index'));
+
+        $this->assertDatabaseHas('employees', [
+            'id' => $employee->id,
+            'department_id' => $department->id,
+            'updated_by' => $manager->id,
+        ]);
+    }
+
+    public function test_hr_officer_can_bulk_update_employees_in_assigned_province(): void
+    {
+        $officer = $this->user($this->officerRole, $this->northern);
+        $project = Project::create(['name' => 'General Operations', 'code' => 'GO', 'is_active' => true]);
+        $employee = $this->employee(['province_id' => $this->northern->id, 'district_id' => $this->kasama->id]);
+
+        $this->actingAs($officer)
+            ->post(route('employees.bulk-action'), [
+                'employee_ids' => [$employee->id],
+                'action' => 'change_project',
+                'project_id' => $project->id,
+            ])
+            ->assertRedirect(route('employees.index'));
+
+        $this->assertDatabaseHas('employees', [
+            'id' => $employee->id,
+            'project_id' => $project->id,
+            'updated_by' => $officer->id,
+        ]);
+    }
+
+    public function test_hr_officer_cannot_bulk_update_employees_outside_assigned_province(): void
+    {
+        $officer = $this->user($this->officerRole, $this->northern);
+        $status = EmploymentStatus::create(['name' => 'Separated', 'code' => 'SEP', 'is_active' => true]);
+        $northernEmployee = $this->employee(['province_id' => $this->northern->id, 'district_id' => $this->kasama->id]);
+        $luapulaEmployee = $this->employee(['province_id' => $this->luapula->id, 'district_id' => $this->mansa->id]);
+
+        $this->actingAs($officer)
+            ->from(route('employees.index'))
+            ->post(route('employees.bulk-action'), [
+                'employee_ids' => [$northernEmployee->id, $luapulaEmployee->id],
+                'action' => 'change_employment_status',
+                'employment_status_id' => $status->id,
+            ])
+            ->assertRedirect(route('employees.index'))
+            ->assertSessionHasErrors('employee_ids');
+
+        $this->assertDatabaseMissing('employees', [
+            'id' => $northernEmployee->id,
+            'employment_status_id' => $status->id,
+        ]);
+        $this->assertDatabaseMissing('employees', [
+            'id' => $luapulaEmployee->id,
+            'employment_status_id' => $status->id,
+        ]);
+    }
+
+    public function test_bulk_archive_soft_deletes_selected_employees(): void
+    {
+        $admin = $this->user($this->adminRole);
+        $employee = $this->employee(['province_id' => $this->northern->id, 'district_id' => $this->kasama->id]);
+
+        $this->actingAs($admin)
+            ->post(route('employees.bulk-action'), [
+                'employee_ids' => [$employee->id],
+                'action' => 'archive',
+            ])
+            ->assertRedirect(route('employees.index'));
+
+        $this->assertSoftDeleted('employees', ['id' => $employee->id]);
+        $this->assertDatabaseHas('employees', [
+            'id' => $employee->id,
+            'archived_by' => $admin->id,
+        ]);
+    }
+
+    public function test_bulk_action_requires_selected_employees(): void
+    {
+        $admin = $this->user($this->adminRole);
+
+        $this->actingAs($admin)
+            ->from(route('employees.index'))
+            ->post(route('employees.bulk-action'), [
+                'action' => 'assign_supervisor',
+                'supervisor_name' => 'Mary Banda',
+            ])
+            ->assertRedirect(route('employees.index'))
+            ->assertSessionHasErrors('employee_ids');
+    }
+
+    public function test_invalid_bulk_action_is_rejected(): void
+    {
+        $admin = $this->user($this->adminRole);
+        $employee = $this->employee(['province_id' => $this->northern->id, 'district_id' => $this->kasama->id]);
+
+        $this->actingAs($admin)
+            ->from(route('employees.index'))
+            ->post(route('employees.bulk-action'), [
+                'employee_ids' => [$employee->id],
+                'action' => 'deactivate_employee',
+            ])
+            ->assertRedirect(route('employees.index'))
+            ->assertSessionHasErrors('action');
+    }
+
+    public function test_bulk_action_logs_summary_activity_and_linked_user_count(): void
+    {
+        $admin = $this->user($this->adminRole);
+        $employee = $this->employee(['province_id' => $this->northern->id, 'district_id' => $this->kasama->id]);
+        User::factory()->create([
+            'employee_id' => $employee->id,
+            'role_id' => $this->officerRole->id,
+            'province_id' => $this->northern->id,
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('employees.bulk-action'), [
+                'employee_ids' => [$employee->id],
+                'action' => 'assign_supervisor',
+                'supervisor_name' => 'Mary Banda',
+            ])
+            ->assertRedirect(route('employees.index'));
+
+        $log = ActivityLog::where('action', 'bulk_employee_action_completed')->first();
+
+        $this->assertNotNull($log);
+        $this->assertSame(1, $log->properties['employee_count']);
+        $this->assertSame(1, $log->properties['linked_user_accounts_count']);
+        $this->assertSame('Mary Banda', $log->properties['changed_value']);
     }
 
     private function user(Role $role, ?Province $province = null): User

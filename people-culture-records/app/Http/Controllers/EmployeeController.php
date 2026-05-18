@@ -27,7 +27,7 @@ class EmployeeController extends Controller
         Gate::authorize('viewAny', Employee::class);
 
         $employees = Employee::query()
-            ->with(['province', 'district', 'facility', 'project', 'jobTitle', 'employmentStatus'])
+            ->with(['province', 'district', 'facility', 'project', 'jobTitle', 'employmentStatus', 'user'])
             ->visibleTo($request->user())
             ->when($request->filled('search'), function ($query) use ($request) {
                 $search = $request->string('search');
