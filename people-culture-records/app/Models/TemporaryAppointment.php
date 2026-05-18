@@ -32,6 +32,7 @@ class TemporaryAppointment extends Model
         'end_date',
         'reason',
         'supervisor_name',
+        'supervisor_employee_id',
         'comment',
         'completed_at',
         'created_by',
@@ -98,6 +99,11 @@ class TemporaryAppointment extends Model
     public function temporaryJobTitle(): BelongsTo
     {
         return $this->belongsTo(JobTitle::class, 'temporary_job_title_id');
+    }
+
+    public function supervisorEmployee(): BelongsTo
+    {
+        return $this->belongsTo(Employee::class, 'supervisor_employee_id');
     }
 
     public function appointmentType(): BelongsTo

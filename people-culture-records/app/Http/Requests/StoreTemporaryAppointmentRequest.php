@@ -27,6 +27,10 @@ class StoreTemporaryAppointmentRequest extends FormRequest
             return;
         }
 
+        $supervisor = $this->filled('supervisor_employee_id')
+            ? Employee::find($this->input('supervisor_employee_id'))
+            : null;
+
         $this->merge([
             'current_job_title_id' => $this->input('current_job_title_id') ?: $employee->job_title_id,
             'province_id' => $this->input('province_id') ?: $employee->province_id,
@@ -34,7 +38,7 @@ class StoreTemporaryAppointmentRequest extends FormRequest
             'facility_id' => $this->input('facility_id') ?: $employee->facility_id,
             'project_id' => $this->input('project_id') ?: $employee->project_id,
             'department_id' => $this->input('department_id') ?: $employee->department_id,
-            'supervisor_name' => $this->input('supervisor_name') ?: $employee->supervisor_name,
+            'supervisor_name' => $supervisor?->full_name ?: ($this->input('supervisor_name') ?: $employee->supervisor_name),
         ]);
     }
 
@@ -58,6 +62,7 @@ class StoreTemporaryAppointmentRequest extends FormRequest
             'end_date' => ['required', 'date', 'after_or_equal:start_date'],
             'reason' => ['nullable', 'string'],
             'supervisor_name' => ['nullable', 'string', 'max:255'],
+            'supervisor_employee_id' => ['nullable', 'exists:employees,id'],
             'comment' => ['nullable', 'string'],
             'supporting_document' => ['nullable', 'file', 'mimes:pdf,doc,docx,jpg,jpeg,png', 'max:10240'],
         ];
@@ -68,6 +73,7 @@ class StoreTemporaryAppointmentRequest extends FormRequest
         $validator->after(function ($validator) {
             $this->validateLocation($validator);
             $this->validateEmployeeProvince($validator);
+            $this->validateSupervisorVisibility($validator);
             $this->validateOfficerProvince($validator);
         });
     }
@@ -116,6 +122,22 @@ class StoreTemporaryAppointmentRequest extends FormRequest
 
         if ($user?->hasRole('HR Officer') && (int) $this->input('province_id') !== (int) $user->province_id) {
             $validator->errors()->add('province_id', 'HR Officers can only manage temporary appointments for their assigned province.');
+        }
+    }
+
+    private function validateSupervisorVisibility($validator): void
+    {
+        if (! $this->filled('supervisor_employee_id')) {
+            return;
+        }
+
+        $visible = Employee::query()
+            ->visibleTo($this->user())
+            ->whereKey($this->input('supervisor_employee_id'))
+            ->exists();
+
+        if (! $visible) {
+            $validator->errors()->add('supervisor_employee_id', 'The selected supervisor is not available to your province access.');
         }
     }
 }

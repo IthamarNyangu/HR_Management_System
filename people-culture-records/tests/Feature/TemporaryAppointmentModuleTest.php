@@ -83,6 +83,53 @@ class TemporaryAppointmentModuleTest extends TestCase
         $this->get('/temporary-appointments')->assertRedirect('/login');
     }
 
+    public function test_employee_search_requires_authentication(): void
+    {
+        $this->getJson(route('employees.search', ['q' => 'NOR']))
+            ->assertUnauthorized();
+    }
+
+    public function test_employee_search_returns_matching_employee_by_name(): void
+    {
+        $employee = $this->employee([
+            'employee_no' => 'RTC001',
+            'first_name' => 'Mary',
+            'last_name' => 'Banda',
+            'email' => 'mary.banda@example.org',
+            'job_title_id' => $this->currentTitle->id,
+        ]);
+
+        $this->actingAs($this->user($this->adminRole))
+            ->getJson(route('employees.search', ['q' => 'Mary']))
+            ->assertOk()
+            ->assertJsonFragment([
+                'id' => $employee->id,
+                'text' => 'RTC001 - Mary Banda',
+                'job_title' => 'HR Assistant',
+                'province' => 'Northern',
+                'district' => 'Kasama',
+            ]);
+    }
+
+    public function test_employee_search_returns_matching_employee_by_employee_number(): void
+    {
+        $this->actingAs($this->user($this->adminRole))
+            ->getJson(route('employees.search', ['q' => 'LUA-001']))
+            ->assertOk()
+            ->assertJsonFragment([
+                'id' => $this->luapulaEmployee->id,
+                'text' => $this->luapulaEmployee->display_name,
+            ]);
+    }
+
+    public function test_employee_search_respects_hr_officer_province_restriction(): void
+    {
+        $this->actingAs($this->user($this->officerRole, $this->northern))
+            ->getJson(route('employees.search', ['q' => 'LUA-001']))
+            ->assertOk()
+            ->assertExactJson([]);
+    }
+
     public function test_admin_can_manage_all_appointments(): void
     {
         $appointment = $this->appointment([
@@ -166,6 +213,46 @@ class TemporaryAppointmentModuleTest extends TestCase
         $appointment = TemporaryAppointment::firstOrFail();
 
         $this->assertSame('TEMP-'.now()->year.'-0001', $appointment->reference_no);
+    }
+
+    public function test_temporary_appointment_can_save_selected_supervisor_employee(): void
+    {
+        $supervisor = $this->employee([
+            'employee_no' => 'SUP-001',
+            'first_name' => 'Grace',
+            'last_name' => 'Mwansa',
+        ]);
+
+        $this->actingAs($this->user($this->adminRole))
+            ->post(route('temporary-appointments.store'), $this->appointmentPayload([
+                'supervisor_employee_id' => $supervisor->id,
+                'supervisor_name' => '',
+            ]))
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('temporary_appointments', [
+            'supervisor_employee_id' => $supervisor->id,
+            'supervisor_name' => 'Grace Mwansa',
+        ]);
+    }
+
+    public function test_edit_page_preloads_selected_employee_and_supervisor(): void
+    {
+        $supervisor = $this->employee([
+            'employee_no' => 'SUP-002',
+            'first_name' => 'Joseph',
+            'last_name' => 'Phiri',
+        ]);
+        $appointment = $this->appointment([
+            'supervisor_employee_id' => $supervisor->id,
+            'supervisor_name' => $supervisor->full_name,
+        ]);
+
+        $this->actingAs($this->user($this->adminRole))
+            ->get(route('temporary-appointments.edit', $appointment))
+            ->assertOk()
+            ->assertSee($this->northernEmployee->display_name)
+            ->assertSee($supervisor->display_name);
     }
 
     public function test_end_date_cannot_be_before_start_date(): void

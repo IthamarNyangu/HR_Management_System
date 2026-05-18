@@ -73,9 +73,8 @@
             </section>
 
             <section class="bg-white border rounded-2 p-4 mb-3">
-                <h2 class="h5">Reason & Comments</h2>
-                <p><strong>Reason:</strong> {{ $appointment->reason ?: 'No reason recorded.' }}</p>
-                <p class="mb-0"><strong>Comment:</strong> {{ $appointment->comment ?: 'No comments recorded.' }}</p>
+                <h2 class="h5">Reason / Comment</h2>
+                <p class="mb-0 text-muted">{{ $appointment->reason ?: ($appointment->comment ?: 'No reason or comment recorded.') }}</p>
             </section>
 
             <section class="bg-white border rounded-2 p-4 mb-3">

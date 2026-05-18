@@ -89,7 +89,7 @@ class TemporaryAppointmentController extends Controller
             'start_date' => now()->toDateString(),
         ]);
 
-        return view('temporary-appointments.create', $this->formData($request) + compact('appointment'));
+        return view('temporary-appointments.create', $this->formData($request, $appointment) + compact('appointment'));
     }
 
     public function store(StoreTemporaryAppointmentRequest $request, ReferenceNumberService $referenceNumbers, ActivityLogger $activity): RedirectResponse
@@ -135,9 +135,9 @@ class TemporaryAppointmentController extends Controller
     {
         Gate::authorize('update', $temporaryAppointment);
 
-        $temporaryAppointment->load(['employee']);
+        $temporaryAppointment->load(['employee', 'supervisorEmployee']);
 
-        return view('temporary-appointments.edit', $this->formData($request) + ['appointment' => $temporaryAppointment]);
+        return view('temporary-appointments.edit', $this->formData($request, $temporaryAppointment) + ['appointment' => $temporaryAppointment]);
     }
 
     public function update(UpdateTemporaryAppointmentRequest $request, TemporaryAppointment $temporaryAppointment, ActivityLogger $activity): RedirectResponse
@@ -292,6 +292,7 @@ class TemporaryAppointmentController extends Controller
             'department',
             'currentJobTitle',
             'temporaryJobTitle',
+            'supervisorEmployee',
             'appointmentType',
             'appointmentStatus',
             'createdBy',
@@ -305,12 +306,15 @@ class TemporaryAppointmentController extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function formData(Request $request): array
+    private function formData(Request $request, ?TemporaryAppointment $appointment = null): array
     {
         $user = $request->user();
+        $selectedEmployee = $this->selectedEmployeeForForm($request, $appointment?->employee_id);
+        $selectedSupervisor = $this->selectedEmployeeForForm($request, $appointment?->supervisor_employee_id, 'supervisor_employee_id');
 
         return [
-            'employees' => Employee::query()->visibleTo($user)->with(['province', 'district', 'facility', 'project', 'department', 'jobTitle'])->orderBy('last_name')->orderBy('first_name')->get(),
+            'selectedEmployeeOption' => $selectedEmployee ? $this->employeeSearchPayload($selectedEmployee) : null,
+            'selectedSupervisorOption' => $selectedSupervisor ? $this->employeeSearchPayload($selectedSupervisor) : null,
             'provinces' => Province::where('is_active', true)
                 ->when($user->hasRole('HR Officer'), fn ($query) => $query->whereKey($user->province_id))
                 ->orderBy('name')
@@ -331,7 +335,7 @@ class TemporaryAppointmentController extends Controller
      */
     private function appointmentData(array $data): array
     {
-        foreach (['district_id', 'facility_id', 'project_id', 'department_id', 'current_job_title_id', 'appointment_type_id', 'reason', 'supervisor_name', 'comment'] as $field) {
+        foreach (['district_id', 'facility_id', 'project_id', 'department_id', 'current_job_title_id', 'appointment_type_id', 'reason', 'supervisor_name', 'supervisor_employee_id', 'comment'] as $field) {
             if (array_key_exists($field, $data) && blank($data[$field])) {
                 $data[$field] = null;
             }
@@ -353,6 +357,7 @@ class TemporaryAppointmentController extends Controller
             'end_date',
             'reason',
             'supervisor_name',
+            'supervisor_employee_id',
             'comment',
             'completed_at',
             'created_by',
@@ -369,6 +374,50 @@ class TemporaryAppointmentController extends Controller
         abort_if($id === null, 422, "Appointment status {$code} is not configured.");
 
         return (int) $id;
+    }
+
+    private function selectedEmployeeForForm(Request $request, ?int $fallbackId, string $field = 'employee_id'): ?Employee
+    {
+        $employeeId = $request->old($field, $fallbackId);
+
+        if (! $employeeId) {
+            return null;
+        }
+
+        return Employee::query()
+            ->visibleTo($request->user())
+            ->with(['jobTitle', 'province', 'district', 'facility', 'project', 'department'])
+            ->find($employeeId);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function employeeSearchPayload(Employee $employee): array
+    {
+        return [
+            'id' => $employee->id,
+            'text' => $employee->display_name,
+            'details' => collect([
+                $employee->jobTitle?->name,
+                $employee->province?->name,
+                $employee->district?->name,
+                $employee->facility?->name,
+            ])->filter()->implode(' | '),
+            'employee_no' => $employee->employee_no,
+            'name' => $employee->full_name,
+            'email' => $employee->email,
+            'job_title' => $employee->jobTitle?->name,
+            'province' => $employee->province?->name,
+            'district' => $employee->district?->name,
+            'facility' => $employee->facility?->name,
+            'province_id' => $employee->province_id,
+            'district_id' => $employee->district_id,
+            'facility_id' => $employee->facility_id,
+            'project_id' => $employee->project_id,
+            'department_id' => $employee->department_id,
+            'job_title_id' => $employee->job_title_id,
+        ];
     }
 
     private function storeInitialAttachment(Request $request, TemporaryAppointment $appointment, ActivityLogger $activity): void

@@ -116,6 +116,7 @@
             html[data-sidebar="collapsed"] .sidebar .nav-link { justify-content: flex-start; gap: .75rem; padding-left: 1rem; padding-right: 1rem; }
         }
     </style>
+    @stack('styles')
 </head>
 <body>
     <div class="app-shell d-lg-flex">

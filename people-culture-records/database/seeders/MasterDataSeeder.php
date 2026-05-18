@@ -74,10 +74,8 @@ class MasterDataSeeder extends Seeder
             ['name' => 'Cancelled', 'code' => 'CANCELLED'],
         ],
         AppointmentType::class => [
-            ['name' => 'Acting Appointment', 'code' => 'ACTING'],
+            ['name' => 'Interim / Acting Appointment', 'code' => 'INTERIM_ACTING'],
             ['name' => 'Temporary Assignment', 'code' => 'TEMP_ASSIGN'],
-            ['name' => 'Secondment', 'code' => 'SECOND'],
-            ['name' => 'Interim Appointment', 'code' => 'INTERIM'],
             ['name' => 'Short-term Appointment', 'code' => 'SHORT_TERM'],
         ],
         DocumentType::class => [
@@ -101,5 +99,8 @@ class MasterDataSeeder extends Seeder
                 );
             }
         }
+
+        AppointmentType::whereIn('name', ['Acting Appointment', 'Secondment', 'Interim Appointment'])
+            ->update(['is_active' => false]);
     }
 }

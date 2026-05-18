@@ -10,6 +10,7 @@ use App\Http\Controllers\DisciplinaryCaseImportController;
 use App\Http\Controllers\EmployeeBulkActionController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\EmployeeImportController;
+use App\Http\Controllers\EmployeeSearchController;
 use App\Http\Controllers\ImportController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ReportController;
@@ -98,6 +99,7 @@ Route::middleware(['auth', 'active'])->group(function () use ($masterDataTypes) 
         Route::get('/archived-records/export/pdf', [ReportExportController::class, 'archivedRecordsPdf'])->middleware('can:export-reports')->name('archived-records.export.pdf');
     });
 
+    Route::get('/employees/search', EmployeeSearchController::class)->name('employees.search');
     Route::get('/employees/archived', [EmployeeController::class, 'archived'])->name('employees.archived');
     Route::post('/employees/bulk-action', [EmployeeBulkActionController::class, 'handle'])->name('employees.bulk-action');
     Route::patch('/employees/{employee}/archive', [EmployeeController::class, 'archive'])->name('employees.archive');
