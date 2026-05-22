@@ -89,11 +89,11 @@
                             <th>Employee Name</th>
                             <th>Job Title</th>
                             <th>Email</th>
-                            <th>System Role / Access Profile</th>
+                            <th>System Role</th>
                             <th>Province Scope</th>
                             <th>Status</th>
                             <th>Password</th>
-                            <th class="text-end">Actions</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -117,7 +117,7 @@
                                         <span class="badge text-bg-light border">Set</span>
                                     @endif
                                 </td>
-                                <td class="text-end">
+                                <td>
                                     <div class="d-inline-flex gap-2">
                                         <a href="{{ route('admin.users.edit', $user) }}" class="btn btn-sm btn-outline-primary">Edit</a>
                                         <form method="POST" action="{{ route('admin.users.toggle-status', $user) }}" data-confirm="true" data-confirm-title="{{ $user->is_active ? 'Deactivate user?' : 'Activate user?' }}" data-confirm-message="{{ $user->is_active ? 'This user will no longer be able to log in. Do you want to continue?' : 'This user will regain access to the system. Do you want to continue?' }}" data-confirm-button="{{ $user->is_active ? 'Deactivate user' : 'Activate user' }}" data-confirm-variant="{{ $user->is_active ? 'btn-warning' : 'btn-primary' }}">

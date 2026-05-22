@@ -115,7 +115,7 @@
                         <th>New Job Title</th>
                         <th>Type</th>
                         <th>Promotion Date</th>
-                        <th class="text-end">Actions</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -134,7 +134,7 @@
                             <td>{{ $promotion->newJobTitle?->name ?? '-' }}</td>
                             <td>{{ $promotion->promotionType?->name ?? '-' }}</td>
                             <td>{{ $promotion->promotion_date?->format('d M Y') }}</td>
-                            <td class="text-end">
+                            <td>
                                 <div class="d-inline-flex gap-2">
                                     @can('view', $promotion)
                                         <a href="{{ route('staff-promotions.show', $promotion) }}" class="btn btn-sm btn-secondary">View</a>

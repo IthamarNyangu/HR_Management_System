@@ -137,7 +137,7 @@
                         <th>Reason</th>
                         <th>Effective Date</th>
                         <th>Amount</th>
-                        <th class="text-end">Actions</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -162,7 +162,7 @@
                             <td>{{ $relocation->relocationReason?->name ?? '-' }}</td>
                             <td>{{ $relocation->effective_date?->format('d M Y') }}</td>
                             <td>{{ $relocation->relocation_amount !== null ? number_format((float) $relocation->relocation_amount, 2) : '-' }}</td>
-                            <td class="text-end">
+                            <td>
                                 <div class="d-inline-flex gap-2">
                                     @can('view', $relocation)
                                         <a href="{{ route('staff-relocations.show', $relocation) }}" class="btn btn-sm btn-secondary">View</a>

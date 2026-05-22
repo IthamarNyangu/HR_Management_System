@@ -101,7 +101,7 @@
                                 <th>File</th>
                                 <th>Uploaded By</th>
                                 <th>Size</th>
-                                <th class="text-end">Actions</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -113,7 +113,7 @@
                                     </td>
                                     <td>{{ $attachment->uploadedBy?->name ?? '-' }}</td>
                                     <td>{{ number_format($attachment->file_size / 1024, 1) }} KB</td>
-                                    <td class="text-end">
+                                    <td>
                                         <div class="d-inline-flex gap-2">
                                             <a href="{{ route('staff-promotions.attachments.download', [$promotion, $attachment]) }}" class="btn btn-sm btn-secondary">Download</a>
                                             @can('deleteAttachment', $promotion)

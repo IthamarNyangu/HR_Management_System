@@ -103,7 +103,7 @@
                 </div>
 
                 <div class="col-md-6">
-                    <label for="role_id" class="form-label">System Role / Access Profile</label>
+                    <label for="role_id" class="form-label">System Role</label>
                     <select id="role_id" name="role_id" class="form-select @error('role_id') is-invalid @enderror" required data-role-select>
                         <option value="">Select access profile</option>
                         @foreach ($roles as $role)

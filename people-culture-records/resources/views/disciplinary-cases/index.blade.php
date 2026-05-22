@@ -110,7 +110,7 @@
                         <th>Penalty</th>
                         <th>Status</th>
                         <th>Expiry</th>
-                        <th class="text-end">Actions</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -145,7 +145,7 @@
                                     <span class="badge text-bg-warning">Expiring soon</span>
                                 @endif
                             </td>
-                            <td class="text-end">
+                            <td>
                                 <div class="d-inline-flex gap-2">
                                     @can('view', $case)
                                         <a href="{{ route('disciplinary-cases.show', $case) }}" class="btn btn-sm btn-secondary">View</a>

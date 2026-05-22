@@ -162,7 +162,7 @@
                         <th>Project</th>
                         <th>Job Title</th>
                         <th>Status</th>
-                        <th class="text-end">Actions</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -183,7 +183,7 @@
                             <td>{{ $employee->project?->name ?? '-' }}</td>
                             <td>{{ $employee->jobTitle?->name ?? '-' }}</td>
                             <td>{{ $employee->employmentStatus?->name ?? '-' }}</td>
-                            <td class="text-end">
+                            <td>
                                 <div class="d-inline-flex gap-2">
                                     @can('view', $employee)
                                         <a href="{{ route('employees.show', $employee) }}" class="btn btn-sm btn-secondary">View</a>

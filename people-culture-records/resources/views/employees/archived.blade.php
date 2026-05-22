@@ -33,7 +33,7 @@
                         <th>District</th>
                         <th>Archived By</th>
                         <th>Archived On</th>
-                        <th class="text-end">Actions</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -45,7 +45,7 @@
                             <td>{{ $employee->district?->name }}</td>
                             <td>{{ $employee->archivedBy?->name ?? '-' }}</td>
                             <td>{{ $employee->deleted_at?->format('d M Y') ?? '-' }}</td>
-                            <td class="text-end">
+                            <td>
                                 @can('restore', $employee)
                                     <form method="POST" action="{{ route('employees.restore', $employee->id) }}" data-confirm="true" data-confirm-title="Restore employee?" data-confirm-message="This employee will return to the active employee register. Do you want to continue?" data-confirm-button="Restore employee">
                                         @csrf

@@ -145,7 +145,7 @@
                         <th>Days Remaining</th>
                         <th>Status</th>
                         <th>Province</th>
-                        <th class="text-end">Actions</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -162,7 +162,7 @@
                             <td><span class="badge text-bg-light">{{ $appointment->date_status_label }}</span></td>
                             <td>{{ $appointment->appointmentStatus?->name }}</td>
                             <td>{{ $appointment->province?->name }}</td>
-                            <td class="text-end">
+                            <td>
                                 <div class="d-inline-flex gap-2">
                                     @can('view', $appointment)
                                         <a href="{{ route('temporary-appointments.show', $appointment) }}" class="btn btn-sm btn-secondary">View</a>

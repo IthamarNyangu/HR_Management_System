@@ -36,7 +36,7 @@
                         <th>Movement</th>
                         <th>Archived By</th>
                         <th>Archived At</th>
-                        <th class="text-end">Actions</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -50,7 +50,7 @@
                             <td>{{ $relocation->fromProvince?->name ?? '-' }} to {{ $relocation->toProvince?->name ?? '-' }}</td>
                             <td>{{ $relocation->archivedBy?->name ?? '-' }}</td>
                             <td>{{ $relocation->deleted_at?->format('d M Y H:i') }}</td>
-                            <td class="text-end">
+                            <td>
                                 @can('restore', $relocation)
                                     <form method="POST" action="{{ route('staff-relocations.restore', $relocation->id) }}" data-confirm="true" data-confirm-title="Restore relocation?" data-confirm-message="This relocation will return to the active relocation register. Do you want to continue?" data-confirm-button="Restore relocation">
                                         @csrf

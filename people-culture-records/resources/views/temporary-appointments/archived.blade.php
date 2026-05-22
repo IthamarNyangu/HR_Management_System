@@ -33,7 +33,7 @@
                         <th>Status</th>
                         <th>Archived By</th>
                         <th>Archived Date</th>
-                        <th class="text-end">Actions</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -45,7 +45,7 @@
                             <td>{{ $appointment->appointmentStatus?->name }}</td>
                             <td>{{ $appointment->archivedBy?->name ?? '-' }}</td>
                             <td>{{ $appointment->deleted_at?->format('d M Y H:i') }}</td>
-                            <td class="text-end">
+                            <td>
                                 @can('restore', $appointment)
                                     <form method="POST" action="{{ route('temporary-appointments.restore', $appointment->id) }}" data-confirm="true" data-confirm-title="Restore appointment?" data-confirm-message="This temporary appointment will return to the active register. Do you want to continue?" data-confirm-button="Restore appointment">
                                         @csrf

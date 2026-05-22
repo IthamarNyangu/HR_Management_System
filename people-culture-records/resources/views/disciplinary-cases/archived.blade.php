@@ -33,7 +33,7 @@
                         <th>Status</th>
                         <th>Archived By</th>
                         <th>Archived On</th>
-                        <th class="text-end">Actions</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -48,7 +48,7 @@
                             <td><span class="badge text-bg-secondary">{{ $case->caseStatus?->name ?? '-' }}</span></td>
                             <td>{{ $case->archivedBy?->name ?? '-' }}</td>
                             <td>{{ $case->deleted_at?->format('d M Y') ?? '-' }}</td>
-                            <td class="text-end">
+                            <td>
                                 @can('restore', $case)
                                     <form method="POST" action="{{ route('disciplinary-cases.restore', $case->id) }}" data-confirm="true" data-confirm-title="Restore disciplinary case?" data-confirm-message="This case will return to the active disciplinary register. Do you want to continue?" data-confirm-button="Restore case">
                                         @csrf

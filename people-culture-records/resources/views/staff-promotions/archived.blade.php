@@ -37,7 +37,7 @@
                         <th>Promotion</th>
                         <th>Archived By</th>
                         <th>Archived At</th>
-                        <th class="text-end">Actions</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -52,7 +52,7 @@
                             <td>{{ $promotion->oldJobTitle?->name ?? '-' }} to {{ $promotion->newJobTitle?->name ?? '-' }}</td>
                             <td>{{ $promotion->archivedBy?->name ?? '-' }}</td>
                             <td>{{ $promotion->deleted_at?->format('d M Y H:i') }}</td>
-                            <td class="text-end">
+                            <td>
                                 @can('restore', $promotion)
                                     <form method="POST" action="{{ route('staff-promotions.restore', $promotion->id) }}" data-confirm="true" data-confirm-title="Restore promotion?" data-confirm-message="This promotion will return to the active promotion register. Do you want to continue?" data-confirm-button="Restore promotion">
                                         @csrf

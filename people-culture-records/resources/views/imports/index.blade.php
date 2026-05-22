@@ -70,7 +70,7 @@
                         <th>Rows</th>
                         <th>Uploaded By</th>
                         <th>Date</th>
-                        <th class="text-end">Actions</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -87,7 +87,7 @@
                             </td>
                             <td>{{ $batch->uploadedBy?->name ?? 'System' }}</td>
                             <td>{{ $batch->created_at->format('d M Y H:i') }}</td>
-                            <td class="text-end">
+                            <td>
                                 <a href="{{ route('imports.batches.show', $batch) }}" class="btn btn-sm btn-secondary">View</a>
                             </td>
                         </tr>
