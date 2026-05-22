@@ -164,6 +164,12 @@ class UserEmployeeLinkTest extends TestCase
         ]);
 
         $this->actingAs($admin)
+            ->get(route('admin.users.edit', $user))
+            ->assertOk()
+            ->assertSee('Grace Banda')
+            ->assertSee('RTC-001');
+
+        $this->actingAs($admin)
             ->put(route('admin.users.update', $user), [
                 'employee_id' => $this->employee->id,
                 'name' => 'Grace Banda',

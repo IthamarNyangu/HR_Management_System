@@ -177,7 +177,7 @@ class UserController extends Controller
                 $query->whereDoesntHave('user');
 
                 if ($user?->employee_id) {
-                    $query->orWhereKey($user->employee_id);
+                    $query->orWhere('id', $user->employee_id);
                 }
             })
             ->orderBy('last_name')
