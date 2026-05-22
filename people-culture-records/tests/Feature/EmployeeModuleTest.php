@@ -12,6 +12,7 @@ use App\Models\Project;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class EmployeeModuleTest extends TestCase
@@ -118,6 +119,52 @@ class EmployeeModuleTest extends TestCase
             'district_id' => $this->kasama->id,
             'created_by' => $admin->id,
         ]);
+    }
+
+    public function test_sensitive_employee_personal_data_is_encrypted_at_rest(): void
+    {
+        $employee = $this->employee([
+            'date_of_birth' => '1998-05-31',
+            'national_id' => '544832/10/1',
+            'notes' => 'Sensitive HR note',
+        ]);
+
+        $raw = DB::table('employees')->where('id', $employee->id)->first();
+
+        $this->assertNotSame('1998-05-31', $raw->date_of_birth);
+        $this->assertNotSame('544832/10/1', $raw->national_id);
+        $this->assertNotSame('Sensitive HR note', $raw->notes);
+
+        $employee->refresh();
+
+        $this->assertSame('1998-05-31', $employee->date_of_birth->toDateString());
+        $this->assertSame('544832/10/1', $employee->national_id);
+        $this->assertSame('Sensitive HR note', $employee->notes);
+    }
+
+    public function test_only_admin_and_hr_manager_can_view_sensitive_employee_personal_data(): void
+    {
+        $employee = $this->employee([
+            'province_id' => $this->northern->id,
+            'district_id' => $this->kasama->id,
+            'date_of_birth' => '1998-05-31',
+            'national_id' => '544832/10/1',
+            'notes' => 'Sensitive HR note',
+        ]);
+
+        $this->actingAs($this->user($this->managerRole))
+            ->get(route('employees.show', $employee))
+            ->assertOk()
+            ->assertSee('31 May 1998')
+            ->assertSee('544832/10/1')
+            ->assertSee('Sensitive HR note');
+
+        $this->actingAs($this->user($this->officerRole, $this->northern))
+            ->get(route('employees.show', $employee))
+            ->assertOk()
+            ->assertSee('Restricted')
+            ->assertDontSee('544832/10/1')
+            ->assertDontSee('Sensitive HR note');
     }
 
     public function test_employee_validation_rejects_district_outside_selected_province(): void

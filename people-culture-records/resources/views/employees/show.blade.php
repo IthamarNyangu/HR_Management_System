@@ -19,6 +19,8 @@
 @endsection
 
 @section('content')
+    @php($canViewSensitivePersonalData = auth()->user()->can('viewSensitivePersonalData', $employee))
+
     <div class="row g-3">
         <div class="col-lg-4">
             <section class="bg-white border rounded-2 p-4 h-100">
@@ -31,9 +33,9 @@
                     <dt>Gender</dt>
                     <dd>{{ $employee->gender ?? '-' }}</dd>
                     <dt>Date of Birth</dt>
-                    <dd>{{ $employee->date_of_birth?->format('d M Y') ?? '-' }}</dd>
+                    <dd>{{ $canViewSensitivePersonalData ? ($employee->date_of_birth?->format('d M Y') ?? '-') : 'Restricted' }}</dd>
                     <dt>National ID</dt>
-                    <dd>{{ $employee->national_id ?? '-' }}</dd>
+                    <dd>{{ $canViewSensitivePersonalData ? ($employee->national_id ?? '-') : 'Restricted' }}</dd>
                 </dl>
             </section>
         </div>
@@ -73,7 +75,7 @@
 
             <section class="bg-white border rounded-2 p-4 mb-3">
                 <h2 class="h5">Notes</h2>
-                <p class="mb-0 text-muted">{{ $employee->notes ?: 'No notes recorded.' }}</p>
+                <p class="mb-0 text-muted">{{ $canViewSensitivePersonalData ? ($employee->notes ?: 'No notes recorded.') : 'Restricted to Admin and HR Manager.' }}</p>
             </section>
 
             <section class="bg-white border rounded-2 p-4 mb-3">

@@ -9,7 +9,7 @@ class ProvinceSeeder extends Seeder
 {
     public function run(): void
     {
-        foreach (['Northern', 'Luapula', 'Muchinga'] as $province) {
+        foreach (['Northern', 'Luapula', 'Muchinga', 'Lusaka'] as $province) {
             Province::updateOrCreate(
                 ['name' => $province],
                 [

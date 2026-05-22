@@ -111,7 +111,7 @@
                             <th>Employee Name</th>
                             <th>Job Title</th>
                             <th>Email</th>
-                            <th>System Role</th>
+                            <th>System Role / Access Profile</th>
                             <th>Province Scope</th>
                             <th>Status</th>
                             <th>Password</th>

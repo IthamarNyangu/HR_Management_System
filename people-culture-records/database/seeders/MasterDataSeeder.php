@@ -6,6 +6,7 @@ use App\Models\CaseStatus;
 use App\Models\Department;
 use App\Models\DocumentType;
 use App\Models\EmploymentStatus;
+use App\Models\Facility;
 use App\Models\JobTitle;
 use App\Models\OffenceCategory;
 use App\Models\AppointmentStatus;
@@ -25,11 +26,14 @@ class MasterDataSeeder extends Seeder
     private array $values = [
         Project::class => [
             ['name' => 'General Operations', 'code' => 'GEN'],
+            ['name' => 'RTC Zamb - Action HIV', 'code' => 'ACTION-HIV'],
+            ['name' => 'RTC Zambia-Right to Care', 'code' => 'RTC-RIGHT-CARE'],
         ],
         Department::class => [
             ['name' => 'People & Culture', 'code' => 'PC'],
             ['name' => 'Finance', 'code' => 'FIN'],
             ['name' => 'Programs', 'code' => 'PROG'],
+            ['name' => 'IT', 'code' => 'IT'],
         ],
         JobTitle::class => [
             ['name' => 'HR Officer', 'code' => 'HRO'],
@@ -102,5 +106,23 @@ class MasterDataSeeder extends Seeder
 
         AppointmentType::whereIn('name', ['Acting Appointment', 'Secondment', 'Interim Appointment'])
             ->update(['is_active' => false]);
+
+        $lusakaDistrict = \App\Models\District::whereHas('province', fn ($query) => $query->where('name', 'Lusaka'))
+            ->where('name', 'Lusaka')
+            ->first();
+
+        if ($lusakaDistrict) {
+            Facility::updateOrCreate(
+                [
+                    'district_id' => $lusakaDistrict->id,
+                    'name' => 'Lusaka Office',
+                ],
+                [
+                    'code' => 'LUS-OFF',
+                    'description' => null,
+                    'is_active' => true,
+                ],
+            );
+        }
     }
 }

@@ -51,6 +51,9 @@ class DistrictSeeder extends Seeder
             ['name' => 'Nsama', 'code' => 'NOR-NSA'],
             ['name' => 'Senga Hill', 'code' => 'NOR-SEN'],
         ],
+        'Lusaka' => [
+            ['name' => 'Lusaka', 'code' => 'LUS-LUS'],
+        ],
     ];
 
     public function run(): void

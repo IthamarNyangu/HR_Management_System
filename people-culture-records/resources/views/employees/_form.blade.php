@@ -1,5 +1,6 @@
 @php
     $isOfficer = auth()->user()->hasRole('HR Officer');
+    $canViewSensitivePersonalData = auth()->user()->can('viewSensitivePersonalData', $employee);
 @endphp
 
 <div class="row g-3" data-employee-form>
@@ -25,14 +26,25 @@
             @endforeach
         </select>
     </div>
-    <div class="col-md-4">
-        <label for="date_of_birth" class="form-label">Date of Birth</label>
-        <input id="date_of_birth" name="date_of_birth" type="date" class="form-control" value="{{ old('date_of_birth', $employee->date_of_birth?->format('Y-m-d')) }}">
-    </div>
-    <div class="col-md-4">
-        <label for="national_id" class="form-label">National ID</label>
-        <input id="national_id" name="national_id" type="text" class="form-control" value="{{ old('national_id', $employee->national_id) }}">
-    </div>
+    @if ($canViewSensitivePersonalData)
+        <div class="col-md-4">
+            <label for="date_of_birth" class="form-label">Date of Birth</label>
+            <input id="date_of_birth" name="date_of_birth" type="date" class="form-control" value="{{ old('date_of_birth', $employee->date_of_birth?->format('Y-m-d')) }}">
+            <div class="form-text">Encrypted at rest.</div>
+        </div>
+        <div class="col-md-4">
+            <label for="national_id" class="form-label">National ID</label>
+            <input id="national_id" name="national_id" type="text" class="form-control" value="{{ old('national_id', $employee->national_id) }}">
+            <div class="form-text">Encrypted at rest.</div>
+        </div>
+    @else
+        <div class="col-md-8">
+            <div class="border rounded-2 bg-light p-3 h-100">
+                <div class="fw-semibold">Sensitive personal data</div>
+                <div class="small text-muted">Date of birth and National ID are restricted to Admin and HR Manager.</div>
+            </div>
+        </div>
+    @endif
 
     <div class="col-md-4">
         <label for="email" class="form-label">Email</label>
@@ -120,10 +132,20 @@
         <input id="supervisor_name" name="supervisor_name" type="text" class="form-control" value="{{ old('supervisor_name', $employee->supervisor_name) }}">
     </div>
 
-    <div class="col-12">
-        <label for="notes" class="form-label">Notes</label>
-        <textarea id="notes" name="notes" rows="4" class="form-control">{{ old('notes', $employee->notes) }}</textarea>
-    </div>
+    @if ($canViewSensitivePersonalData)
+        <div class="col-12">
+            <label for="notes" class="form-label">Notes</label>
+            <textarea id="notes" name="notes" rows="4" class="form-control">{{ old('notes', $employee->notes) }}</textarea>
+            <div class="form-text">Notes are encrypted at rest. Avoid storing unnecessary sensitive details.</div>
+        </div>
+    @else
+        <div class="col-12">
+            <div class="border rounded-2 bg-light p-3">
+                <div class="fw-semibold">Notes restricted</div>
+                <div class="small text-muted">Employee notes are restricted to Admin and HR Manager.</div>
+            </div>
+        </div>
+    @endif
 
     <div class="col-12 d-flex gap-2">
         <button type="submit" class="btn btn-primary btn-md">Save Employee</button>

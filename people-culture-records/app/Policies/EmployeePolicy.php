@@ -62,4 +62,9 @@ class EmployeePolicy
     {
         return $this->update($user, $employee);
     }
+
+    public function viewSensitivePersonalData(User $user, Employee $employee): bool
+    {
+        return $user->is_active && ($user->isAdmin() || $user->isHrManager());
+    }
 }

@@ -438,7 +438,9 @@ class EmployeeImportPreviewService
 
     private function lookupKey(mixed $value): string
     {
-        return trim((string) preg_replace('/\s+/', ' ', mb_strtolower((string) $value)));
+        $key = trim((string) preg_replace('/\s+/', ' ', mb_strtolower((string) $value)));
+
+        return trim((string) preg_replace('/\s+(province|district)$/', '', $key));
     }
 
     /**
