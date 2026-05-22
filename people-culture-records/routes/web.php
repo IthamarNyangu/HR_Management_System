@@ -13,6 +13,7 @@ use App\Http\Controllers\EmployeeImportController;
 use App\Http\Controllers\EmployeeSearchController;
 use App\Http\Controllers\ImportController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\PasswordChangeController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ReportExportController;
 use App\Http\Controllers\StaffPromotionAttachmentController;
@@ -39,7 +40,12 @@ Route::post('/sign-out', function (Request $request) {
     return redirect()->route('login');
 })->middleware('auth')->name('app.logout');
 
-Route::middleware(['auth', 'active'])->group(function () use ($masterDataTypes) {
+Route::middleware(['auth', 'active'])->group(function () {
+    Route::get('/password/change', [PasswordChangeController::class, 'edit'])->name('password.change');
+    Route::put('/password/change', [PasswordChangeController::class, 'update'])->name('password.change.update');
+});
+
+Route::middleware(['auth', 'active', 'password.changed'])->group(function () use ($masterDataTypes) {
     Route::get('/dashboard', DashboardController::class)
         ->middleware('can:access-dashboard')
         ->name('dashboard');

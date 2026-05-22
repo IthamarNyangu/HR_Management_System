@@ -19,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'active' => \App\Http\Middleware\EnsureUserIsActive::class,
+            'password.changed' => \App\Http\Middleware\EnsurePasswordHasBeenChanged::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

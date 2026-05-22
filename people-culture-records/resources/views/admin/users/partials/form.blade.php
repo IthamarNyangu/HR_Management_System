@@ -82,7 +82,8 @@
 
     <section class="col-12">
         <div class="border rounded-2 p-3">
-            <h2 class="h5 mb-3">Account Details</h2>
+            <h2 class="h5 mb-1">Account Details</h2>
+            <p class="text-muted small mb-3">System role/access profile controls what this user can do. It is separate from the employee's HR job title.</p>
 
             <div class="row g-3">
                 <div class="col-md-6">
@@ -102,9 +103,9 @@
                 </div>
 
                 <div class="col-md-6">
-                    <label for="role_id" class="form-label">Role</label>
+                    <label for="role_id" class="form-label">System Role / Access Profile</label>
                     <select id="role_id" name="role_id" class="form-select @error('role_id') is-invalid @enderror" required data-role-select>
-                        <option value="">Select role</option>
+                        <option value="">Select access profile</option>
                         @foreach ($roles as $role)
                             <option value="{{ $role->id }}" data-requires-province="{{ in_array($role->name, ['HR Officer', 'Viewer'], true) ? '1' : '0' }}" @selected((string) old('role_id', $user?->role_id) === (string) $role->id)>
                                 {{ $role->name }}
@@ -126,7 +127,7 @@
                             </option>
                         @endforeach
                     </select>
-                    <div class="form-text" data-province-help>Required for HR Officer and Viewer roles.</div>
+                    <div class="form-text" data-province-help>Required for HR Officer and Viewer access profiles.</div>
                     @error('province_id')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
@@ -150,6 +151,14 @@
                         <input id="is_active" name="is_active" type="checkbox" class="form-check-input" value="1" @checked(old('is_active', $user?->is_active ?? true))>
                         <label for="is_active" class="form-check-label">Active</label>
                     </div>
+                </div>
+
+                <div class="col-12">
+                    <div class="form-check">
+                        <input id="must_change_password" name="must_change_password" type="checkbox" class="form-check-input" value="1" @checked(old('must_change_password', $user?->must_change_password ?? true))>
+                        <label for="must_change_password" class="form-check-label">Require password change on next login</label>
+                    </div>
+                    <div class="form-text">Use this when creating an account with a temporary password or resetting a user's password.</div>
                 </div>
             </div>
         </div>

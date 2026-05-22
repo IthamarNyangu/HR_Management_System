@@ -55,6 +55,7 @@ class UpdateUserRequest extends FormRequest
             'role_id' => ['required', 'exists:roles,id'],
             'province_id' => ['nullable', 'exists:provinces,id'],
             'is_active' => ['nullable', 'boolean'],
+            'must_change_password' => ['nullable', 'boolean'],
         ];
     }
 

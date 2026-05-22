@@ -20,20 +20,42 @@ class UserController extends Controller
     public function index(Request $request): View
     {
         $users = User::query()
-            ->with(['role', 'province', 'employee'])
+            ->with(['role', 'province', 'employee.jobTitle', 'employee.province'])
             ->when($request->filled('search'), function ($query) use ($request) {
                 $search = $request->string('search');
 
                 $query->where(function ($query) use ($search) {
                     $query->where('name', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%");
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhereHas('employee', function ($query) use ($search) {
+                            $query->where('employee_no', 'like', "%{$search}%")
+                                ->orWhere('first_name', 'like', "%{$search}%")
+                                ->orWhere('last_name', 'like', "%{$search}%");
+                        });
                 });
+            })
+            ->when($request->filled('role_id'), fn ($query) => $query->where('role_id', $request->integer('role_id')))
+            ->when($request->filled('status'), function ($query) use ($request) {
+                if ($request->input('status') === 'active') {
+                    $query->where('is_active', true);
+                }
+
+                if ($request->input('status') === 'inactive') {
+                    $query->where('is_active', false);
+                }
+
+                if ($request->input('status') === 'password-change-required') {
+                    $query->where('must_change_password', true);
+                }
             })
             ->latest()
             ->paginate(10)
             ->withQueryString();
 
-        return view('admin.users.index', compact('users'));
+        return view('admin.users.index', [
+            'users' => $users,
+            'roles' => Role::where('is_active', true)->orderBy('name')->get(),
+        ]);
     }
 
     public function create(): View
@@ -54,6 +76,7 @@ class UserController extends Controller
 
         $data['password'] = Hash::make($data['password']);
         $data['is_active'] = $request->boolean('is_active', true);
+        $data['must_change_password'] = $request->boolean('must_change_password', true);
         $data['employee_id'] = $employee?->id;
 
         $user = User::create($data);
@@ -92,6 +115,7 @@ class UserController extends Controller
         }
 
         $data['is_active'] = $request->boolean('is_active');
+        $data['must_change_password'] = $request->boolean('must_change_password');
 
         if (blank($data['password'])) {
             unset($data['password']);

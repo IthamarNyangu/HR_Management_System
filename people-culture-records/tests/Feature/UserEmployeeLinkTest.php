@@ -9,6 +9,7 @@ use App\Models\Province;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 class UserEmployeeLinkTest extends TestCase
@@ -71,6 +72,7 @@ class UserEmployeeLinkTest extends TestCase
             'email' => 'grace.banda@example.test',
             'province_id' => $this->northern->id,
             'role_id' => $this->officerRole->id,
+            'must_change_password' => true,
         ]);
 
         $this->assertDatabaseHas('activity_logs', [
@@ -221,6 +223,77 @@ class UserEmployeeLinkTest extends TestCase
         $this->assertDatabaseHas('users', [
             'id' => $linkedUser->id,
             'employee_id' => $this->employee->id,
+        ]);
+    }
+
+    public function test_user_access_register_shows_employee_job_title_and_access_profile(): void
+    {
+        $admin = $this->admin();
+        $user = User::factory()->create([
+            'employee_id' => $this->employee->id,
+            'name' => 'Grace Banda',
+            'email' => 'grace.user@example.test',
+            'role_id' => $this->officerRole->id,
+            'province_id' => $this->northern->id,
+            'is_active' => true,
+            'must_change_password' => true,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.users.index'))
+            ->assertOk()
+            ->assertSee('User Access Register')
+            ->assertSee('System Role / Access Profile')
+            ->assertSee('RTC-001')
+            ->assertSee('Grace Banda')
+            ->assertSee('HR Officer')
+            ->assertSee('Change required');
+    }
+
+    public function test_user_with_temporary_password_must_change_password_before_dashboard(): void
+    {
+        $user = User::factory()->create([
+            'role_id' => $this->officerRole->id,
+            'province_id' => $this->northern->id,
+            'is_active' => true,
+            'must_change_password' => true,
+            'password' => Hash::make('temporary123'),
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('dashboard'))
+            ->assertRedirect(route('password.change'));
+
+        $this->actingAs($user)
+            ->get(route('password.change'))
+            ->assertOk()
+            ->assertSee('Set Your Own Password');
+    }
+
+    public function test_user_can_change_temporary_password_and_continue(): void
+    {
+        $user = User::factory()->create([
+            'role_id' => $this->officerRole->id,
+            'province_id' => $this->northern->id,
+            'is_active' => true,
+            'must_change_password' => true,
+            'password' => Hash::make('temporary123'),
+        ]);
+
+        $this->actingAs($user)
+            ->put(route('password.change.update'), [
+                'password' => 'new-password-123',
+                'password_confirmation' => 'new-password-123',
+            ])
+            ->assertRedirect(route('dashboard'));
+
+        $user->refresh();
+
+        $this->assertFalse($user->must_change_password);
+        $this->assertTrue(Hash::check('new-password-123', $user->password));
+        $this->assertDatabaseHas('activity_logs', [
+            'action' => 'password_changed',
+            'user_id' => $user->id,
         ]);
     }
 
