@@ -174,6 +174,7 @@ Route::middleware(['auth', 'active', 'password.changed'])->group(function () use
         Route::middleware('can:manage-users')->group(function () {
             Route::resource('users', UserController::class)->except(['show', 'destroy']);
             Route::patch('/users/{user}/toggle-status', [UserController::class, 'toggleStatus'])->name('users.toggle-status');
+            Route::patch('/users/{user}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset-password');
         });
     });
 });

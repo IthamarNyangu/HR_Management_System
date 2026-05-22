@@ -41,7 +41,8 @@ class StoreUserRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'generate_password' => ['nullable', 'boolean'],
+            'password' => [Rule::requiredIf(! $this->boolean('generate_password')), 'nullable', 'string', 'min:8', 'confirmed'],
             'employee_id' => ['nullable', 'exists:employees,id', 'unique:users,employee_id'],
             'role_id' => ['required', 'exists:roles,id'],
             'province_id' => ['nullable', 'exists:provinces,id'],

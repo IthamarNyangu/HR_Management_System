@@ -135,16 +135,27 @@
 
                 <div class="col-md-6">
                     <label for="password" class="form-label">Password</label>
-                    <input id="password" name="password" type="password" class="form-control @error('password') is-invalid @enderror" {{ $user ? '' : 'required' }}>
+                    <input id="password" name="password" type="password" class="form-control @error('password') is-invalid @enderror" data-password-input>
                     @error('password')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
+                    <div class="form-text">{{ $user ? 'Leave blank to keep the current password.' : 'Leave blank when generating a temporary password automatically.' }}</div>
                 </div>
 
                 <div class="col-md-6">
                     <label for="password_confirmation" class="form-label">Confirm Password</label>
-                    <input id="password_confirmation" name="password_confirmation" type="password" class="form-control" {{ $user ? '' : 'required' }}>
+                    <input id="password_confirmation" name="password_confirmation" type="password" class="form-control" data-password-confirmation-input>
                 </div>
+
+                @unless ($user)
+                    <div class="col-12">
+                        <div class="form-check">
+                            <input id="generate_password" name="generate_password" type="checkbox" class="form-check-input" value="1" @checked(old('generate_password', true)) data-generate-password-toggle>
+                            <label for="generate_password" class="form-check-label">Generate temporary password automatically</label>
+                        </div>
+                        <div class="form-text">The temporary password will be shown once after saving, and the user will be required to change it on first login.</div>
+                    </div>
+                @endunless
 
                 <div class="col-12">
                     <div class="form-check">
@@ -185,6 +196,9 @@
             const emailInput = form.querySelector('[data-email-input]');
             const provinceSelect = form.querySelector('[data-province-select]');
             const roleSelect = form.querySelector('[data-role-select]');
+            const generatePasswordToggle = form.querySelector('[data-generate-password-toggle]');
+            const passwordInput = form.querySelector('[data-password-input]');
+            const passwordConfirmationInput = form.querySelector('[data-password-confirmation-input]');
             const summary = {
                 employeeNo: form.querySelector('[data-summary-employee-no]'),
                 name: form.querySelector('[data-summary-name]'),
@@ -251,10 +265,29 @@
                 provinceSelect.required = required;
             }
 
+            function updatePasswordFields() {
+                if (!generatePasswordToggle || !passwordInput || !passwordConfirmationInput) {
+                    return;
+                }
+
+                const generated = generatePasswordToggle.checked;
+                passwordInput.disabled = generated;
+                passwordConfirmationInput.disabled = generated;
+                passwordInput.required = !generated;
+                passwordConfirmationInput.required = !generated;
+
+                if (generated) {
+                    passwordInput.value = '';
+                    passwordConfirmationInput.value = '';
+                }
+            }
+
             employeeSelect?.addEventListener('change', applyEmployeeSelection);
             employeeSearch?.addEventListener('input', filterEmployees);
             roleSelect?.addEventListener('change', updateProvinceRequirement);
+            generatePasswordToggle?.addEventListener('change', updatePasswordFields);
             updateProvinceRequirement();
+            updatePasswordFields();
         });
     </script>
 @endpush

@@ -134,6 +134,33 @@ class UserEmployeeLinkTest extends TestCase
         ]);
     }
 
+    public function test_admin_can_create_user_with_generated_temporary_password(): void
+    {
+        $admin = $this->admin();
+
+        $response = $this->actingAs($admin)
+            ->post(route('admin.users.store'), [
+                'employee_id' => $this->employee->id,
+                'name' => '',
+                'email' => '',
+                'role_id' => $this->officerRole->id,
+                'province_id' => '',
+                'generate_password' => '1',
+                'is_active' => '1',
+            ]);
+
+        $response
+            ->assertRedirect(route('admin.users.index'))
+            ->assertSessionHas('temporary_password');
+
+        $temporaryPassword = session('temporary_password.password');
+
+        $user = User::where('email', 'grace.banda@example.test')->firstOrFail();
+
+        $this->assertTrue($user->must_change_password);
+        $this->assertTrue(Hash::check($temporaryPassword, $user->password));
+    }
+
     public function test_hr_officer_and_viewer_province_rules_still_work(): void
     {
         $admin = $this->admin();
@@ -294,6 +321,37 @@ class UserEmployeeLinkTest extends TestCase
         $this->assertDatabaseHas('activity_logs', [
             'action' => 'password_changed',
             'user_id' => $user->id,
+        ]);
+    }
+
+    public function test_admin_can_reset_user_password_to_generated_temporary_password(): void
+    {
+        $admin = $this->admin();
+        $user = User::factory()->create([
+            'role_id' => $this->officerRole->id,
+            'province_id' => $this->northern->id,
+            'is_active' => false,
+            'must_change_password' => false,
+            'password' => Hash::make('old-password-123'),
+        ]);
+
+        $response = $this->actingAs($admin)
+            ->patch(route('admin.users.reset-password', $user));
+
+        $response
+            ->assertRedirect()
+            ->assertSessionHas('temporary_password');
+
+        $temporaryPassword = session('temporary_password.password');
+        $user->refresh();
+
+        $this->assertTrue($user->is_active);
+        $this->assertTrue($user->must_change_password);
+        $this->assertTrue(Hash::check($temporaryPassword, $user->password));
+        $this->assertFalse(Hash::check('old-password-123', $user->password));
+        $this->assertDatabaseHas('activity_logs', [
+            'action' => 'user_password_reset',
+            'user_id' => $admin->id,
         ]);
     }
 

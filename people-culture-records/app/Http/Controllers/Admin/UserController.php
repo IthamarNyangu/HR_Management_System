@@ -67,6 +67,7 @@ class UserController extends Controller
     {
         $data = $request->validated();
         $employee = $this->selectedEmployee($data['employee_id'] ?? null);
+        $temporaryPassword = null;
 
         if ($employee) {
             $data['name'] = $data['name'] ?: $employee->full_name;
@@ -74,10 +75,17 @@ class UserController extends Controller
             $data['province_id'] = $data['province_id'] ?: $employee->province_id;
         }
 
-        $data['password'] = Hash::make($data['password']);
+        if ($request->boolean('generate_password')) {
+            $temporaryPassword = $this->generateTemporaryPassword();
+            $data['password'] = Hash::make($temporaryPassword);
+        } else {
+            $data['password'] = Hash::make($data['password']);
+        }
+
         $data['is_active'] = $request->boolean('is_active', true);
-        $data['must_change_password'] = $request->boolean('must_change_password', true);
+        $data['must_change_password'] = $temporaryPassword !== null || $request->boolean('must_change_password', true);
         $data['employee_id'] = $employee?->id;
+        unset($data['generate_password']);
 
         $user = User::create($data);
 
@@ -94,7 +102,18 @@ class UserController extends Controller
             request: $request,
         );
 
-        return redirect()->route('admin.users.index')->with('success', 'User created successfully.');
+        $redirect = redirect()->route('admin.users.index')->with('success', 'User created successfully.');
+
+        if ($temporaryPassword !== null) {
+            $redirect->with('temporary_password', [
+                'name' => $user->name,
+                'email' => $user->email,
+                'password' => $temporaryPassword,
+                'message' => 'Temporary password generated. Share it securely with the user. It will only be shown once.',
+            ]);
+        }
+
+        return $redirect;
     }
 
     public function edit(User $user): View
@@ -190,6 +209,34 @@ class UserController extends Controller
         return back()->with('success', 'User status updated successfully.');
     }
 
+    public function resetPassword(Request $request, User $user, ActivityLogger $activity): RedirectResponse
+    {
+        $temporaryPassword = $this->generateTemporaryPassword();
+
+        $user->update([
+            'password' => Hash::make($temporaryPassword),
+            'must_change_password' => true,
+            'is_active' => true,
+        ]);
+
+        $activity->log(
+            'user_password_reset',
+            "{$request->user()->name} reset the password for user {$user->email}.",
+            $user,
+            user: $request->user(),
+            request: $request,
+        );
+
+        return back()
+            ->with('success', 'Temporary password generated successfully.')
+            ->with('temporary_password', [
+                'name' => $user->name,
+                'email' => $user->email,
+                'password' => $temporaryPassword,
+                'message' => 'Temporary password generated. Share it securely with the user. It will only be shown once.',
+            ]);
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -222,5 +269,26 @@ class UserController extends Controller
         }
 
         return Employee::with(['province', 'department', 'jobTitle'])->findOrFail($employeeId);
+    }
+
+    private function generateTemporaryPassword(): string
+    {
+        $groups = [
+            'ABCDEFGHJKLMNPQRSTUVWXYZ',
+            'abcdefghijkmnopqrstuvwxyz',
+            '23456789',
+            '!@#$%&*',
+        ];
+
+        $characters = implode('', $groups);
+        $password = array_map(fn (string $group): string => $group[random_int(0, strlen($group) - 1)], $groups);
+
+        while (count($password) < 14) {
+            $password[] = $characters[random_int(0, strlen($characters) - 1)];
+        }
+
+        shuffle($password);
+
+        return implode('', $password);
     }
 }

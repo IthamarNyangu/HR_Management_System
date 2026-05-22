@@ -13,6 +13,28 @@
 @endsection
 
 @section('content')
+    @if (session('temporary_password'))
+        @php($temporaryPassword = session('temporary_password'))
+        <section class="alert alert-warning border-warning mb-3">
+            <div class="fw-semibold mb-1">Temporary password shown once</div>
+            <p class="mb-2">{{ $temporaryPassword['message'] }}</p>
+            <div class="row g-2 align-items-center">
+                <div class="col-md-4">
+                    <div class="small text-muted">User</div>
+                    <div class="fw-semibold">{{ $temporaryPassword['name'] }} &lt;{{ $temporaryPassword['email'] }}&gt;</div>
+                </div>
+                <div class="col-md-4">
+                    <div class="small text-muted">Temporary Password</div>
+                    <code class="fs-6">{{ $temporaryPassword['password'] }}</code>
+                </div>
+                <div class="col-md-4">
+                    <div class="small text-muted">Next Step</div>
+                    <div>Ask the user to log in and set their own password.</div>
+                </div>
+            </div>
+        </section>
+    @endif
+
     <section class="bg-white border rounded-2 p-3 mb-3">
         <h2 class="h5 mb-2">System Access Overview</h2>
 
@@ -120,6 +142,11 @@
                                 <td>
                                     <div class="d-inline-flex gap-2">
                                         <a href="{{ route('admin.users.edit', $user) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                                        <form method="POST" action="{{ route('admin.users.reset-password', $user) }}" data-confirm="true" data-confirm-title="Reset password?" data-confirm-message="A new temporary password will be generated and shown once. The user will be required to change it on next login. Do you want to continue?" data-confirm-button="Reset password" data-confirm-variant="btn-warning">
+                                            @csrf
+                                            @method('PATCH')
+                                            <button type="submit" class="btn btn-sm btn-outline-warning">Reset Password</button>
+                                        </form>
                                         <form method="POST" action="{{ route('admin.users.toggle-status', $user) }}" data-confirm="true" data-confirm-title="{{ $user->is_active ? 'Deactivate user?' : 'Activate user?' }}" data-confirm-message="{{ $user->is_active ? 'This user will no longer be able to log in. Do you want to continue?' : 'This user will regain access to the system. Do you want to continue?' }}" data-confirm-button="{{ $user->is_active ? 'Deactivate user' : 'Activate user' }}" data-confirm-variant="{{ $user->is_active ? 'btn-warning' : 'btn-primary' }}">
                                             @csrf
                                             @method('PATCH')
