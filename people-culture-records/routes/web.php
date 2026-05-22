@@ -47,6 +47,9 @@ Route::middleware(['auth', 'active'])->group(function () use ($masterDataTypes) 
     Route::get('/activity-logs', [ActivityLogController::class, 'index'])
         ->middleware('can:access-dashboard')
         ->name('activity-logs.index');
+    Route::get('/activity-logs/export/pdf', [ActivityLogController::class, 'exportPdf'])
+        ->middleware('can:access-dashboard')
+        ->name('activity-logs.export.pdf');
 
     Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead'])
         ->name('notifications.mark-all-read');

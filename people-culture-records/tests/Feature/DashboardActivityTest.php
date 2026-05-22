@@ -193,6 +193,73 @@ class DashboardActivityTest extends TestCase
             ->assertSee('Paged Activity #01');
     }
 
+    public function test_audit_logs_can_be_filtered_by_module_and_action(): void
+    {
+        $admin = $this->user($this->adminRole);
+
+        ActivityLog::create([
+            'user_id' => $admin->id,
+            'action' => 'employee_created',
+            'description' => 'Created employee record for audit.',
+            'subject_type' => Employee::class,
+            'subject_id' => $this->northernEmployee->id,
+            'properties' => [
+                'employee_no' => $this->northernEmployee->employee_no,
+                'province_id' => $this->northern->id,
+                'province_name' => $this->northern->name,
+            ],
+        ]);
+        ActivityLog::create([
+            'user_id' => $admin->id,
+            'action' => 'case_approved',
+            'description' => 'Approved disciplinary case for audit.',
+            'subject_type' => DisciplinaryCase::class,
+            'properties' => [
+                'reference_no' => 'DC-2026-9001',
+                'province_id' => $this->northern->id,
+                'province_name' => $this->northern->name,
+            ],
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('activity-logs.index', [
+                'module' => 'employees',
+                'action' => 'employee_created',
+            ]))
+            ->assertOk()
+            ->assertSee('Audit Trail')
+            ->assertSee('Created employee record for audit.')
+            ->assertDontSee('Approved disciplinary case for audit.');
+    }
+
+    public function test_audit_logs_pdf_export_uses_filters_and_logs_export(): void
+    {
+        $admin = $this->user($this->adminRole);
+
+        ActivityLog::create([
+            'user_id' => $admin->id,
+            'action' => 'employee_created',
+            'description' => 'PDF export visible activity.',
+            'subject_type' => Employee::class,
+            'subject_id' => $this->northernEmployee->id,
+            'properties' => [
+                'employee_no' => $this->northernEmployee->employee_no,
+                'province_id' => $this->northern->id,
+                'province_name' => $this->northern->name,
+            ],
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('activity-logs.export.pdf', ['module' => 'employees']))
+            ->assertOk()
+            ->assertHeader('content-type', 'application/pdf');
+
+        $this->assertDatabaseHas('activity_logs', [
+            'action' => 'audit_logs_exported_pdf',
+            'user_id' => $admin->id,
+        ]);
+    }
+
     public function test_viewer_cannot_see_activity_outside_assigned_province(): void
     {
         $viewer = $this->user($this->viewerRole, $this->northern);
