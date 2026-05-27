@@ -15,6 +15,10 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withCommands([
         \App\Console\Commands\AutoCloseExpiredDisciplinaryCases::class,
         \App\Console\Commands\ApplyEffectiveStaffPromotions::class,
+        \App\Console\Commands\ApplyEffectiveStaffRelocations::class,
+        \App\Console\Commands\AutoCompleteTemporaryAppointments::class,
+        \App\Console\Commands\NotifyTemporaryAppointmentsEndingSoon::class,
+        \App\Console\Commands\SyncEmployeeImportMasterData::class,
     ])
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([

@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Models\District;
 use App\Models\Facility;
+use App\Support\EmployeeNumber;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -12,6 +13,15 @@ class UpdateEmployeeRequest extends FormRequest
     public function authorize(): bool
     {
         return $this->user()?->can('update', $this->route('employee')) ?? false;
+    }
+
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('employee_no')) {
+            $this->merge([
+                'employee_no' => EmployeeNumber::normalize($this->input('employee_no')),
+            ]);
+        }
     }
 
     /**

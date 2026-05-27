@@ -14,6 +14,7 @@ use App\Models\Province;
 use App\Models\User;
 use App\Services\ActivityLogger;
 use App\Services\ReferenceNumberService;
+use App\Support\EmployeeNumber;
 use Carbon\Carbon;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
@@ -64,6 +65,11 @@ class EmployeeImportPreviewService
 
         try {
             [$rawRows, $workbookWarnings] = $this->readRows($path);
+
+            if ($rawRows->isEmpty()) {
+                $workbookWarnings[] = 'No employee data rows were found. The file has headings, but employee records must start on row 2 of the Employees_Import sheet.';
+            }
+
             $normalizedRows = $rawRows->map(fn (array $row) => $this->normalizeRow($row));
             $employeeNumbers = $normalizedRows
                 ->pluck('employee_no')
@@ -245,6 +251,10 @@ class EmployeeImportPreviewService
             }
         }
 
+        if (filled($normalized['employee_no'])) {
+            $normalized['employee_no'] = EmployeeNumber::normalize($normalized['employee_no']);
+        }
+
         return $normalized;
     }
 
@@ -258,8 +268,8 @@ class EmployeeImportPreviewService
             'departments' => $this->masterLookup(Department::query()->get()),
             'job_titles' => $this->masterLookup(JobTitle::query()->get()),
             'provinces' => $this->masterLookup(Province::query()->get()),
-            'districts' => $this->masterLookup(District::query()->with('province')->get()),
-            'facilities' => $this->masterLookup(Facility::query()->with('district')->get()),
+            'districts' => $this->districtLookup(District::query()->with('province')->get()),
+            'facilities' => $this->facilityLookup(Facility::query()->with('district')->get()),
             'employment_statuses' => $this->masterLookup(EmploymentStatus::query()->get()),
         ];
     }
@@ -277,6 +287,44 @@ class EmployeeImportPreviewService
 
             if ($record->code) {
                 $lookup[$this->lookupKey($record->code)] = $record;
+            }
+        }
+
+        return $lookup;
+    }
+
+    /**
+     * @param Collection<int, District> $records
+     * @return array<string, District>
+     */
+    private function districtLookup(Collection $records): array
+    {
+        $lookup = [];
+
+        foreach ($records as $record) {
+            $lookup[$this->districtLookupKey($record->name)] = $record;
+
+            if ($record->code) {
+                $lookup[$this->lookupKey($record->code)] = $record;
+            }
+        }
+
+        return $lookup;
+    }
+
+    /**
+     * @param Collection<int, Facility> $records
+     * @return array<string, Facility>
+     */
+    private function facilityLookup(Collection $records): array
+    {
+        $lookup = [];
+
+        foreach ($records as $record) {
+            $lookup[$this->facilityLookupKey($record->district_id, $record->name)] = $record;
+
+            if ($record->code) {
+                $lookup[$this->facilityLookupKey($record->district_id, $record->code)] = $record;
             }
         }
 
@@ -321,16 +369,12 @@ class EmployeeImportPreviewService
         $department = $this->matchOptionalMaster($normalized['department'], $lookups['departments'], 'Department', $errors);
         $jobTitle = $this->matchOptionalMaster($normalized['job_title'], $lookups['job_titles'], 'Job title', $errors);
         $province = $this->matchRequiredMaster($normalized['province'], $lookups['provinces'], 'Province', $errors);
-        $district = $this->matchRequiredMaster($normalized['district'], $lookups['districts'], 'District', $errors);
-        $facility = $this->matchOptionalMaster($normalized['facility'], $lookups['facilities'], 'Facility', $errors);
+        $district = $this->matchDistrict($normalized['district'], $lookups['districts'], $errors);
+        $facility = $this->matchFacility($normalized['facility'], $district, $lookups['facilities'], $errors);
         $employmentStatus = $this->matchOptionalMaster($normalized['employment_status'], $lookups['employment_statuses'], 'Employment status', $errors);
 
         if ($province && $district && (int) $district->province_id !== (int) $province->id) {
             $errors[] = "District '{$district->name}' does not belong to province '{$province->name}'.";
-        }
-
-        if ($district && $facility && (int) $facility->district_id !== (int) $district->id) {
-            $errors[] = "Facility '{$facility->name}' does not belong to district '{$district->name}'.";
         }
 
         if ($user->hasRole('HR Officer') && $province && (int) $province->id !== (int) $user->province_id) {
@@ -410,6 +454,52 @@ class EmployeeImportPreviewService
     }
 
     /**
+     * @param array<string, mixed> $lookup
+     * @param list<string> $errors
+     */
+    private function matchDistrict(mixed $value, array $lookup, array &$errors): mixed
+    {
+        if (blank($value)) {
+            return null;
+        }
+
+        $key = $this->districtLookupKey($value);
+
+        if (isset($lookup[$key])) {
+            return $lookup[$key];
+        }
+
+        $errors[] = "District '{$value}' does not exist in master data.";
+
+        return null;
+    }
+
+    /**
+     * @param array<string, mixed> $lookup
+     * @param list<string> $errors
+     */
+    private function matchFacility(mixed $value, mixed $district, array $lookup, array &$errors): mixed
+    {
+        if (blank($value)) {
+            return null;
+        }
+
+        if (! $district) {
+            return null;
+        }
+
+        $key = $this->facilityLookupKey($district->id, $value);
+
+        if (isset($lookup[$key])) {
+            return $lookup[$key];
+        }
+
+        $errors[] = "Facility '{$value}' does not exist in district '{$district->name}' master data.";
+
+        return null;
+    }
+
+    /**
      * @param list<string> $errors
      */
     private function parseDate(mixed $value, string $label, array &$errors): ?string
@@ -438,9 +528,25 @@ class EmployeeImportPreviewService
 
     private function lookupKey(mixed $value): string
     {
-        $key = trim((string) preg_replace('/\s+/', ' ', mb_strtolower((string) $value)));
+        $value = str_replace(['â€™', '’', '‘', '`'], "'", (string) $value);
+        $key = trim((string) preg_replace('/\s+/', ' ', mb_strtolower($value)));
 
         return trim((string) preg_replace('/\s+(province|district)$/', '', $key));
+    }
+
+    private function districtLookupKey(mixed $value): string
+    {
+        $key = $this->lookupKey($value);
+
+        return match ($key) {
+            'senga' => 'senga hill',
+            default => $key,
+        };
+    }
+
+    private function facilityLookupKey(mixed $districtId, mixed $value): string
+    {
+        return $districtId.'|'.$this->lookupKey($value);
     }
 
     /**

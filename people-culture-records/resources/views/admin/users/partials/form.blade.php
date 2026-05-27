@@ -83,7 +83,7 @@
     <section class="col-12">
         <div class="border rounded-2 p-3">
             <h2 class="h5 mb-1">Account Details</h2>
-            <p class="text-muted small mb-3">System role/access profile controls what this user can do. It is separate from the employee's HR job title.</p>
+            <p class="text-muted small mb-3">System role controls what this user can do. It is separate from the employee's HR job title.</p>
 
             <div class="row g-3">
                 <div class="col-md-6">

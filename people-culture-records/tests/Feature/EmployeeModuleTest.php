@@ -121,6 +121,26 @@ class EmployeeModuleTest extends TestCase
         ]);
     }
 
+    public function test_employee_number_underscores_are_removed_on_create(): void
+    {
+        $admin = $this->user($this->adminRole);
+
+        $this->actingAs($admin)
+            ->post(route('employees.store'), [
+                'employee_no' => '_RTC_003_',
+                'first_name' => 'Clean',
+                'last_name' => 'Number',
+                'province_id' => $this->northern->id,
+                'district_id' => $this->kasama->id,
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('employees', [
+            'employee_no' => 'RTC003',
+            'first_name' => 'Clean',
+        ]);
+    }
+
     public function test_sensitive_employee_personal_data_is_encrypted_at_rest(): void
     {
         $employee = $this->employee([

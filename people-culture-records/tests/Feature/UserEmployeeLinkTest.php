@@ -270,7 +270,7 @@ class UserEmployeeLinkTest extends TestCase
             ->get(route('admin.users.index'))
             ->assertOk()
             ->assertSee('User Access Register')
-            ->assertSee('System Role / Access Profile')
+            ->assertSee('System Role')
             ->assertSee('RTC-001')
             ->assertSee('Grace Banda')
             ->assertSee('HR Officer')
