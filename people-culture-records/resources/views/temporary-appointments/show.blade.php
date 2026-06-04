@@ -63,7 +63,6 @@
                 <div class="row g-3">
                     <div class="col-md-6"><strong>Current Job Title:</strong> {{ $appointment->currentJobTitle?->name ?? '-' }}</div>
                     <div class="col-md-6"><strong>Temporary Job Title:</strong> {{ $appointment->temporaryJobTitle?->name ?? '-' }}</div>
-                    <div class="col-md-6"><strong>Appointment Type:</strong> {{ $appointment->appointmentType?->name ?? '-' }}</div>
                     <div class="col-md-6"><strong>Supervisor:</strong> {{ $appointment->supervisor_name ?? '-' }}</div>
                     <div class="col-md-6"><strong>Start Date:</strong> {{ $appointment->start_date?->format('d M Y') }}</div>
                     <div class="col-md-6"><strong>Current End Date:</strong> {{ $appointment->end_date?->format('d M Y') }}</div>

@@ -79,8 +79,6 @@ class MasterDataSeeder extends Seeder
         ],
         AppointmentType::class => [
             ['name' => 'Interim / Acting Appointment', 'code' => 'INTERIM_ACTING'],
-            ['name' => 'Temporary Assignment', 'code' => 'TEMP_ASSIGN'],
-            ['name' => 'Short-term Appointment', 'code' => 'SHORT_TERM'],
         ],
         DocumentType::class => [
             ['name' => 'Letter', 'code' => 'LETTER'],
@@ -104,7 +102,7 @@ class MasterDataSeeder extends Seeder
             }
         }
 
-        AppointmentType::whereIn('name', ['Acting Appointment', 'Secondment', 'Interim Appointment'])
+        AppointmentType::where('name', '!=', 'Interim / Acting Appointment')
             ->update(['is_active' => false]);
 
         $lusakaDistrict = \App\Models\District::whereHas('province', fn ($query) => $query->where('name', 'Lusaka'))

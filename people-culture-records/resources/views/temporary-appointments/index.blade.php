@@ -80,14 +80,6 @@
                 </select>
             </div>
             <div class="col-md-6 col-xl-3">
-                <select name="appointment_type_id" class="form-select">
-                    <option value="">All appointment types</option>
-                    @foreach ($appointmentTypes as $type)
-                        <option value="{{ $type->id }}" @selected((string) request('appointment_type_id') === (string) $type->id)>{{ $type->name }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="col-md-6 col-xl-3">
                 <select name="appointment_status_id" class="form-select">
                     <option value="">All statuses</option>
                     @foreach ($appointmentStatuses as $status)

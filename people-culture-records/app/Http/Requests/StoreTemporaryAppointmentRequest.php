@@ -56,7 +56,6 @@ class StoreTemporaryAppointmentRequest extends FormRequest
             'department_id' => ['nullable', 'exists:departments,id'],
             'current_job_title_id' => ['nullable', 'exists:job_titles,id'],
             'temporary_job_title_id' => ['required', 'exists:job_titles,id'],
-            'appointment_type_id' => ['nullable', 'exists:appointment_types,id'],
             'appointment_status_id' => ['required', 'exists:appointment_statuses,id'],
             'start_date' => ['required', 'date'],
             'end_date' => ['required', 'date', 'after_or_equal:start_date'],

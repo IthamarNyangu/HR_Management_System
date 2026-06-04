@@ -188,7 +188,6 @@
                             <tr>
                                 <th>Reference</th>
                                 <th>Temporary Job Title</th>
-                                <th>Type</th>
                                 <th>Start Date</th>
                                 <th>End Date</th>
                                 <th>Status</th>
@@ -199,7 +198,6 @@
                                 <tr>
                                     <td><a href="{{ route('temporary-appointments.show', $appointment) }}">{{ $appointment->reference_no }}</a></td>
                                     <td>{{ $appointment->temporaryJobTitle?->name ?? '-' }}</td>
-                                    <td>{{ $appointment->appointmentType?->name ?? '-' }}</td>
                                     <td>{{ $appointment->start_date?->format('d M Y') }}</td>
                                     <td>{{ $appointment->end_date?->format('d M Y') }}</td>
                                     <td>
@@ -209,7 +207,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" class="text-center text-muted py-4">No temporary appointment history recorded.</td>
+                                    <td colspan="5" class="text-center text-muted py-4">No temporary appointment history recorded.</td>
                                 </tr>
                             @endforelse
                         </tbody>

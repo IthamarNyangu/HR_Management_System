@@ -215,6 +215,25 @@ class TemporaryAppointmentModuleTest extends TestCase
         $this->assertSame('TEMP-'.now()->year.'-0001', $appointment->reference_no);
     }
 
+    public function test_appointment_type_defaults_to_interim_acting_without_user_selection(): void
+    {
+        $payload = $this->appointmentPayload();
+        unset($payload['appointment_type_id']);
+
+        $this->actingAs($this->user($this->adminRole))
+            ->post(route('temporary-appointments.store'), $payload)
+            ->assertRedirect();
+
+        $appointment = TemporaryAppointment::with('appointmentType')->firstOrFail();
+
+        $this->assertSame('Interim / Acting Appointment', $appointment->appointmentType?->name);
+
+        $this->actingAs($this->user($this->adminRole))
+            ->get(route('temporary-appointments.create'))
+            ->assertOk()
+            ->assertDontSee('Appointment Type');
+    }
+
     public function test_temporary_appointment_can_save_selected_supervisor_employee(): void
     {
         $supervisor = $this->employee([

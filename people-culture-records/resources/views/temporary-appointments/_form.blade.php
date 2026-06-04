@@ -48,18 +48,18 @@
 <div class="d-grid gap-4" data-temporary-appointment-form>
     <section class="border rounded-2 bg-white p-4">
         <div class="mb-3">
-            <h2 class="h5 mb-1">Employee & Appointment Type</h2>
-            <p class="text-muted mb-0">Select the staff member and the type of temporary appointment being recorded.</p>
+            <h2 class="h5 mb-1">Employee</h2>
+            <p class="text-muted mb-0">Select the staff member for the interim or acting appointment.</p>
         </div>
         <div class="row g-3">
             @if ($appointment->exists)
-                <div class="col-md-6">
+                <div class="col-md-6 col-xl-4">
                     <label class="form-label">Reference Number</label>
                     <input type="text" class="form-control" value="{{ $appointment->reference_no }}" disabled>
                 </div>
             @endif
 
-            <div class="col-md-6">
+            <div class="col-md-6 col-xl-4">
                 <label for="employee_search" class="form-label">Employee <span class="text-danger">*</span></label>
                 <div class="smart-employee-select" data-smart-employee-select data-role="employee" data-url="{{ route('employees.search') }}" data-selected='@json($employeeOption)'>
                     <input
@@ -85,19 +85,6 @@
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
                 <div class="invalid-feedback d-none" data-employee-feedback>Please choose an employee from the list.</div>
-            </div>
-
-            <div class="col-md-6">
-                <label for="appointment_type_id" class="form-label">Appointment Type</label>
-                <select id="appointment_type_id" name="appointment_type_id" class="form-select @error('appointment_type_id') is-invalid @enderror">
-                    <option value="">Select appointment type</option>
-                    @foreach ($appointmentTypes as $type)
-                        <option value="{{ $type->id }}" @selected((string) old('appointment_type_id', $appointment->appointment_type_id) === (string) $type->id)>{{ $type->name }}</option>
-                    @endforeach
-                </select>
-                @error('appointment_type_id')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
             </div>
         </div>
     </section>

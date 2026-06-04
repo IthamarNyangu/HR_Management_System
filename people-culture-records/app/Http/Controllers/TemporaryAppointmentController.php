@@ -52,7 +52,6 @@ class TemporaryAppointmentController extends Controller
             ->when($request->filled('department_id'), fn ($query) => $query->where('department_id', $request->integer('department_id')))
             ->when($request->filled('current_job_title_id'), fn ($query) => $query->where('current_job_title_id', $request->integer('current_job_title_id')))
             ->when($request->filled('temporary_job_title_id'), fn ($query) => $query->where('temporary_job_title_id', $request->integer('temporary_job_title_id')))
-            ->when($request->filled('appointment_type_id'), fn ($query) => $query->where('appointment_type_id', $request->integer('appointment_type_id')))
             ->when($request->filled('appointment_status_id'), fn ($query) => $query->where('appointment_status_id', $request->integer('appointment_status_id')))
             ->when($request->filled('start_from'), fn ($query) => $query->whereDate('start_date', '>=', $request->date('start_from')))
             ->when($request->filled('start_to'), fn ($query) => $query->whereDate('start_date', '<=', $request->date('start_to')))
@@ -324,7 +323,6 @@ class TemporaryAppointmentController extends Controller
             'projects' => Project::where('is_active', true)->orderBy('name')->get(),
             'departments' => Department::where('is_active', true)->orderBy('name')->get(),
             'jobTitles' => JobTitle::where('is_active', true)->orderBy('name')->get(),
-            'appointmentTypes' => AppointmentType::where('is_active', true)->orderBy('name')->get(),
             'appointmentStatuses' => AppointmentStatus::where('is_active', true)->orderBy('name')->get(),
         ];
     }
@@ -335,13 +333,13 @@ class TemporaryAppointmentController extends Controller
      */
     private function appointmentData(array $data): array
     {
-        foreach (['district_id', 'facility_id', 'project_id', 'department_id', 'current_job_title_id', 'appointment_type_id', 'reason', 'supervisor_name', 'supervisor_employee_id', 'comment'] as $field) {
+        foreach (['district_id', 'facility_id', 'project_id', 'department_id', 'current_job_title_id', 'reason', 'supervisor_name', 'supervisor_employee_id', 'comment'] as $field) {
             if (array_key_exists($field, $data) && blank($data[$field])) {
                 $data[$field] = null;
             }
         }
 
-        return Arr::only($data, [
+        $appointmentData = Arr::only($data, [
             'reference_no',
             'employee_id',
             'province_id',
@@ -351,7 +349,6 @@ class TemporaryAppointmentController extends Controller
             'department_id',
             'current_job_title_id',
             'temporary_job_title_id',
-            'appointment_type_id',
             'appointment_status_id',
             'start_date',
             'end_date',
@@ -364,6 +361,30 @@ class TemporaryAppointmentController extends Controller
             'updated_by',
             'archived_by',
         ]);
+
+        $appointmentData['appointment_type_id'] = $this->defaultAppointmentTypeId();
+
+        return $appointmentData;
+    }
+
+    private function defaultAppointmentTypeId(): int
+    {
+        $type = AppointmentType::where('code', 'INTERIM_ACTING')
+            ->orWhere('name', 'Interim / Acting Appointment')
+            ->first();
+
+        if (! $type) {
+            $type = AppointmentType::create([
+                'name' => 'Interim / Acting Appointment',
+                'code' => 'INTERIM_ACTING',
+                'description' => null,
+                'is_active' => true,
+            ]);
+        } elseif (! $type->is_active) {
+            $type->update(['is_active' => true]);
+        }
+
+        return (int) $type->id;
     }
 
     private function statusId(string $code): int
