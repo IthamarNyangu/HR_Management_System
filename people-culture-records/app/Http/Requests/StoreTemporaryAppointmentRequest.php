@@ -136,7 +136,7 @@ class StoreTemporaryAppointmentRequest extends FormRequest
             ->exists();
 
         if (! $visible) {
-            $validator->errors()->add('supervisor_employee_id', 'The selected supervisor is not available to your province access.');
+            $validator->errors()->add('supervisor_employee_id', 'The selected line manager is not available to your province access.');
         }
     }
 }

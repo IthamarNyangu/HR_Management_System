@@ -35,6 +35,7 @@ class Employee extends Model
         'employment_status_id',
         'hire_date',
         'supervisor_name',
+        'supervisor_employee_id',
         'notes',
         'created_by',
         'updated_by',
@@ -105,6 +106,16 @@ class Employee extends Model
     public function archivedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'archived_by');
+    }
+
+    public function supervisor(): BelongsTo
+    {
+        return $this->belongsTo(Employee::class, 'supervisor_employee_id');
+    }
+
+    public function directReports(): HasMany
+    {
+        return $this->hasMany(Employee::class, 'supervisor_employee_id');
     }
 
     public function disciplinaryCases(): HasMany

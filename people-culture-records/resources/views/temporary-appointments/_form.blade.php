@@ -3,7 +3,7 @@
     $employeeOption = $selectedEmployeeOption ?? null;
     $supervisorOption = $selectedSupervisorOption ?? null;
     $employeeSearchValue = old('employee_search', $employeeOption['text'] ?? '');
-    $supervisorSearchValue = old('supervisor_search', $supervisorOption['text'] ?? old('supervisor_name', $appointment->supervisor_name));
+            $supervisorSearchValue = old('supervisor_search', $supervisorOption['text'] ?? old('supervisor_name', $appointment->supervisor_name));
 @endphp
 
 @push('styles')
@@ -240,12 +240,12 @@
         <div class="col-lg-6">
             <section class="border rounded-2 bg-white p-4 h-100">
                 <div class="mb-3">
-                    <h2 class="h5 mb-1">Supervisor, Reason & Comments</h2>
-                    <p class="text-muted mb-0">Record who supervises the appointment and why it is being made.</p>
+                    <h2 class="h5 mb-1">Line Manager, Reason & Comments</h2>
+                    <p class="text-muted mb-0">Record the appointment line manager and why it is being made.</p>
                 </div>
                 <div class="row g-3">
                     <div class="col-12">
-                        <label for="supervisor_name" class="form-label">Supervisor</label>
+                        <label for="supervisor_name" class="form-label">Line Manager</label>
                         <div class="smart-employee-select" data-smart-employee-select data-role="supervisor" data-url="{{ route('employees.search') }}" data-selected='@json($supervisorOption)'>
                             <input
                                 id="supervisor_name"
@@ -253,7 +253,7 @@
                                 type="search"
                                 class="form-control @error('supervisor_employee_id') is-invalid @enderror @error('supervisor_name') is-invalid @enderror"
                                 value="{{ $supervisorSearchValue }}"
-                                placeholder="Search supervisor number, name, email, job title, or location"
+                                placeholder="Search line manager number, name, email, job title, or location"
                                 autocomplete="off"
                                 data-smart-input
                             >

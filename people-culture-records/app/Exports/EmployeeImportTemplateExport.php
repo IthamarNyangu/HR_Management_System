@@ -31,7 +31,7 @@ class EmployeeImportTemplateExport implements FromArray, ShouldAutoSize, WithHea
             'facility',
             'employment_status',
             'hire_date',
-            'supervisor_name',
+            'line_manager',
             'notes',
         ];
     }

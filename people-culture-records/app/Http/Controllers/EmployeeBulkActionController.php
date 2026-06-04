@@ -125,7 +125,7 @@ class EmployeeBulkActionController extends Controller
             'change_employment_status' => "{$actor} changed employment status to {$valueLabel} for {$employeeCount} employees.",
             'change_project' => "{$actor} changed project to {$valueLabel} for {$employeeCount} employees.",
             'change_department' => "{$actor} changed department to {$valueLabel} for {$employeeCount} employees.",
-            'assign_supervisor' => "{$actor} assigned supervisor {$valueLabel} to {$employeeCount} employees.",
+            'assign_supervisor' => "{$actor} assigned line manager {$valueLabel} to {$employeeCount} employees.",
             'archive' => "{$actor} archived {$employeeCount} employees.",
             default => "{$actor} completed a bulk employee action for {$employeeCount} employees.",
         };

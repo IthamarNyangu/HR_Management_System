@@ -97,7 +97,7 @@
                     <div class="col-md-6"><strong>Penalty Type:</strong> {{ $case->penaltyType?->name ?? '-' }}</div>
                     <div class="col-md-6"><strong>Effective Date:</strong> {{ $case->effective_date?->format('d M Y') }}</div>
                     <div class="col-md-6"><strong>Expiry Date:</strong> {{ $case->expiry_date?->format('d M Y') ?? '-' }}</div>
-                    <div class="col-md-6"><strong>Supervisor:</strong> {{ $case->supervisor_name ?? '-' }}</div>
+                    <div class="col-md-6"><strong>Line Manager:</strong> {{ $case->supervisor_name ?? '-' }}</div>
                     <div class="col-md-6"><strong>Created By:</strong> {{ $case->createdBy?->name ?? '-' }}</div>
                 </div>
                 <hr>

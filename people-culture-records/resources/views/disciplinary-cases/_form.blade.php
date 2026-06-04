@@ -109,7 +109,7 @@
     </div>
 
     <div class="col-md-4">
-        <label for="supervisor_name" class="form-label">Supervisor Name</label>
+        <label for="supervisor_name" class="form-label">Line Manager Name</label>
         <input id="supervisor_name" name="supervisor_name" type="text" class="form-control @error('supervisor_name') is-invalid @enderror" value="{{ old('supervisor_name', $case->supervisor_name) }}">
         @error('supervisor_name')
             <div class="invalid-feedback">{{ $message }}</div>

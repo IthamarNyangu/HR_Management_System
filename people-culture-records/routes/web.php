@@ -13,6 +13,7 @@ use App\Http\Controllers\EmployeeImportController;
 use App\Http\Controllers\EmployeeSearchController;
 use App\Http\Controllers\ImportController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\OrganisationChartController;
 use App\Http\Controllers\PasswordChangeController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ReportExportController;
@@ -109,6 +110,8 @@ Route::middleware(['auth', 'active', 'password.changed'])->group(function () use
     });
 
     Route::get('/employees/search', EmployeeSearchController::class)->name('employees.search');
+    Route::get('/organisation-chart', OrganisationChartController::class)->name('organisation-chart.index');
+    Route::post('/organisation-chart/link-line-managers', [OrganisationChartController::class, 'linkLineManagers'])->name('organisation-chart.link-line-managers');
     Route::get('/employees/archived', [EmployeeController::class, 'archived'])->name('employees.archived');
     Route::post('/employees/bulk-action', [EmployeeBulkActionController::class, 'handle'])->name('employees.bulk-action');
     Route::patch('/employees/{employee}/archive', [EmployeeController::class, 'archive'])->name('employees.archive');

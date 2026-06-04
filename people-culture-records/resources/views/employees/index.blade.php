@@ -8,6 +8,19 @@
     <li class="breadcrumb-item active" aria-current="page">Employees</li>
 @endsection
 
+@push('styles')
+    <style>
+        .employee-index-table {
+            min-width: 1180px;
+        }
+
+        .employee-index-table th,
+        .employee-index-table td {
+            white-space: nowrap;
+        }
+    </style>
+@endpush
+
 @section('page-actions')
     <div class="d-flex gap-2">
         <a href="{{ route('employees.archived') }}" class="btn btn-secondary btn-md">Archived</a>
@@ -102,7 +115,7 @@
                                 <option value="change_employment_status" @selected(old('action') === 'change_employment_status')>Change Employment Status</option>
                                 <option value="change_project" @selected(old('action') === 'change_project')>Change Project</option>
                                 <option value="change_department" @selected(old('action') === 'change_department')>Change Department</option>
-                                <option value="assign_supervisor" @selected(old('action') === 'assign_supervisor')>Assign Supervisor</option>
+                                <option value="assign_supervisor" @selected(old('action') === 'assign_supervisor')>Assign Line Manager</option>
                                 <option value="archive" @selected(old('action') === 'archive')>Archive Selected Employees</option>
                             </select>
                         </div>
@@ -131,7 +144,7 @@
                             </select>
                         </div>
                         <div class="col-md-6 col-xl-3 bulk-value-field" data-bulk-field="assign_supervisor">
-                            <input id="bulkSupervisor" type="text" name="supervisor_name" value="{{ old('supervisor_name') }}" class="form-control" placeholder="Supervisor name" aria-label="Supervisor name">
+                            <input id="bulkSupervisor" type="text" name="supervisor_name" value="{{ old('supervisor_name') }}" class="form-control" placeholder="Line manager name" aria-label="Line manager name">
                         </div>
                         <div class="col-md-auto">
                             <button id="bulkApplyButton" type="submit" class="btn btn-primary btn-md">Apply</button>
@@ -146,7 +159,7 @@
         @endif
 
         <div class="table-responsive data-table-wrap">
-            <table class="table table-hover align-middle data-table">
+            <table class="table table-hover align-middle data-table employee-index-table">
                 <thead>
                     <tr>
                         @if ($canBulkUpdateEmployees)
@@ -157,12 +170,11 @@
                         <th>Employee ID</th>
                         <th>Employee Name</th>
                         <th>Province</th>
-                        <th>District</th>
                         <th>Facility</th>
                         <th>Project</th>
                         <th>Job Title</th>
                         <th>Status</th>
-                        <th>Actions</th>
+                        <th style="min-width: 260px;">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -178,13 +190,12 @@
                             <td class="fw-semibold">{{ $employee->employee_no }}</td>
                             <td>{{ $employee->full_name }}</td>
                             <td>{{ $employee->province?->name }}</td>
-                            <td>{{ $employee->district?->name }}</td>
                             <td>{{ $employee->facility?->name ?? '-' }}</td>
                             <td>{{ $employee->project?->name ?? '-' }}</td>
                             <td>{{ $employee->jobTitle?->name ?? '-' }}</td>
                             <td>{{ $employee->employmentStatus?->name ?? '-' }}</td>
                             <td>
-                                <div class="d-inline-flex gap-2">
+                                <div class="d-inline-flex gap-2 flex-nowrap">
                                     @can('view', $employee)
                                         <a href="{{ route('employees.show', $employee) }}" class="btn btn-sm btn-secondary">View</a>
                                     @endcan
@@ -203,7 +214,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="{{ $canBulkUpdateEmployees ? 10 : 9 }}" class="text-center text-muted py-4">No employees found.</td>
+                            <td colspan="{{ $canBulkUpdateEmployees ? 9 : 8 }}" class="text-center text-muted py-4">No employees found.</td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -237,7 +248,7 @@
                 change_employment_status: 'Change Employment Status',
                 change_project: 'Change Project',
                 change_department: 'Change Department',
-                assign_supervisor: 'Assign Supervisor',
+                assign_supervisor: 'Assign Line Manager',
                 archive: 'Archive Selected Employees',
             };
 

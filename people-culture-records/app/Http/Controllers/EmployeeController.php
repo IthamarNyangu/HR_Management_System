@@ -50,7 +50,7 @@ class EmployeeController extends Controller
             ->when($request->filled('employment_status_id'), fn ($query) => $query->where('employment_status_id', $request->integer('employment_status_id')))
             ->orderBy('last_name')
             ->orderBy('first_name')
-            ->paginate(10)
+            ->paginate(6)
             ->withQueryString();
 
         return view('employees.index', $this->formData($request) + compact('employees'));
@@ -102,6 +102,11 @@ class EmployeeController extends Controller
             'district',
             'facility',
             'employmentStatus',
+            'supervisor',
+            'directReports.jobTitle',
+            'directReports.province',
+            'directReports.district',
+            'directReports.facility',
             'createdBy',
             'updatedBy',
         ]);
@@ -143,14 +148,18 @@ class EmployeeController extends Controller
             ->orderBy('end_date')
             ->first();
 
-        return view('employees.show', compact('employee', 'disciplinaryCases', 'staffPromotions', 'staffRelocations', 'temporaryAppointments', 'activeTemporaryAppointment'));
+        $directReports = $employee->directReports
+            ->sortBy([['last_name', 'asc'], ['first_name', 'asc']])
+            ->values();
+
+        return view('employees.show', compact('employee', 'directReports', 'disciplinaryCases', 'staffPromotions', 'staffRelocations', 'temporaryAppointments', 'activeTemporaryAppointment'));
     }
 
     public function edit(Request $request, Employee $employee): View
     {
         Gate::authorize('update', $employee);
 
-        return view('employees.edit', $this->formData($request) + compact('employee'));
+        return view('employees.edit', $this->formData($request, $employee) + compact('employee'));
     }
 
     public function update(UpdateEmployeeRequest $request, Employee $employee, ActivityLogger $activity): RedirectResponse
@@ -242,9 +251,17 @@ class EmployeeController extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function formData(Request $request): array
+    private function formData(Request $request, ?Employee $employee = null): array
     {
         $user = $request->user();
+        $supervisor = null;
+
+        if ($employee?->supervisor_employee_id) {
+            $supervisor = Employee::query()
+                ->with(['jobTitle', 'province', 'district', 'facility'])
+                ->visibleTo($user)
+                ->find($employee->supervisor_employee_id);
+        }
 
         return [
             'provinces' => Province::where('is_active', true)
@@ -257,6 +274,7 @@ class EmployeeController extends Controller
             'departments' => Department::where('is_active', true)->orderBy('name')->get(),
             'jobTitles' => JobTitle::where('is_active', true)->orderBy('name')->get(),
             'employmentStatuses' => EmploymentStatus::where('is_active', true)->orderBy('name')->get(),
+            'selectedSupervisorOption' => $supervisor ? $this->employeeSearchOption($supervisor) : null,
         ];
     }
 
@@ -266,7 +284,7 @@ class EmployeeController extends Controller
      */
     private function employeeData(array $data): array
     {
-        foreach (['project_id', 'department_id', 'job_title_id', 'facility_id', 'employment_status_id', 'gender', 'date_of_birth', 'national_id', 'email', 'phone', 'hire_date', 'supervisor_name', 'notes'] as $field) {
+        foreach (['project_id', 'department_id', 'job_title_id', 'facility_id', 'employment_status_id', 'gender', 'date_of_birth', 'national_id', 'email', 'phone', 'hire_date', 'supervisor_name', 'supervisor_employee_id', 'notes'] as $field) {
             if (array_key_exists($field, $data) && blank($data[$field])) {
                 $data[$field] = null;
             }
@@ -290,10 +308,29 @@ class EmployeeController extends Controller
             'employment_status_id',
             'hire_date',
             'supervisor_name',
+            'supervisor_employee_id',
             'notes',
             'created_by',
             'updated_by',
             'archived_by',
         ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function employeeSearchOption(Employee $employee): array
+    {
+        return [
+            'id' => $employee->id,
+            'text' => $employee->display_name,
+            'details' => collect([
+                $employee->jobTitle?->name,
+                $employee->province?->name,
+                $employee->district?->name,
+                $employee->facility?->name,
+            ])->filter()->implode(' | '),
+            'name' => $employee->full_name,
+        ];
     }
 }

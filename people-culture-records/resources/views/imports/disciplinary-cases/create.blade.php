@@ -79,7 +79,7 @@
             <section class="bg-white border rounded-2 p-3">
                 <h2 class="h5 mb-3">Expected Columns</h2>
                 <div class="row row-cols-1 row-cols-sm-2 g-2 small">
-                    @foreach (['employee_no', 'first_name', 'last_name', 'project', 'province', 'district', 'facility', 'supervisor_name', 'nature_of_offence', 'offence_category', 'penalty_type', 'case_status', 'effective_date', 'expiry_date', 'comment'] as $column)
+                    @foreach (['employee_no', 'first_name', 'last_name', 'project', 'province', 'district', 'facility', 'line_manager', 'nature_of_offence', 'offence_category', 'penalty_type', 'case_status', 'effective_date', 'expiry_date', 'comment'] as $column)
                         <div class="col"><code>{{ $column }}</code></div>
                     @endforeach
                 </div>

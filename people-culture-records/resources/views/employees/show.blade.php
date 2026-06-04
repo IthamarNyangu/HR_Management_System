@@ -11,6 +11,7 @@
 
 @section('page-actions')
     <div class="d-flex gap-2">
+        <a href="{{ route('organisation-chart.index', ['search' => $employee->employee_no]) }}" class="btn btn-secondary btn-md">View in Chart</a>
         @can('update', $employee)
             <a href="{{ route('employees.edit', $employee) }}" class="btn btn-primary btn-md">Edit Employee</a>
         @endcan
@@ -58,7 +59,44 @@
                     <div class="col-md-6"><strong>Job Title:</strong> {{ $employee->jobTitle?->name ?? '-' }}</div>
                     <div class="col-md-6"><strong>Status:</strong> {{ $employee->employmentStatus?->name ?? '-' }}</div>
                     <div class="col-md-6"><strong>Hire Date:</strong> {{ $employee->hire_date?->format('d M Y') ?? '-' }}</div>
-                    <div class="col-md-6"><strong>Supervisor:</strong> {{ $employee->supervisor_name ?? '-' }}</div>
+                    <div class="col-md-6">
+                        <strong>Line Manager:</strong>
+                        @if ($employee->supervisor)
+                            <a href="{{ route('employees.show', $employee->supervisor) }}">{{ $employee->supervisor->display_name }}</a>
+                        @else
+                            {{ $employee->supervisor_name ?? '-' }}
+                        @endif
+                    </div>
+                </div>
+            </section>
+
+            <section class="bg-white border rounded-2 p-4 mb-3">
+                <h2 class="h5">Direct Reports</h2>
+                <div class="table-responsive data-table-wrap">
+                    <table class="table table-hover align-middle data-table">
+                        <thead>
+                            <tr>
+                                <th>Employee No</th>
+                                <th>Employee Name</th>
+                                <th>Job Title</th>
+                                <th>Location</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse ($directReports as $report)
+                                <tr>
+                                    <td>{{ $report->employee_no }}</td>
+                                    <td><a href="{{ route('employees.show', $report) }}">{{ $report->full_name }}</a></td>
+                                    <td>{{ $report->jobTitle?->name ?? '-' }}</td>
+                                    <td>{{ collect([$report->province?->name, $report->district?->name, $report->facility?->name])->filter()->implode(' / ') ?: '-' }}</td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted py-4">No direct reports linked yet.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
                 </div>
             </section>
 

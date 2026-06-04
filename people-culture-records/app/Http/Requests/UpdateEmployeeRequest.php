@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\District;
+use App\Models\Employee;
 use App\Models\Facility;
 use App\Support\EmployeeNumber;
 use Illuminate\Foundation\Http\FormRequest;
@@ -21,6 +22,16 @@ class UpdateEmployeeRequest extends FormRequest
             $this->merge([
                 'employee_no' => EmployeeNumber::normalize($this->input('employee_no')),
             ]);
+        }
+
+        if ($this->filled('supervisor_employee_id')) {
+            $supervisor = Employee::query()->find($this->input('supervisor_employee_id'));
+
+            if ($supervisor) {
+                $this->merge([
+                    'supervisor_name' => $supervisor->full_name,
+                ]);
+            }
         }
     }
 
@@ -52,6 +63,7 @@ class UpdateEmployeeRequest extends FormRequest
             'employment_status_id' => ['nullable', 'exists:employment_statuses,id'],
             'hire_date' => ['nullable', 'date'],
             'supervisor_name' => ['nullable', 'string', 'max:255'],
+            'supervisor_employee_id' => ['nullable', 'exists:employees,id'],
             'notes' => ['nullable', 'string'],
         ];
     }
@@ -61,6 +73,7 @@ class UpdateEmployeeRequest extends FormRequest
         $validator->after(function ($validator) {
             $this->validateLocation($validator);
             $this->validateOfficerProvince($validator);
+            $this->validateSupervisor($validator);
         });
     }
 
@@ -93,6 +106,30 @@ class UpdateEmployeeRequest extends FormRequest
 
         if ($user?->hasRole('HR Officer') && (int) $this->input('province_id') !== (int) $user->province_id) {
             $validator->errors()->add('province_id', 'HR Officers cannot move employees outside their assigned province.');
+        }
+    }
+
+    private function validateSupervisor($validator): void
+    {
+        if (! $this->filled('supervisor_employee_id')) {
+            return;
+        }
+
+        $employee = $this->route('employee');
+
+        if ($employee && (int) $this->input('supervisor_employee_id') === (int) $employee->id) {
+            $validator->errors()->add('supervisor_employee_id', 'An employee cannot be their own line manager.');
+
+            return;
+        }
+
+        $supervisorIsVisible = Employee::query()
+            ->visibleTo($this->user())
+            ->whereKey($this->input('supervisor_employee_id'))
+            ->exists();
+
+        if (! $supervisorIsVisible) {
+            $validator->errors()->add('supervisor_employee_id', 'The selected line manager is not available to your province access.');
         }
     }
 }

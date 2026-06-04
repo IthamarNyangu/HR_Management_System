@@ -58,7 +58,7 @@ class BulkEmployeeActionRequest extends FormRequest
             'employment_status_id.required_if' => 'Choose the employment status to apply.',
             'project_id.required_if' => 'Choose the project to apply.',
             'department_id.required_if' => 'Choose the department to apply.',
-            'supervisor_name.required_if' => 'Enter the supervisor name to apply.',
+            'supervisor_name.required_if' => 'Enter the line manager name to apply.',
         ];
     }
 }

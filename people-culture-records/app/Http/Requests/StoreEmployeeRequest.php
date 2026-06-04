@@ -22,6 +22,16 @@ class StoreEmployeeRequest extends FormRequest
                 'employee_no' => EmployeeNumber::normalize($this->input('employee_no')),
             ]);
         }
+
+        if ($this->filled('supervisor_employee_id')) {
+            $supervisor = Employee::query()->find($this->input('supervisor_employee_id'));
+
+            if ($supervisor) {
+                $this->merge([
+                    'supervisor_name' => $supervisor->full_name,
+                ]);
+            }
+        }
     }
 
     /**
@@ -47,6 +57,7 @@ class StoreEmployeeRequest extends FormRequest
             'employment_status_id' => ['nullable', 'exists:employment_statuses,id'],
             'hire_date' => ['nullable', 'date'],
             'supervisor_name' => ['nullable', 'string', 'max:255'],
+            'supervisor_employee_id' => ['nullable', 'exists:employees,id'],
             'notes' => ['nullable', 'string'],
         ];
     }
@@ -56,6 +67,7 @@ class StoreEmployeeRequest extends FormRequest
         $validator->after(function ($validator) {
             $this->validateLocation($validator);
             $this->validateOfficerProvince($validator);
+            $this->validateSupervisorVisibility($validator);
         });
     }
 
@@ -88,6 +100,22 @@ class StoreEmployeeRequest extends FormRequest
 
         if ($user?->hasRole('HR Officer') && (int) $this->input('province_id') !== (int) $user->province_id) {
             $validator->errors()->add('province_id', 'HR Officers can only create employees for their assigned province.');
+        }
+    }
+
+    private function validateSupervisorVisibility($validator): void
+    {
+        if (! $this->filled('supervisor_employee_id')) {
+            return;
+        }
+
+        $supervisorIsVisible = Employee::query()
+            ->visibleTo($this->user())
+            ->whereKey($this->input('supervisor_employee_id'))
+            ->exists();
+
+        if (! $supervisorIsVisible) {
+            $validator->errors()->add('supervisor_employee_id', 'The selected line manager is not available to your province access.');
         }
     }
 }

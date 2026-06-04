@@ -61,6 +61,7 @@
         .admin-card:hover, .admin-card:focus-within { border-color: #b8c7dd; box-shadow: 0 .6rem 1.4rem rgba(23, 32, 51, .08); transform: translateY(-1px); }
         .admin-card-icon { width: 2.5rem; height: 2.5rem; border-radius: .5rem; display: inline-flex; align-items: center; justify-content: center; background: #eef4ff; color: #0d6efd; font-size: 1.15rem; flex: 0 0 auto; }
         .data-table-wrap { border: 1px solid #e1e7f0; border-radius: .5rem; overflow: hidden; background: #fff; }
+        .table-responsive.data-table-wrap { overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; }
         .data-table { margin-bottom: 0; }
         .data-table thead th { background: #f3f6fa; color: #344054; border-bottom: 1px solid #d8e0ec; font-size: .875rem; font-weight: 700; }
         .data-table tbody tr:hover { background: #f8fafc; }

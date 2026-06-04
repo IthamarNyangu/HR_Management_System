@@ -1,7 +1,48 @@
 @php
     $isOfficer = auth()->user()->hasRole('HR Officer');
     $canViewSensitivePersonalData = auth()->user()->can('viewSensitivePersonalData', $employee);
+    $supervisorOption = $selectedSupervisorOption ?? null;
+    $supervisorSearchValue = old('supervisor_search', $supervisorOption['text'] ?? old('supervisor_name', $employee->supervisor_name));
 @endphp
+
+@push('styles')
+    <style>
+        .smart-employee-select { position: relative; }
+        .smart-employee-results {
+            position: absolute;
+            z-index: 1050;
+            top: calc(100% + .35rem);
+            left: 0;
+            right: 0;
+            max-height: 18rem;
+            overflow-y: auto;
+            border: 1px solid #d8e0ec;
+            border-radius: .5rem;
+            background: #fff;
+            box-shadow: 0 .8rem 1.8rem rgba(23, 32, 51, .14);
+        }
+        .smart-employee-option {
+            width: 100%;
+            border: 0;
+            background: #fff;
+            padding: .75rem .9rem;
+            text-align: left;
+            border-bottom: 1px solid #eef2f7;
+        }
+        .smart-employee-option:hover,
+        .smart-employee-option:focus {
+            background: #f3f6fa;
+            outline: none;
+        }
+        .smart-employee-option:last-child { border-bottom: 0; }
+        .smart-employee-selected {
+            border: 1px solid #d8e0ec;
+            border-radius: .5rem;
+            background: #f8fafc;
+            padding: .75rem;
+        }
+    </style>
+@endpush
 
 <div class="row g-3" data-employee-form>
     <div class="col-md-4">
@@ -128,8 +169,33 @@
         </select>
     </div>
     <div class="col-md-8">
-        <label for="supervisor_name" class="form-label">Supervisor Name</label>
-        <input id="supervisor_name" name="supervisor_name" type="text" class="form-control" value="{{ old('supervisor_name', $employee->supervisor_name) }}">
+        <label for="supervisor_search" class="form-label">Line Manager</label>
+        <div class="smart-employee-select" data-smart-employee-select data-url="{{ route('employees.search') }}" data-selected='@json($supervisorOption)'>
+            <input
+                id="supervisor_search"
+                name="supervisor_search"
+                type="search"
+                class="form-control @error('supervisor_employee_id') is-invalid @enderror @error('supervisor_name') is-invalid @enderror"
+                value="{{ $supervisorSearchValue }}"
+                placeholder="Search line manager number, name, email, job title, or location"
+                autocomplete="off"
+                data-smart-input
+            >
+            <input name="supervisor_employee_id" type="hidden" value="{{ old('supervisor_employee_id', $employee->supervisor_employee_id) }}" data-smart-id>
+            <input name="supervisor_name" type="hidden" value="{{ old('supervisor_name', $employee->supervisor_name) }}" data-smart-name>
+            <div class="smart-employee-results d-none" data-smart-results role="listbox"></div>
+            <div class="smart-employee-selected mt-2 {{ $supervisorOption ? '' : 'd-none' }}" data-smart-selected>
+                <div class="fw-semibold" data-smart-selected-text>{{ $supervisorOption['text'] ?? '' }}</div>
+                <div class="small text-muted" data-smart-selected-details>{{ $supervisorOption['details'] ?? '' }}</div>
+            </div>
+        </div>
+        <div class="form-text">Select a line manager from employees where possible. Typed names are kept as text if no employee is selected.</div>
+        @error('supervisor_employee_id')
+            <div class="invalid-feedback d-block">{{ $message }}</div>
+        @enderror
+        @error('supervisor_name')
+            <div class="invalid-feedback d-block">{{ $message }}</div>
+        @enderror
     </div>
 
     @if ($canViewSensitivePersonalData)
@@ -164,6 +230,7 @@
         const province = form.querySelector('[data-province-select]');
         const district = form.querySelector('[data-district-select]');
         const facility = form.querySelector('[data-facility-select]');
+        const supervisorPicker = form.querySelector('[data-smart-employee-select]');
 
         function filterDistricts() {
             const provinceId = province.value;
@@ -198,5 +265,121 @@
         province.addEventListener('change', filterDistricts);
         district.addEventListener('change', filterFacilities);
         filterDistricts();
+
+        function renderSelected(picker, employee) {
+            const selected = picker.querySelector('[data-smart-selected]');
+            const selectedText = picker.querySelector('[data-smart-selected-text]');
+            const selectedDetails = picker.querySelector('[data-smart-selected-details]');
+
+            if (!selected || !selectedText || !selectedDetails) return;
+
+            if (!employee) {
+                selected.classList.add('d-none');
+                selectedText.textContent = '';
+                selectedDetails.textContent = '';
+                return;
+            }
+
+            selectedText.textContent = employee.text || '';
+            selectedDetails.textContent = employee.details || '';
+            selected.classList.remove('d-none');
+        }
+
+        function renderResults(picker, employees) {
+            const results = picker.querySelector('[data-smart-results]');
+
+            if (!results) return;
+
+            results.innerHTML = '';
+
+            if (!employees.length) {
+                results.innerHTML = '<div class="px-3 py-2 text-muted small">No employees found.</div>';
+                results.classList.remove('d-none');
+                return;
+            }
+
+            employees.forEach(function (employee) {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'smart-employee-option';
+                button.innerHTML = `
+                    <div class="fw-semibold">${employee.text}</div>
+                    <div class="small text-muted">${employee.details || 'No job/location details recorded'}</div>
+                    ${employee.email ? `<div class="small text-muted">${employee.email}</div>` : ''}
+                `;
+                button.addEventListener('click', function () {
+                    const input = picker.querySelector('[data-smart-input]');
+                    const idInput = picker.querySelector('[data-smart-id]');
+                    const nameInput = picker.querySelector('[data-smart-name]');
+
+                    input.value = employee.text || '';
+                    idInput.value = employee.id || '';
+                    if (nameInput) nameInput.value = employee.name || '';
+                    renderSelected(picker, employee);
+                    results.classList.add('d-none');
+                });
+                results.appendChild(button);
+            });
+
+            results.classList.remove('d-none');
+        }
+
+        function setupSupervisorPicker(picker) {
+            if (!picker) return;
+
+            const input = picker.querySelector('[data-smart-input]');
+            const idInput = picker.querySelector('[data-smart-id]');
+            const nameInput = picker.querySelector('[data-smart-name]');
+            const url = picker.dataset.url;
+            let abortController = null;
+            let searchTimer = null;
+
+            input.addEventListener('input', function () {
+                const query = input.value.trim();
+                idInput.value = '';
+                if (nameInput) nameInput.value = query;
+                renderSelected(picker, null);
+                clearTimeout(searchTimer);
+
+                if (query.length < 1) {
+                    picker.querySelector('[data-smart-results]')?.classList.add('d-none');
+                    return;
+                }
+
+                searchTimer = setTimeout(function () {
+                    if (abortController) abortController.abort();
+                    abortController = new AbortController();
+
+                    const results = picker.querySelector('[data-smart-results]');
+                    results.innerHTML = '<div class="px-3 py-2 text-muted small">Searching employees...</div>';
+                    results.classList.remove('d-none');
+
+                    fetch(`${url}?q=${encodeURIComponent(query)}&limit=10`, {
+                        headers: { 'Accept': 'application/json' },
+                        signal: abortController.signal,
+                    })
+                        .then(function (response) {
+                            if (!response.ok) throw new Error('Employee search failed.');
+                            return response.json();
+                        })
+                        .then(function (employees) {
+                            renderResults(picker, employees);
+                        })
+                        .catch(function (error) {
+                            if (error.name === 'AbortError') return;
+                            results.innerHTML = '<div class="px-3 py-2 text-danger small">Unable to search employees right now.</div>';
+                            results.classList.remove('d-none');
+                        });
+                }, 220);
+            });
+
+            document.addEventListener('click', function (event) {
+                if (!picker.contains(event.target)) {
+                    picker.querySelector('[data-smart-results]')?.classList.add('d-none');
+                }
+            });
+        }
+
+        setupSupervisorPicker(supervisorPicker);
     });
 </script>
