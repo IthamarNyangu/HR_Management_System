@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class JobOpening extends Model
@@ -143,6 +144,11 @@ class JobOpening extends Model
         return $this->belongsTo(User::class, 'archived_by');
     }
 
+    public function jobApplications(): HasMany
+    {
+        return $this->hasMany(JobApplication::class);
+    }
+
     public function getDisplayNameAttribute(): string
     {
         return trim($this->reference_no.' - '.$this->title);
@@ -190,6 +196,15 @@ class JobOpening extends Model
         return 'Closes in '.$this->closing_date->diffInDays(today()).' day(s)';
     }
 
+    public function getIsPubliclyApplyableAttribute(): bool
+    {
+        return ! $this->trashed()
+            && $this->status === self::STATUS_PUBLISHED
+            && in_array($this->visibility, [self::VISIBILITY_EXTERNAL, self::VISIBILITY_BOTH], true)
+            && $this->closing_date !== null
+            && $this->closing_date->toDateString() >= today()->toDateString();
+    }
+
     public function getLocationLabelAttribute(): string
     {
         if ($this->location_details) {
@@ -227,6 +242,11 @@ class JobOpening extends Model
         return $query->published()
             ->external()
             ->whereDate('closing_date', '>=', today());
+    }
+
+    public function scopePubliclyApplyable(Builder $query): Builder
+    {
+        return $query->publiclyVisible();
     }
 
     public function scopeVisibleTo(Builder $query, User $user): Builder

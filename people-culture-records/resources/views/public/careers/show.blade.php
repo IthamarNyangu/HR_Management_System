@@ -37,6 +37,9 @@
                     <div class="col-md-3"><span class="fw-semibold text-dark">Positions:</span> {{ $jobOpening->number_of_positions }}</div>
                 @endif
             </div>
+            <div class="mt-4">
+                <a href="{{ route('careers.apply', $jobOpening->slug) }}" class="btn btn-danger">Apply Now</a>
+            </div>
         </header>
 
         <article class="job-panel p-4">

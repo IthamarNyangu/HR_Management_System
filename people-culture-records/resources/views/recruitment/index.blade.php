@@ -10,7 +10,10 @@
 
 @section('page-actions')
     @can('create', App\Models\JobOpening::class)
-        <a href="{{ route('recruitment.job-openings.create') }}" class="btn btn-primary btn-md">New Job Opening</a>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{{ route('recruitment.applications.index') }}" class="btn btn-secondary btn-md">Applications</a>
+            <a href="{{ route('recruitment.job-openings.create') }}" class="btn btn-primary btn-md">New Job Opening</a>
+        </div>
     @endcan
 @endsection
 
@@ -62,6 +65,16 @@
                         @endforelse
                     </tbody>
                 </table>
+            </div>
+        </section>
+
+        <section class="bg-white border rounded-2 p-3">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                <div>
+                    <h2 class="h5 mb-1">Applications</h2>
+                    <div class="text-muted">Review submitted public job applications and download documents securely.</div>
+                </div>
+                <a href="{{ route('recruitment.applications.index') }}" class="btn btn-primary-outline btn-md">View Applications</a>
             </div>
         </section>
     </div>

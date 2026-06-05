@@ -46,7 +46,7 @@ class PublicJobOpeningController extends Controller
             'closing_date' => $job->closing_date?->toDateString(),
             'summary' => $job->summary,
             'detail_url' => route('careers.show', $job->slug),
-            'apply_url' => null,
+            'apply_url' => $job->is_publicly_applyable ? route('careers.apply', $job->slug) : null,
         ];
     }
 

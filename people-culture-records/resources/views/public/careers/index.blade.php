@@ -47,7 +47,10 @@
                         <div class="text-lg-end flex-shrink-0">
                             <div class="small text-muted">Closing date</div>
                             <div class="fw-semibold">{{ $job->closing_date?->format('d M Y') }}</div>
-                            <a href="{{ route('careers.show', $job->slug) }}" class="btn btn-danger btn-sm mt-3">View Details</a>
+                            <div class="d-flex flex-lg-column gap-2 align-items-lg-end mt-3">
+                                <a href="{{ route('careers.show', $job->slug) }}" class="btn btn-outline-danger btn-sm">View Details</a>
+                                <a href="{{ route('careers.apply', $job->slug) }}" class="btn btn-danger btn-sm">Apply Now</a>
+                            </div>
                         </div>
                     </div>
                 </article>

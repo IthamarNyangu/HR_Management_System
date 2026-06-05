@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\Employee;
 use App\Models\DisciplinaryCase;
+use App\Models\JobApplication;
 use App\Models\JobOpening;
 use App\Models\StaffPromotion;
 use App\Models\StaffRelocation;
@@ -11,6 +12,7 @@ use App\Models\TemporaryAppointment;
 use App\Models\User;
 use App\Policies\DisciplinaryCasePolicy;
 use App\Policies\EmployeePolicy;
+use App\Policies\JobApplicationPolicy;
 use App\Policies\JobOpeningPolicy;
 use App\Policies\StaffPromotionPolicy;
 use App\Policies\StaffRelocationPolicy;
@@ -38,6 +40,7 @@ class AppServiceProvider extends ServiceProvider
 
         Gate::policy(DisciplinaryCase::class, DisciplinaryCasePolicy::class);
         Gate::policy(Employee::class, EmployeePolicy::class);
+        Gate::policy(JobApplication::class, JobApplicationPolicy::class);
         Gate::policy(JobOpening::class, JobOpeningPolicy::class);
         Gate::policy(StaffPromotion::class, StaffPromotionPolicy::class);
         Gate::policy(StaffRelocation::class, StaffRelocationPolicy::class);

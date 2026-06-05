@@ -6,6 +6,8 @@ use App\Models\ActivityLog;
 use App\Models\Attachment;
 use App\Models\DisciplinaryCase;
 use App\Models\Employee;
+use App\Models\JobApplication;
+use App\Models\JobApplicationDocument;
 use App\Models\JobOpening;
 use App\Models\StaffPromotion;
 use App\Models\StaffRelocation;
@@ -153,6 +155,33 @@ class ActivityLogger
                 'province_name' => $subject->province?->name,
                 'facility_id' => $subject->facility_id,
                 'facility_name' => $subject->facility?->name,
+            ];
+        }
+
+        if ($subject instanceof JobApplication) {
+            return [
+                'reference_no' => $subject->reference_no,
+                'job_reference_no' => $subject->jobOpening?->reference_no,
+                'job_title' => $subject->jobOpening?->title,
+                'applicant_email' => $subject->email,
+                'province_id' => $subject->jobOpening?->province_id,
+                'province_name' => $subject->jobOpening?->province?->name,
+                'facility_id' => $subject->jobOpening?->facility_id,
+                'facility_name' => $subject->jobOpening?->facility?->name,
+            ];
+        }
+
+        if ($subject instanceof JobApplicationDocument) {
+            return [
+                'reference_no' => $subject->jobApplication?->reference_no,
+                'job_reference_no' => $subject->jobApplication?->jobOpening?->reference_no,
+                'job_title' => $subject->jobApplication?->jobOpening?->title,
+                'applicant_email' => $subject->jobApplication?->email,
+                'filename' => $subject->original_filename,
+                'province_id' => $subject->jobApplication?->jobOpening?->province_id,
+                'province_name' => $subject->jobApplication?->jobOpening?->province?->name,
+                'facility_id' => $subject->jobApplication?->jobOpening?->facility_id,
+                'facility_name' => $subject->jobApplication?->jobOpening?->facility?->name,
             ];
         }
 

@@ -102,6 +102,7 @@ class ActivityLog extends Model
                 'StaffRelocation' => 'Staff Relocations',
                 'TemporaryAppointment' => 'Temporary Appointments',
                 'JobOpening' => 'Recruitment',
+                'JobApplication', 'JobApplicationDocument' => 'Recruitment',
                 'Attachment' => 'Attachments',
                 'User' => 'User Management',
                 'ImportBatch', 'ImportRow' => 'Imports',
@@ -118,6 +119,7 @@ class ActivityLog extends Model
             str_contains($this->action, 'relocation') => 'Staff Relocations',
             str_contains($this->action, 'temporary_appointment') => 'Temporary Appointments',
             str_contains($this->action, 'job_opening') => 'Recruitment',
+            str_contains($this->action, 'job_application') => 'Recruitment',
             str_contains($this->action, 'user') => 'User Management',
             default => 'System',
         };

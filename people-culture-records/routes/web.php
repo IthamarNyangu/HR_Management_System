@@ -16,9 +16,12 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OrganisationChartController;
 use App\Http\Controllers\PasswordChangeController;
 use App\Http\Controllers\PublicCareerController;
+use App\Http\Controllers\PublicJobApplicationController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ReportExportController;
 use App\Http\Controllers\Api\PublicJobOpeningController;
+use App\Http\Controllers\Recruitment\JobApplicationController;
+use App\Http\Controllers\Recruitment\JobApplicationDocumentController;
 use App\Http\Controllers\Recruitment\JobOpeningController;
 use App\Http\Controllers\StaffPromotionAttachmentController;
 use App\Http\Controllers\StaffPromotionController;
@@ -36,7 +39,13 @@ $masterDataTypes = implode('|', array_map(fn (string $type) => preg_quote($type,
 Route::redirect('/', '/dashboard');
 
 Route::get('/careers', [PublicCareerController::class, 'index'])->name('careers.index');
+Route::get('/careers/{jobOpening:slug}/apply', [PublicJobApplicationController::class, 'create'])->name('careers.apply');
+Route::post('/careers/{jobOpening:slug}/apply', [PublicJobApplicationController::class, 'store'])->middleware('throttle:5,1')->name('careers.apply.store');
 Route::get('/careers/{jobOpening:slug}', [PublicCareerController::class, 'show'])->name('careers.show');
+Route::get('/applications/withdraw', [PublicJobApplicationController::class, 'withdrawalRequest'])->name('applications.withdraw.request');
+Route::post('/applications/withdraw', [PublicJobApplicationController::class, 'sendWithdrawalLink'])->middleware('throttle:5,1')->name('applications.withdraw.link');
+Route::get('/applications/{jobApplication}/withdraw/{token}', [PublicJobApplicationController::class, 'withdrawShow'])->middleware('signed')->name('applications.withdraw.show');
+Route::post('/applications/{jobApplication}/withdraw/{token}', [PublicJobApplicationController::class, 'withdrawConfirm'])->middleware('signed')->name('applications.withdraw.confirm');
 Route::get('/api/careers/jobs', [PublicJobOpeningController::class, 'index'])->name('api.careers.jobs.index');
 Route::get('/api/careers/jobs/{slug}', [PublicJobOpeningController::class, 'show'])->name('api.careers.jobs.show');
 
@@ -122,6 +131,9 @@ Route::middleware(['auth', 'active', 'password.changed'])->group(function () use
     Route::post('/organisation-chart/link-line-managers', [OrganisationChartController::class, 'linkLineManagers'])->name('organisation-chart.link-line-managers');
 
     Route::get('/recruitment', [JobOpeningController::class, 'dashboard'])->name('recruitment.index');
+    Route::get('/recruitment/applications', [JobApplicationController::class, 'index'])->name('recruitment.applications.index');
+    Route::get('/recruitment/applications/{jobApplication}', [JobApplicationController::class, 'show'])->name('recruitment.applications.show');
+    Route::get('/recruitment/applications/{jobApplication}/documents/{document}/download', [JobApplicationDocumentController::class, 'download'])->name('recruitment.applications.documents.download');
     Route::get('/recruitment/job-openings/archived', [JobOpeningController::class, 'archived'])->name('recruitment.job-openings.archived');
     Route::patch('/recruitment/job-openings/{job_opening}/publish', [JobOpeningController::class, 'publish'])->name('recruitment.job-openings.publish');
     Route::patch('/recruitment/job-openings/{job_opening}/close', [JobOpeningController::class, 'close'])->name('recruitment.job-openings.close');
