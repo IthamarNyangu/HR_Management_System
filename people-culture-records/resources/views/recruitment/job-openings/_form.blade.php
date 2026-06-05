@@ -22,21 +22,23 @@
         <h2 class="h6 mb-3">Job Summary</h2>
         <div class="row g-3">
             <div class="col-lg-8">
-                <label for="title" class="form-label">Job Title <span class="text-danger">*</span></label>
-                <input id="title" name="title" type="text" class="form-control @error('title') is-invalid @enderror" value="{{ old('title', $jobOpening->title) }}" required>
-                @error('title')<div class="invalid-feedback">{{ $message }}</div>@enderror
-            </div>
-            <div class="col-md-6 col-lg-4">
-                <label for="job_title_id" class="form-label">Master Job Title</label>
-                <select id="job_title_id" name="job_title_id" class="form-select @error('job_title_id') is-invalid @enderror">
+                <label for="job_title_id" class="form-label">Job Title <span class="text-danger">*</span></label>
+                <select id="job_title_id" name="job_title_id" class="form-select @error('job_title_id') is-invalid @enderror" required>
                     <option value="">Select job title</option>
                     @foreach ($jobTitles as $jobTitle)
                         <option value="{{ $jobTitle->id }}" @selected((string) old('job_title_id', $jobOpening->job_title_id) === (string) $jobTitle->id)>{{ $jobTitle->name }}</option>
                     @endforeach
                 </select>
                 @error('job_title_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                <div class="form-text d-flex flex-wrap align-items-center gap-2">
+                    <span>Job title must already exist in the Job Titles master table.</span>
+                    @can('manage-master-data')
+                        <a href="{{ route('admin.master-data.records', 'job-titles') }}">Manage job titles</a>
+                    @endcan
+                </div>
+                <input type="hidden" name="title" value="{{ old('title', $jobOpening->title) }}">
             </div>
-            <div class="col-md-4">
+            <div class="col-md-6 col-lg-4">
                 <label for="employment_type_id" class="form-label">Employment Type</label>
                 <select id="employment_type_id" name="employment_type_id" class="form-select @error('employment_type_id') is-invalid @enderror">
                     <option value="">Select employment type</option>

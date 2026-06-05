@@ -7,6 +7,7 @@ use App\Models\District;
 use App\Models\EmploymentType;
 use App\Models\Facility;
 use App\Models\JobOpening;
+use App\Models\JobTitle;
 use App\Models\Project;
 use App\Models\Province;
 use App\Models\Role;
@@ -29,6 +30,7 @@ class RecruitmentJobOpeningTest extends TestCase
     private Facility $kasamaFacility;
     private Department $department;
     private Project $project;
+    private JobTitle $jobTitle;
     private EmploymentType $employmentType;
 
     protected function setUp(): void
@@ -47,6 +49,7 @@ class RecruitmentJobOpeningTest extends TestCase
         $this->kasamaFacility = Facility::create(['district_id' => $this->kasama->id, 'name' => 'Kasama Office', 'code' => 'KAS-OFF', 'is_active' => true]);
         $this->department = Department::create(['name' => 'People and Culture', 'code' => 'P&C', 'is_active' => true]);
         $this->project = Project::create(['name' => 'General Operations', 'code' => 'GO', 'is_active' => true]);
+        $this->jobTitle = JobTitle::create(['name' => 'Data Analyst', 'code' => 'DATA-ANALYST', 'is_active' => true]);
         $this->employmentType = EmploymentType::create(['name' => 'Full-time', 'code' => 'FULL_TIME', 'is_active' => true]);
     }
 
@@ -88,7 +91,8 @@ class RecruitmentJobOpeningTest extends TestCase
             ->assertRedirect();
 
         $this->assertDatabaseHas('job_openings', [
-            'title' => 'HR Officer',
+            'title' => 'Data Analyst',
+            'job_title_id' => $this->jobTitle->id,
             'province_id' => $this->luapula->id,
         ]);
     }
@@ -218,6 +222,7 @@ class RecruitmentJobOpeningTest extends TestCase
             'reference_no' => $reference,
             'slug' => str('data-analyst-'.$reference)->slug(),
             'title' => 'Data Analyst',
+            'job_title_id' => $this->jobTitle->id,
             'project_id' => $this->project->id,
             'department_id' => $this->department->id,
             'province_id' => $this->northern->id,
@@ -244,6 +249,7 @@ class RecruitmentJobOpeningTest extends TestCase
     {
         return array_merge([
             'title' => 'Data Analyst',
+            'job_title_id' => $this->jobTitle->id,
             'project_id' => $this->project->id,
             'department_id' => $this->department->id,
             'province_id' => $this->northern->id,

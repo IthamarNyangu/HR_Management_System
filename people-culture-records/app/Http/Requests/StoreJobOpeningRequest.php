@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Models\District;
 use App\Models\Facility;
 use App\Models\JobOpening;
+use App\Models\JobTitle;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -17,9 +18,14 @@ class StoreJobOpeningRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
+        $jobTitleName = $this->filled('job_title_id')
+            ? JobTitle::whereKey($this->input('job_title_id'))->value('name')
+            : null;
+
         $this->merge([
             'show_number_of_positions' => $this->boolean('show_number_of_positions'),
             'status' => $this->input('status') ?: JobOpening::STATUS_DRAFT,
+            'title' => $jobTitleName ?: $this->input('title'),
         ]);
 
         if ($this->user()?->hasRole('HR Officer')) {
@@ -35,8 +41,8 @@ class StoreJobOpeningRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'title' => ['required', 'string', 'max:255'],
-            'job_title_id' => ['nullable', 'exists:job_titles,id'],
+            'title' => ['nullable', 'string', 'max:255'],
+            'job_title_id' => ['required', 'exists:job_titles,id'],
             'project_id' => ['nullable', 'exists:projects,id'],
             'department_id' => ['nullable', 'exists:departments,id'],
             'province_id' => ['nullable', 'exists:provinces,id'],

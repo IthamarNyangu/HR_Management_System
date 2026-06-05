@@ -52,6 +52,9 @@ class JobOpeningController extends Controller
     {
         Gate::authorize('viewAny', JobOpening::class);
 
+        $perPage = (int) $request->input('per_page', 10);
+        $perPage = in_array($perPage, [5, 10, 25, 50], true) ? $perPage : 10;
+
         $jobOpenings = JobOpening::query()
             ->with(['department', 'project', 'province', 'district', 'facility', 'jobTitle', 'employmentType'])
             ->visibleTo($request->user())
@@ -72,10 +75,10 @@ class JobOpeningController extends Controller
             ->when($request->filled('closing_from'), fn ($query) => $query->whereDate('closing_date', '>=', $request->date('closing_from')))
             ->when($request->filled('closing_to'), fn ($query) => $query->whereDate('closing_date', '<=', $request->date('closing_to')))
             ->latest()
-            ->paginate(10)
+            ->paginate($perPage)
             ->withQueryString();
 
-        return view('recruitment.job-openings.index', $this->formData($request) + compact('jobOpenings'));
+        return view('recruitment.job-openings.index', $this->formData($request) + compact('jobOpenings', 'perPage'));
     }
 
     public function create(Request $request): View

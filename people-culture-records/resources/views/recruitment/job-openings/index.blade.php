@@ -70,6 +70,13 @@
             <div class="col-md-6 col-xl-2">
                 <input type="date" name="closing_to" value="{{ request('closing_to') }}" class="form-control" aria-label="Closing date to">
             </div>
+            <div class="col-md-6 col-xl-2">
+                <select name="per_page" class="form-select" aria-label="Items per page">
+                    @foreach ([5, 10, 25, 50] as $size)
+                        <option value="{{ $size }}" @selected((int) request('per_page', $perPage) === $size)>Show {{ $size }}</option>
+                    @endforeach
+                </select>
+            </div>
             <div class="col-auto">
                 <button type="submit" class="btn btn-primary-outline btn-md">Filter</button>
             </div>
