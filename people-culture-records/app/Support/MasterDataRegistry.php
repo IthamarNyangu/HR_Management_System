@@ -7,6 +7,7 @@ use App\Models\Department;
 use App\Models\District;
 use App\Models\DocumentType;
 use App\Models\EmploymentStatus;
+use App\Models\EmploymentType;
 use App\Models\Facility;
 use App\Models\JobTitle;
 use App\Models\OffenceCategory;
@@ -34,6 +35,7 @@ class MasterDataRegistry
             'job-titles' => ['label' => 'Job Titles', 'icon' => 'bi-briefcase', 'model' => JobTitle::class],
             'departments' => ['label' => 'Departments', 'icon' => 'bi-diagram-3', 'model' => Department::class],
             'employment-statuses' => ['label' => 'Employment Statuses', 'icon' => 'bi-patch-check', 'model' => EmploymentStatus::class],
+            'employment-types' => ['label' => 'Employment Types', 'icon' => 'bi-clock-history', 'model' => EmploymentType::class],
             'projects' => ['label' => 'Projects', 'icon' => 'bi-folder2-open', 'model' => Project::class],
             'offence-categories' => ['label' => 'Offence Categories', 'icon' => 'bi-exclamation-triangle', 'model' => OffenceCategory::class],
             'penalty-types' => ['label' => 'Penalty Types', 'icon' => 'bi-clipboard2-x', 'model' => PenaltyType::class],

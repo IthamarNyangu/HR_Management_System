@@ -13,3 +13,4 @@ Schedule::command('promotions:apply-effective')->daily();
 Schedule::command('relocations:apply-effective')->daily();
 Schedule::command('appointments:auto-complete')->daily();
 Schedule::command('appointments:notify-ending-soon')->daily();
+Schedule::command('recruitment:close-expired-jobs')->daily();

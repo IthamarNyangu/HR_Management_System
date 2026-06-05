@@ -6,6 +6,7 @@ use App\Models\CaseStatus;
 use App\Models\Department;
 use App\Models\DocumentType;
 use App\Models\EmploymentStatus;
+use App\Models\EmploymentType;
 use App\Models\Facility;
 use App\Models\JobTitle;
 use App\Models\OffenceCategory;
@@ -44,6 +45,14 @@ class MasterDataSeeder extends Seeder
             ['name' => 'Active', 'code' => 'ACTIVE'],
             ['name' => 'On Leave', 'code' => 'LEAVE'],
             ['name' => 'Separated', 'code' => 'SEP'],
+        ],
+        EmploymentType::class => [
+            ['name' => 'Full-time', 'code' => 'FULL_TIME'],
+            ['name' => 'Part-time', 'code' => 'PART_TIME'],
+            ['name' => 'Fixed-term Contract', 'code' => 'FIXED_TERM'],
+            ['name' => 'Temporary', 'code' => 'TEMPORARY'],
+            ['name' => 'Internship', 'code' => 'INTERNSHIP'],
+            ['name' => 'Consultancy', 'code' => 'CONSULTANCY'],
         ],
         OffenceCategory::class => [
             ['name' => 'Attendance', 'code' => 'ATT'],

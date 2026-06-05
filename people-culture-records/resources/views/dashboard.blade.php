@@ -63,6 +63,12 @@
                             Add Temporary Appointment
                         </a>
                     @endcan
+                    @can('create', App\Models\JobOpening::class)
+                        <a href="{{ route('recruitment.job-openings.create') }}" class="btn btn-primary-outline btn-md">
+                            <i class="bi bi-briefcase" aria-hidden="true"></i>
+                            Add Job Opening
+                        </a>
+                    @endcan
                     @can('view-reports')
                         <a href="{{ route('reports.index') }}" class="btn btn-secondary btn-md">
                             <i class="bi bi-file-earmark-spreadsheet" aria-hidden="true"></i>
@@ -242,6 +248,23 @@
                         @endforelse
                     </div>
                 </div>
+            </div>
+        </section>
+
+        <section class="bg-white border rounded-2 p-3">
+            <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
+                <h2 class="h5 mb-0">Recruitment Overview</h2>
+                <a href="{{ route('recruitment.index') }}" class="btn btn-secondary btn-sm">Open recruitment</a>
+            </div>
+            <div class="row row-cols-1 row-cols-sm-2 row-cols-xl-4 g-3">
+                @foreach ($recruitmentOverview as $card)
+                    <div class="col">
+                        <div class="summary-tile h-100">
+                            <div class="summary-label">{{ $card['label'] }}</div>
+                            <div class="summary-value">{{ $card['value'] }}</div>
+                        </div>
+                    </div>
+                @endforeach
             </div>
         </section>
 

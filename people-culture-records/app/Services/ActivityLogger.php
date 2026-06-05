@@ -6,6 +6,7 @@ use App\Models\ActivityLog;
 use App\Models\Attachment;
 use App\Models\DisciplinaryCase;
 use App\Models\Employee;
+use App\Models\JobOpening;
 use App\Models\StaffPromotion;
 use App\Models\StaffRelocation;
 use App\Models\TemporaryAppointment;
@@ -136,6 +137,16 @@ class ActivityLogger
         }
 
         if ($subject instanceof TemporaryAppointment) {
+            return [
+                'reference_no' => $subject->reference_no,
+                'province_id' => $subject->province_id,
+                'province_name' => $subject->province?->name,
+                'facility_id' => $subject->facility_id,
+                'facility_name' => $subject->facility?->name,
+            ];
+        }
+
+        if ($subject instanceof JobOpening) {
             return [
                 'reference_no' => $subject->reference_no,
                 'province_id' => $subject->province_id,

@@ -65,6 +65,7 @@
         .data-table { margin-bottom: 0; }
         .data-table thead th { background: #f3f6fa; color: #344054; border-bottom: 1px solid #d8e0ec; font-size: .875rem; font-weight: 700; }
         .data-table tbody tr:hover { background: #f8fafc; }
+        .text-pre-line { white-space: pre-line; }
         .brand-logo { width: 42px; height: 42px; object-fit: contain; flex: 0 0 auto; }
         .topbar-logo { width: 34px; height: 34px; object-fit: contain; }
         main .form-control, main .form-select { min-height: 40px; }

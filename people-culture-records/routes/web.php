@@ -15,8 +15,11 @@ use App\Http\Controllers\ImportController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OrganisationChartController;
 use App\Http\Controllers\PasswordChangeController;
+use App\Http\Controllers\PublicCareerController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ReportExportController;
+use App\Http\Controllers\Api\PublicJobOpeningController;
+use App\Http\Controllers\Recruitment\JobOpeningController;
 use App\Http\Controllers\StaffPromotionAttachmentController;
 use App\Http\Controllers\StaffPromotionController;
 use App\Http\Controllers\StaffRelocationAttachmentController;
@@ -31,6 +34,11 @@ use Illuminate\Support\Facades\Route;
 $masterDataTypes = implode('|', array_map(fn (string $type) => preg_quote($type, '/'), array_keys(MasterDataRegistry::all())));
 
 Route::redirect('/', '/dashboard');
+
+Route::get('/careers', [PublicCareerController::class, 'index'])->name('careers.index');
+Route::get('/careers/{jobOpening:slug}', [PublicCareerController::class, 'show'])->name('careers.show');
+Route::get('/api/careers/jobs', [PublicJobOpeningController::class, 'index'])->name('api.careers.jobs.index');
+Route::get('/api/careers/jobs/{slug}', [PublicJobOpeningController::class, 'show'])->name('api.careers.jobs.show');
 
 Route::post('/sign-out', function (Request $request) {
     Auth::logout();
@@ -112,6 +120,19 @@ Route::middleware(['auth', 'active', 'password.changed'])->group(function () use
     Route::get('/employees/search', EmployeeSearchController::class)->name('employees.search');
     Route::get('/organisation-chart', OrganisationChartController::class)->name('organisation-chart.index');
     Route::post('/organisation-chart/link-line-managers', [OrganisationChartController::class, 'linkLineManagers'])->name('organisation-chart.link-line-managers');
+
+    Route::get('/recruitment', [JobOpeningController::class, 'dashboard'])->name('recruitment.index');
+    Route::get('/recruitment/job-openings/archived', [JobOpeningController::class, 'archived'])->name('recruitment.job-openings.archived');
+    Route::patch('/recruitment/job-openings/{job_opening}/publish', [JobOpeningController::class, 'publish'])->name('recruitment.job-openings.publish');
+    Route::patch('/recruitment/job-openings/{job_opening}/close', [JobOpeningController::class, 'close'])->name('recruitment.job-openings.close');
+    Route::patch('/recruitment/job-openings/{job_opening}/cancel', [JobOpeningController::class, 'cancel'])->name('recruitment.job-openings.cancel');
+    Route::patch('/recruitment/job-openings/{job_opening}/archive', [JobOpeningController::class, 'archive'])->name('recruitment.job-openings.archive');
+    Route::patch('/recruitment/job-openings/{id}/restore', [JobOpeningController::class, 'restore'])->whereNumber('id')->name('recruitment.job-openings.restore');
+    Route::resource('recruitment/job-openings', JobOpeningController::class)
+        ->parameters(['job-openings' => 'job_opening'])
+        ->names('recruitment.job-openings')
+        ->except(['destroy']);
+
     Route::get('/employees/archived', [EmployeeController::class, 'archived'])->name('employees.archived');
     Route::post('/employees/bulk-action', [EmployeeBulkActionController::class, 'handle'])->name('employees.bulk-action');
     Route::patch('/employees/{employee}/archive', [EmployeeController::class, 'archive'])->name('employees.archive');

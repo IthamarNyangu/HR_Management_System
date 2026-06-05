@@ -7,6 +7,7 @@ use App\Models\CaseStatus;
 use App\Models\DisciplinaryCase;
 use App\Models\Employee;
 use App\Models\EmploymentStatus;
+use App\Models\JobOpening;
 use App\Models\StaffPromotion;
 use App\Models\StaffRelocation;
 use App\Models\AppointmentStatus;
@@ -24,6 +25,7 @@ class DashboardController extends Controller
         $promotionQuery = StaffPromotion::query()->visibleTo($user);
         $relocationQuery = StaffRelocation::query()->visibleTo($user);
         $appointmentQuery = TemporaryAppointment::query()->visibleTo($user);
+        $jobOpeningQuery = JobOpening::query()->visibleTo($user);
 
         $activeEmploymentStatus = EmploymentStatus::where('code', 'ACTIVE')->orWhere('name', 'Active')->first();
         $submittedStatus = $this->caseStatus('SUBMITTED');
@@ -144,6 +146,13 @@ class DashboardController extends Controller
             ->take(5)
             ->get();
 
+        $recruitmentOverview = [
+            ['label' => 'Published External Jobs', 'value' => (clone $jobOpeningQuery)->where('status', JobOpening::STATUS_PUBLISHED)->whereIn('visibility', [JobOpening::VISIBILITY_EXTERNAL, JobOpening::VISIBILITY_BOTH])->whereDate('closing_date', '>=', today())->count()],
+            ['label' => 'Internal Jobs', 'value' => (clone $jobOpeningQuery)->whereIn('visibility', [JobOpening::VISIBILITY_INTERNAL, JobOpening::VISIBILITY_BOTH])->count()],
+            ['label' => 'Jobs Closing Soon', 'value' => (clone $jobOpeningQuery)->where('status', JobOpening::STATUS_PUBLISHED)->whereBetween('closing_date', [today(), today()->addDays(14)])->count()],
+            ['label' => 'Closed Jobs This Month', 'value' => (clone $jobOpeningQuery)->where('status', JobOpening::STATUS_CLOSED)->whereYear('closed_at', now()->year)->whereMonth('closed_at', now()->month)->count()],
+        ];
+
         $latestRelocations = StaffRelocation::query()
             ->visibleTo($user)
             ->with(['employee', 'fromProvince', 'toProvince'])
@@ -171,6 +180,7 @@ class DashboardController extends Controller
             'latestRelocations',
             'temporaryAppointmentOverview',
             'latestTemporaryAppointments',
+            'recruitmentOverview',
             'recentActivities',
             'submittedStatus',
             'activeCaseStatus',
