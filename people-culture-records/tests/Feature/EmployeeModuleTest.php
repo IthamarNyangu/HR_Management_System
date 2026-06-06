@@ -10,6 +10,7 @@ use App\Models\Department;
 use App\Models\Province;
 use App\Models\Project;
 use App\Models\Role;
+use App\Models\TerminationReason;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -27,6 +28,9 @@ class EmployeeModuleTest extends TestCase
     private Province $luapula;
     private District $kasama;
     private District $mansa;
+    private EmploymentStatus $activeStatus;
+    private EmploymentStatus $terminatedStatus;
+    private TerminationReason $resignationReason;
 
     protected function setUp(): void
     {
@@ -42,6 +46,9 @@ class EmployeeModuleTest extends TestCase
 
         $this->kasama = District::create(['province_id' => $this->northern->id, 'name' => 'Kasama', 'code' => 'NOR-KAS', 'is_active' => true]);
         $this->mansa = District::create(['province_id' => $this->luapula->id, 'name' => 'Mansa', 'code' => 'LUA-MAN', 'is_active' => true]);
+        $this->activeStatus = EmploymentStatus::updateOrCreate(['name' => 'Active'], ['code' => 'ACTIVE', 'is_active' => true]);
+        $this->terminatedStatus = EmploymentStatus::updateOrCreate(['name' => 'Terminated'], ['code' => 'TERMINATED', 'is_active' => true]);
+        $this->resignationReason = TerminationReason::updateOrCreate(['name' => 'Resignation'], ['code' => 'RESIGNATION', 'is_active' => true]);
     }
 
     public function test_unauthenticated_users_cannot_access_employees(): void
@@ -117,8 +124,74 @@ class EmployeeModuleTest extends TestCase
             'first_name' => 'Grace',
             'province_id' => $this->northern->id,
             'district_id' => $this->kasama->id,
+            'employment_status_id' => $this->activeStatus->id,
             'created_by' => $admin->id,
         ]);
+    }
+
+    public function test_terminated_employee_requires_reason_and_date(): void
+    {
+        $admin = $this->user($this->adminRole);
+        $employee = $this->employee(['province_id' => $this->northern->id, 'district_id' => $this->kasama->id]);
+
+        $this->actingAs($admin)
+            ->from(route('employees.edit', $employee))
+            ->put(route('employees.update', $employee), $this->employeePayload($employee, [
+                'employment_status_id' => $this->terminatedStatus->id,
+            ]))
+            ->assertRedirect(route('employees.edit', $employee))
+            ->assertSessionHasErrors(['termination_reason_id', 'termination_date']);
+    }
+
+    public function test_employee_can_be_marked_terminated_with_reason_date_and_comment(): void
+    {
+        $admin = $this->user($this->adminRole);
+        $employee = $this->employee(['province_id' => $this->northern->id, 'district_id' => $this->kasama->id]);
+
+        $this->actingAs($admin)
+            ->put(route('employees.update', $employee), $this->employeePayload($employee, [
+                'employment_status_id' => $this->terminatedStatus->id,
+                'termination_reason_id' => $this->resignationReason->id,
+                'termination_date' => '2026-06-06',
+                'termination_comment' => 'Employee resigned after notice period.',
+            ]))
+            ->assertRedirect(route('employees.show', $employee));
+
+        $employee->refresh();
+
+        $this->assertSame($this->terminatedStatus->id, $employee->employment_status_id);
+        $this->assertSame($this->resignationReason->id, $employee->termination_reason_id);
+        $this->assertSame('2026-06-06', $employee->termination_date->toDateString());
+        $this->assertSame('Employee resigned after notice period.', $employee->termination_comment);
+    }
+
+    public function test_returning_employee_to_active_clears_termination_details(): void
+    {
+        $admin = $this->user($this->adminRole);
+        $employee = $this->employee([
+            'province_id' => $this->northern->id,
+            'district_id' => $this->kasama->id,
+            'employment_status_id' => $this->terminatedStatus->id,
+            'termination_reason_id' => $this->resignationReason->id,
+            'termination_date' => '2026-06-06',
+            'termination_comment' => 'Old termination details.',
+        ]);
+
+        $this->actingAs($admin)
+            ->put(route('employees.update', $employee), $this->employeePayload($employee, [
+                'employment_status_id' => $this->activeStatus->id,
+                'termination_reason_id' => $this->resignationReason->id,
+                'termination_date' => '2026-06-06',
+                'termination_comment' => 'Should be cleared.',
+            ]))
+            ->assertRedirect(route('employees.show', $employee));
+
+        $employee->refresh();
+
+        $this->assertSame($this->activeStatus->id, $employee->employment_status_id);
+        $this->assertNull($employee->termination_reason_id);
+        $this->assertNull($employee->termination_date);
+        $this->assertNull($employee->termination_comment);
     }
 
     public function test_employee_number_underscores_are_removed_on_create(): void
@@ -229,7 +302,6 @@ class EmployeeModuleTest extends TestCase
     public function test_admin_can_bulk_change_employment_status(): void
     {
         $admin = $this->user($this->adminRole);
-        $status = EmploymentStatus::create(['name' => 'Separated', 'code' => 'SEP', 'is_active' => true]);
         $employees = [
             $this->employee(['province_id' => $this->northern->id, 'district_id' => $this->kasama->id]),
             $this->employee(['province_id' => $this->luapula->id, 'district_id' => $this->mansa->id]),
@@ -239,16 +311,20 @@ class EmployeeModuleTest extends TestCase
             ->post(route('employees.bulk-action'), [
                 'employee_ids' => collect($employees)->pluck('id')->all(),
                 'action' => 'change_employment_status',
-                'employment_status_id' => $status->id,
+                'employment_status_id' => $this->terminatedStatus->id,
+                'termination_reason_id' => $this->resignationReason->id,
+                'termination_date' => '2026-06-06',
+                'termination_comment' => 'Bulk termination after payroll confirmation.',
             ])
             ->assertRedirect(route('employees.index'));
 
         foreach ($employees as $employee) {
-            $this->assertDatabaseHas('employees', [
-                'id' => $employee->id,
-                'employment_status_id' => $status->id,
-                'updated_by' => $admin->id,
-            ]);
+            $employee->refresh();
+
+            $this->assertSame($this->terminatedStatus->id, $employee->employment_status_id);
+            $this->assertSame($this->resignationReason->id, $employee->termination_reason_id);
+            $this->assertSame('2026-06-06', $employee->termination_date->toDateString());
+            $this->assertSame($admin->id, $employee->updated_by);
         }
     }
 
@@ -297,7 +373,6 @@ class EmployeeModuleTest extends TestCase
     public function test_hr_officer_cannot_bulk_update_employees_outside_assigned_province(): void
     {
         $officer = $this->user($this->officerRole, $this->northern);
-        $status = EmploymentStatus::create(['name' => 'Separated', 'code' => 'SEP', 'is_active' => true]);
         $northernEmployee = $this->employee(['province_id' => $this->northern->id, 'district_id' => $this->kasama->id]);
         $luapulaEmployee = $this->employee(['province_id' => $this->luapula->id, 'district_id' => $this->mansa->id]);
 
@@ -306,18 +381,18 @@ class EmployeeModuleTest extends TestCase
             ->post(route('employees.bulk-action'), [
                 'employee_ids' => [$northernEmployee->id, $luapulaEmployee->id],
                 'action' => 'change_employment_status',
-                'employment_status_id' => $status->id,
+                'employment_status_id' => $this->activeStatus->id,
             ])
             ->assertRedirect(route('employees.index'))
             ->assertSessionHasErrors('employee_ids');
 
         $this->assertDatabaseMissing('employees', [
             'id' => $northernEmployee->id,
-            'employment_status_id' => $status->id,
+            'employment_status_id' => $this->activeStatus->id,
         ]);
         $this->assertDatabaseMissing('employees', [
             'id' => $luapulaEmployee->id,
-            'employment_status_id' => $status->id,
+            'employment_status_id' => $this->activeStatus->id,
         ]);
     }
 
@@ -417,5 +492,25 @@ class EmployeeModuleTest extends TestCase
             'province_id' => $this->northern->id,
             'district_id' => $this->kasama->id,
         ], $attributes));
+    }
+
+    /**
+     * @param array<string, mixed> $overrides
+     * @return array<string, mixed>
+     */
+    private function employeePayload(Employee $employee, array $overrides = []): array
+    {
+        return array_merge([
+            'employee_no' => $employee->employee_no,
+            'first_name' => $employee->first_name,
+            'last_name' => $employee->last_name,
+            'province_id' => $employee->province_id,
+            'district_id' => $employee->district_id,
+            'facility_id' => $employee->facility_id,
+            'project_id' => $employee->project_id,
+            'department_id' => $employee->department_id,
+            'job_title_id' => $employee->job_title_id,
+            'employment_status_id' => $employee->employment_status_id ?? $this->activeStatus->id,
+        ], $overrides);
     }
 }

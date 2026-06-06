@@ -7,6 +7,7 @@ use App\Models\Department;
 use App\Models\Employee;
 use App\Models\EmploymentStatus;
 use App\Models\Project;
+use App\Models\TerminationReason;
 use App\Services\ActivityLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Collection;
@@ -46,12 +47,17 @@ class EmployeeBulkActionController extends Controller
         $linkedUserAccountsCount = $employees->filter(fn (Employee $employee) => $employee->user !== null)->count();
         $valueLabel = $this->valueLabel($action, $data);
         $employeeCount = $employees->count();
+        $isTerminatedStatus = $action === 'change_employment_status'
+            && $this->isTerminatedStatus($data['employment_status_id'] ?? null);
 
-        DB::transaction(function () use ($action, $data, $employees, $user): void {
+        DB::transaction(function () use ($action, $data, $employees, $user, $isTerminatedStatus): void {
             foreach ($employees as $employee) {
                 match ($action) {
                     'change_employment_status' => $employee->update([
                         'employment_status_id' => $data['employment_status_id'],
+                        'termination_reason_id' => $isTerminatedStatus ? ($data['termination_reason_id'] ?? null) : null,
+                        'termination_date' => $isTerminatedStatus ? ($data['termination_date'] ?? null) : null,
+                        'termination_comment' => $isTerminatedStatus ? ($data['termination_comment'] ?? null) : null,
                         'updated_by' => $user->id,
                     ]),
                     'change_project' => $employee->update([
@@ -81,8 +87,12 @@ class EmployeeBulkActionController extends Controller
                 'action' => $action,
                 'employee_count' => $employeeCount,
                 'employee_ids' => $employees->pluck('id')->values()->all(),
-                'changed_value' => $valueLabel,
-                'performed_by' => $user->name,
+            'changed_value' => $valueLabel,
+            'termination_reason' => $action === 'change_employment_status' && isset($data['termination_reason_id'])
+                ? TerminationReason::find($data['termination_reason_id'])?->name
+                : null,
+            'termination_date' => $data['termination_date'] ?? null,
+            'performed_by' => $user->name,
                 'linked_user_accounts_count' => $linkedUserAccountsCount,
                 'province_id' => $this->singleProvinceId($employees),
                 'province_name' => $this->singleProvinceName($employees),
@@ -111,12 +121,49 @@ class EmployeeBulkActionController extends Controller
     private function valueLabel(string $action, array $data): ?string
     {
         return match ($action) {
-            'change_employment_status' => EmploymentStatus::find($data['employment_status_id'])?->name,
+            'change_employment_status' => $this->employmentStatusLabel($data),
             'change_project' => Project::find($data['project_id'])?->name,
             'change_department' => Department::find($data['department_id'])?->name,
             'assign_supervisor' => $data['supervisor_name'],
             default => null,
         };
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
+    private function employmentStatusLabel(array $data): ?string
+    {
+        $status = EmploymentStatus::find($data['employment_status_id']);
+
+        if (! $status) {
+            return null;
+        }
+
+        if (! $this->isTerminatedStatus($status->id)) {
+            return $status->name;
+        }
+
+        $reason = isset($data['termination_reason_id'])
+            ? TerminationReason::find($data['termination_reason_id'])?->name
+            : null;
+        $date = $data['termination_date'] ?? null;
+
+        return trim($status->name.($reason ? " - {$reason}" : '').($date ? " effective {$date}" : ''));
+    }
+
+    private function isTerminatedStatus(null|int|string $statusId): bool
+    {
+        if (! $statusId) {
+            return false;
+        }
+
+        return EmploymentStatus::whereKey($statusId)
+            ->where(function ($query) {
+                $query->where('code', 'TERMINATED')
+                    ->orWhere('name', 'Terminated');
+            })
+            ->exists();
     }
 
     private function description(string $actor, string $action, ?string $valueLabel, int $employeeCount): string

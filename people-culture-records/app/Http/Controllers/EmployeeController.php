@@ -13,6 +13,7 @@ use App\Models\JobTitle;
 use App\Models\Project;
 use App\Models\Province;
 use App\Models\StaffRelocation;
+use App\Models\TerminationReason;
 use App\Models\TemporaryAppointment;
 use App\Services\ActivityLogger;
 use Illuminate\Contracts\View\View;
@@ -28,7 +29,7 @@ class EmployeeController extends Controller
         Gate::authorize('viewAny', Employee::class);
 
         $employees = Employee::query()
-            ->with(['province', 'district', 'facility', 'project', 'jobTitle', 'employmentStatus', 'user'])
+            ->with(['province', 'district', 'facility', 'project', 'jobTitle', 'employmentStatus', 'terminationReason', 'user'])
             ->visibleTo($request->user())
             ->when($request->filled('search'), function ($query) use ($request) {
                 $search = $request->string('search');
@@ -102,6 +103,7 @@ class EmployeeController extends Controller
             'district',
             'facility',
             'employmentStatus',
+            'terminationReason',
             'supervisor',
             'directReports.jobTitle',
             'directReports.province',
@@ -207,7 +209,7 @@ class EmployeeController extends Controller
         Gate::authorize('viewAny', Employee::class);
 
         $employees = Employee::onlyTrashed()
-            ->with(['province', 'district', 'facility', 'project', 'jobTitle', 'employmentStatus', 'archivedBy'])
+            ->with(['province', 'district', 'facility', 'project', 'jobTitle', 'employmentStatus', 'terminationReason', 'archivedBy'])
             ->visibleTo($request->user())
             ->when($request->filled('search'), function ($query) use ($request) {
                 $search = $request->string('search');
@@ -273,7 +275,22 @@ class EmployeeController extends Controller
             'projects' => Project::where('is_active', true)->orderBy('name')->get(),
             'departments' => Department::where('is_active', true)->orderBy('name')->get(),
             'jobTitles' => JobTitle::where('is_active', true)->orderBy('name')->get(),
-            'employmentStatuses' => EmploymentStatus::where('is_active', true)->orderBy('name')->get(),
+            'employmentStatuses' => EmploymentStatus::where('is_active', true)
+                ->whereIn('name', ['Active', 'Terminated'])
+                ->orderByRaw("CASE WHEN name = 'Active' THEN 0 ELSE 1 END")
+                ->orderBy('name')
+                ->get(),
+            'terminationReasons' => TerminationReason::where('is_active', true)->orderBy('name')->get(),
+            'activeEmploymentStatusId' => EmploymentStatus::where('name', 'Active')->value('id'),
+            'terminatedEmploymentStatusIds' => EmploymentStatus::where('is_active', true)
+                ->where(function ($query) {
+                    $query->where('code', 'TERMINATED')
+                        ->orWhere('name', 'Terminated');
+                })
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->values()
+                ->all(),
             'selectedSupervisorOption' => $supervisor ? $this->employeeSearchOption($supervisor) : null,
         ];
     }
@@ -284,10 +301,18 @@ class EmployeeController extends Controller
      */
     private function employeeData(array $data): array
     {
-        foreach (['project_id', 'department_id', 'job_title_id', 'facility_id', 'employment_status_id', 'gender', 'date_of_birth', 'national_id', 'email', 'phone', 'hire_date', 'supervisor_name', 'supervisor_employee_id', 'notes'] as $field) {
+        $data['employment_status_id'] = $data['employment_status_id'] ?? $this->activeEmploymentStatusId();
+
+        foreach (['project_id', 'department_id', 'job_title_id', 'facility_id', 'employment_status_id', 'termination_reason_id', 'gender', 'date_of_birth', 'national_id', 'email', 'phone', 'hire_date', 'termination_date', 'termination_comment', 'supervisor_name', 'supervisor_employee_id', 'notes'] as $field) {
             if (array_key_exists($field, $data) && blank($data[$field])) {
                 $data[$field] = null;
             }
+        }
+
+        if (! $this->isTerminatedStatus($data['employment_status_id'] ?? null)) {
+            $data['termination_reason_id'] = null;
+            $data['termination_date'] = null;
+            $data['termination_comment'] = null;
         }
 
         return Arr::only($data, [
@@ -306,6 +331,9 @@ class EmployeeController extends Controller
             'district_id',
             'facility_id',
             'employment_status_id',
+            'termination_reason_id',
+            'termination_date',
+            'termination_comment',
             'hire_date',
             'supervisor_name',
             'supervisor_employee_id',
@@ -314,6 +342,25 @@ class EmployeeController extends Controller
             'updated_by',
             'archived_by',
         ]);
+    }
+
+    private function activeEmploymentStatusId(): ?int
+    {
+        return EmploymentStatus::where('name', 'Active')->value('id');
+    }
+
+    private function isTerminatedStatus(null|int|string $statusId): bool
+    {
+        if (! $statusId) {
+            return false;
+        }
+
+        return EmploymentStatus::whereKey($statusId)
+            ->where(function ($query) {
+                $query->where('code', 'TERMINATED')
+                    ->orWhere('name', 'Terminated');
+            })
+            ->exists();
     }
 
     /**

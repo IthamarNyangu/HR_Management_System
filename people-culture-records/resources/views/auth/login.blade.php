@@ -16,6 +16,7 @@
         .btn-primary { background: #2563eb !important; border-color: #2563eb !important; color: #fff !important; }
         .btn-primary:hover, .btn-primary:focus { background: #1d4ed8 !important; border-color: #1d4ed8 !important; color: #fff !important; }
         .btn:focus-visible { outline: 2px solid transparent; outline-offset: 2px; box-shadow: 0 0 0 3px rgba(37, 99, 235, .28); }
+        .required-field-label::after { content: " *"; color: #dc2626; font-weight: 700; }
     </style>
 </head>
 <body class="d-flex align-items-center">
@@ -37,12 +38,12 @@
                 @csrf
 
                 <div class="mb-3">
-                    <label for="email" class="form-label">Email address</label>
+                    <label for="email" class="form-label required-field-label">Email address</label>
                     <input id="email" name="email" type="email" value="{{ old('email') }}" class="form-control" required autofocus autocomplete="email">
                 </div>
 
                 <div class="mb-3">
-                    <label for="password" class="form-label">Password</label>
+                    <label for="password" class="form-label required-field-label">Password</label>
                     <input id="password" name="password" type="password" class="form-control" required autocomplete="current-password">
                 </div>
 

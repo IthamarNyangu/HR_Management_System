@@ -69,6 +69,11 @@
         .brand-logo { width: 42px; height: 42px; object-fit: contain; flex: 0 0 auto; }
         .topbar-logo { width: 34px; height: 34px; object-fit: contain; }
         main .form-control, main .form-select { min-height: 40px; }
+        .required-field-label::after {
+            content: " *";
+            color: #dc2626;
+            font-weight: 700;
+        }
         .btn {
             display: inline-flex;
             align-items: center;
@@ -160,36 +165,79 @@
         document.addEventListener('DOMContentLoaded', function () {
             const modalElement = document.getElementById('confirmationModal');
 
-            if (!modalElement) {
-                return;
+            if (modalElement) {
+                const modal = new bootstrap.Modal(modalElement);
+                const title = document.getElementById('confirmationModalTitle');
+                const message = document.getElementById('confirmationModalMessage');
+                const confirmButton = document.getElementById('confirmationModalConfirm');
+                let pendingForm = null;
+
+                document.querySelectorAll('form[data-confirm="true"]').forEach(function (form) {
+                    form.addEventListener('submit', function (event) {
+                        event.preventDefault();
+
+                        pendingForm = form;
+                        title.textContent = form.dataset.confirmTitle || 'Confirm action';
+                        message.textContent = form.dataset.confirmMessage || 'Please confirm that you want to continue.';
+                        confirmButton.textContent = form.dataset.confirmButton || 'Continue';
+                        confirmButton.className = 'btn btn-md ' + (form.dataset.confirmVariant || 'btn-primary');
+                        modal.show();
+                    });
+                });
+
+                confirmButton.addEventListener('click', function () {
+                    if (pendingForm) {
+                        const form = pendingForm;
+                        pendingForm = null;
+                        modal.hide();
+                        form.submit();
+                    }
+                });
             }
 
-            const modal = new bootstrap.Modal(modalElement);
-            const title = document.getElementById('confirmationModalTitle');
-            const message = document.getElementById('confirmationModalMessage');
-            const confirmButton = document.getElementById('confirmationModalConfirm');
-            let pendingForm = null;
+            const hasVisibleRequiredMarker = function (label) {
+                return label.classList.contains('required')
+                    || label.querySelector('.text-danger')
+                    || label.textContent.includes('*');
+            };
 
-            document.querySelectorAll('form[data-confirm="true"]').forEach(function (form) {
-                form.addEventListener('submit', function (event) {
-                    event.preventDefault();
-
-                    pendingForm = form;
-                    title.textContent = form.dataset.confirmTitle || 'Confirm action';
-                    message.textContent = form.dataset.confirmMessage || 'Please confirm that you want to continue.';
-                    confirmButton.textContent = form.dataset.confirmButton || 'Continue';
-                    confirmButton.className = 'btn btn-md ' + (form.dataset.confirmVariant || 'btn-primary');
-                    modal.show();
-                });
-            });
-
-            confirmButton.addEventListener('click', function () {
-                if (pendingForm) {
-                    const form = pendingForm;
-                    pendingForm = null;
-                    modal.hide();
-                    form.submit();
+            const labelsForControl = function (control) {
+                if (!control.id) {
+                    return [];
                 }
+
+                const escapedId = window.CSS && CSS.escape ? CSS.escape(control.id) : control.id.replace(/"/g, '\\"');
+
+                return Array.from(document.querySelectorAll(`label[for="${escapedId}"]`));
+            };
+
+            const refreshRequiredFieldLabels = function () {
+                document.querySelectorAll('.required-field-label').forEach(function (label) {
+                    label.classList.remove('required-field-label');
+                });
+
+                document.querySelectorAll('input[required], select[required], textarea[required]').forEach(function (control) {
+                    if (control.type === 'hidden') {
+                        return;
+                    }
+
+                    labelsForControl(control).forEach(function (label) {
+                        if (!hasVisibleRequiredMarker(label)) {
+                            label.classList.add('required-field-label');
+                        }
+                    });
+                });
+            };
+
+            window.refreshRequiredFieldLabels = refreshRequiredFieldLabels;
+            refreshRequiredFieldLabels();
+
+            document.querySelectorAll('form').forEach(function (form) {
+                new MutationObserver(refreshRequiredFieldLabels).observe(form, {
+                    subtree: true,
+                    attributes: true,
+                    attributeFilter: ['required'],
+                });
             });
 
             const sidebarToggle = document.getElementById('sidebarToggle');

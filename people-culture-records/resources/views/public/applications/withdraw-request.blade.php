@@ -10,6 +10,7 @@
         body { background: #f7f8fb; color: #172033; }
         .panel { background: #fff; border: 1px solid #e1e7f0; border-radius: .5rem; }
         .career-logo { width: 46px; height: 46px; object-fit: contain; }
+        .required::after { content: " *"; color: #c01818; font-weight: 700; }
         .visually-hidden-field { position: absolute; left: -9999px; opacity: 0; }
     </style>
 </head>
@@ -34,13 +35,13 @@
                 @csrf
                 <input type="text" name="company_website" value="" tabindex="-1" autocomplete="off" class="visually-hidden-field">
                 <div class="col-md-6">
-                    <label for="reference_no" class="form-label">Application Reference</label>
-                    <input id="reference_no" type="text" name="reference_no" value="{{ old('reference_no') }}" class="form-control @error('reference_no') is-invalid @enderror">
+                    <label for="reference_no" class="form-label required">Application Reference</label>
+                    <input id="reference_no" type="text" name="reference_no" value="{{ old('reference_no') }}" class="form-control @error('reference_no') is-invalid @enderror" required>
                     @error('reference_no') <div class="invalid-feedback">{{ $message }}</div> @enderror
                 </div>
                 <div class="col-md-6">
-                    <label for="email" class="form-label">Email</label>
-                    <input id="email" type="email" name="email" value="{{ old('email') }}" class="form-control @error('email') is-invalid @enderror">
+                    <label for="email" class="form-label required">Email</label>
+                    <input id="email" type="email" name="email" value="{{ old('email') }}" class="form-control @error('email') is-invalid @enderror" required>
                     @error('email') <div class="invalid-feedback">{{ $message }}</div> @enderror
                 </div>
                 <div class="col-12 d-flex gap-2">

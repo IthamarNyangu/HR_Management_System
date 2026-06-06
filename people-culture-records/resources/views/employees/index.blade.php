@@ -33,6 +33,7 @@
 @section('content')
     @php
         $canBulkUpdateEmployees = auth()->user()->isAdmin() || auth()->user()->isHrManager() || auth()->user()->hasRole('HR Officer');
+        $terminatedStatusIds = collect($terminatedEmploymentStatusIds ?? [])->map(fn ($id) => (string) $id)->all();
     @endphp
 
     <div class="bg-white border rounded-2 p-3">
@@ -123,9 +124,37 @@
                             <select id="bulkEmploymentStatus" name="employment_status_id" class="form-select" aria-label="Employment status">
                                 <option value="">Select employment status</option>
                                 @foreach ($employmentStatuses as $employmentStatus)
-                                    <option value="{{ $employmentStatus->id }}" @selected((string) old('employment_status_id') === (string) $employmentStatus->id)>{{ $employmentStatus->name }}</option>
+                                    <option
+                                        value="{{ $employmentStatus->id }}"
+                                        data-terminated="{{ in_array((string) $employmentStatus->id, $terminatedStatusIds, true) ? '1' : '0' }}"
+                                        @selected((string) old('employment_status_id') === (string) $employmentStatus->id)
+                                    >
+                                        {{ $employmentStatus->name }}
+                                    </option>
                                 @endforeach
                             </select>
+                        </div>
+                        <div class="col-12 bulk-termination-fields d-none" data-bulk-termination-fields>
+                            <div class="border rounded-2 bg-white p-3">
+                                <div class="fw-semibold mb-2">Termination Details</div>
+                                <div class="row g-2">
+                                    <div class="col-md-4">
+                                        <input type="date" name="termination_date" value="{{ old('termination_date') }}" class="form-control" aria-label="Termination date" data-bulk-termination-required>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <select name="termination_reason_id" class="form-select" aria-label="Termination reason" data-bulk-termination-required>
+                                            <option value="">Select termination reason</option>
+                                            @foreach ($terminationReasons as $terminationReason)
+                                                <option value="{{ $terminationReason->id }}" @selected((string) old('termination_reason_id') === (string) $terminationReason->id)>{{ $terminationReason->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <input type="text" name="termination_comment" value="{{ old('termination_comment') }}" class="form-control" placeholder="Termination comment optional" aria-label="Termination comment">
+                                    </div>
+                                </div>
+                                <div class="small text-muted mt-2">These details apply to all selected employees and do not archive their records.</div>
+                            </div>
                         </div>
                         <div class="col-md-6 col-xl-3 bulk-value-field" data-bulk-field="change_project">
                             <select id="bulkProject" name="project_id" class="form-select" aria-label="Project">
@@ -243,6 +272,9 @@
             const selectAll = document.getElementById('selectAllEmployees');
             const applyButton = document.getElementById('bulkApplyButton');
             const checkboxes = document.querySelectorAll('.employee-select');
+            const bulkEmploymentStatus = document.getElementById('bulkEmploymentStatus');
+            const terminationFields = document.querySelector('[data-bulk-termination-fields]');
+            const terminationRequiredFields = document.querySelectorAll('[data-bulk-termination-required]');
 
             const actionLabels = {
                 change_employment_status: 'Change Employment Status',
@@ -275,6 +307,19 @@
                 valueFields.forEach(function (field) {
                     const isActive = field.dataset.bulkField === bulkAction.value;
                     field.classList.toggle('d-none', ! isActive);
+                });
+                updateTerminationFields();
+            }
+
+            function updateTerminationFields() {
+                if (!terminationFields || !bulkEmploymentStatus) return;
+
+                const isVisible = bulkAction.value === 'change_employment_status'
+                    && bulkEmploymentStatus.selectedOptions[0]?.dataset.terminated === '1';
+
+                terminationFields.classList.toggle('d-none', !isVisible);
+                terminationRequiredFields.forEach(function (field) {
+                    field.required = isVisible;
                 });
             }
 
@@ -327,6 +372,12 @@
                     message += ` Value: ${valueLabel}.`;
                 }
 
+                if (action === 'change_employment_status' && bulkEmploymentStatus?.selectedOptions[0]?.dataset.terminated === '1') {
+                    const terminationDate = document.querySelector('[name="termination_date"]')?.value || '';
+                    const terminationReason = document.querySelector('[name="termination_reason_id"]')?.selectedOptions[0]?.text || '';
+                    message += ` Termination date: ${terminationDate || 'not set'}. Reason: ${terminationReason || 'not set'}.`;
+                }
+
                 if (linkedUserCount > 0) {
                     message += ' Some selected employees have system login accounts. This action will update employee records only and will not deactivate user accounts.';
                 }
@@ -339,6 +390,7 @@
 
             bulkAction.addEventListener('change', updateValueFields);
             bulkAction.addEventListener('change', updateRequiredFields);
+            bulkEmploymentStatus?.addEventListener('change', updateTerminationFields);
             checkboxes.forEach(function (checkbox) {
                 checkbox.addEventListener('change', updateSelectionSummary);
             });

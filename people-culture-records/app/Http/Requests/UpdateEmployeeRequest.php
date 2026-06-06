@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Models\District;
 use App\Models\Employee;
+use App\Models\EmploymentStatus;
 use App\Models\Facility;
 use App\Support\EmployeeNumber;
 use Illuminate\Foundation\Http\FormRequest;
@@ -61,6 +62,9 @@ class UpdateEmployeeRequest extends FormRequest
             'district_id' => ['required', 'exists:districts,id'],
             'facility_id' => ['nullable', 'exists:facilities,id'],
             'employment_status_id' => ['nullable', 'exists:employment_statuses,id'],
+            'termination_reason_id' => ['nullable', 'exists:termination_reasons,id'],
+            'termination_date' => ['nullable', 'date'],
+            'termination_comment' => ['nullable', 'string'],
             'hire_date' => ['nullable', 'date'],
             'supervisor_name' => ['nullable', 'string', 'max:255'],
             'supervisor_employee_id' => ['nullable', 'exists:employees,id'],
@@ -74,6 +78,8 @@ class UpdateEmployeeRequest extends FormRequest
             $this->validateLocation($validator);
             $this->validateOfficerProvince($validator);
             $this->validateSupervisor($validator);
+            $this->validateEmploymentStatus($validator);
+            $this->validateTerminationDetails($validator);
         });
     }
 
@@ -131,5 +137,50 @@ class UpdateEmployeeRequest extends FormRequest
         if (! $supervisorIsVisible) {
             $validator->errors()->add('supervisor_employee_id', 'The selected line manager is not available to your province access.');
         }
+    }
+
+    private function validateTerminationDetails($validator): void
+    {
+        if (! $this->isTerminatedStatus($this->input('employment_status_id'))) {
+            return;
+        }
+
+        if (! $this->filled('termination_reason_id')) {
+            $validator->errors()->add('termination_reason_id', 'Choose a termination reason when employment status is Terminated.');
+        }
+
+        if (! $this->filled('termination_date')) {
+            $validator->errors()->add('termination_date', 'Enter a termination date when employment status is Terminated.');
+        }
+    }
+
+    private function validateEmploymentStatus($validator): void
+    {
+        if (! $this->filled('employment_status_id')) {
+            return;
+        }
+
+        $isAllowed = EmploymentStatus::whereKey($this->input('employment_status_id'))
+            ->where('is_active', true)
+            ->whereIn('name', ['Active', 'Terminated'])
+            ->exists();
+
+        if (! $isAllowed) {
+            $validator->errors()->add('employment_status_id', 'Employment status must be Active or Terminated.');
+        }
+    }
+
+    private function isTerminatedStatus(null|int|string $statusId): bool
+    {
+        if (! $statusId) {
+            return false;
+        }
+
+        return EmploymentStatus::whereKey($statusId)
+            ->where(function ($query) {
+                $query->where('code', 'TERMINATED')
+                    ->orWhere('name', 'Terminated');
+            })
+            ->exists();
     }
 }

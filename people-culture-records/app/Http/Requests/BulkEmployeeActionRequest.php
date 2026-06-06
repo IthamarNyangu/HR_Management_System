@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\Employee;
+use App\Models\EmploymentStatus;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -38,6 +39,9 @@ class BulkEmployeeActionRequest extends FormRequest
             'employee_ids.*' => ['integer', 'exists:employees,id'],
             'action' => ['required', 'string', Rule::in(self::ACTIONS)],
             'employment_status_id' => ['required_if:action,change_employment_status', 'nullable', 'integer', 'exists:employment_statuses,id'],
+            'termination_reason_id' => ['nullable', 'integer', 'exists:termination_reasons,id'],
+            'termination_date' => ['nullable', 'date'],
+            'termination_comment' => ['nullable', 'string'],
             'project_id' => ['required_if:action,change_project', 'nullable', 'integer', 'exists:projects,id'],
             'department_id' => ['required_if:action,change_department', 'nullable', 'integer', 'exists:departments,id'],
             'supervisor_name' => ['required_if:action,assign_supervisor', 'nullable', 'string', 'max:255'],
@@ -60,5 +64,58 @@ class BulkEmployeeActionRequest extends FormRequest
             'department_id.required_if' => 'Choose the department to apply.',
             'supervisor_name.required_if' => 'Enter the line manager name to apply.',
         ];
+    }
+
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            if ($this->input('action') !== 'change_employment_status') {
+                return;
+            }
+
+            $this->validateEmploymentStatus($validator);
+
+            if (! $this->isTerminatedStatus($this->input('employment_status_id'))) {
+                return;
+            }
+
+            if (! $this->filled('termination_reason_id')) {
+                $validator->errors()->add('termination_reason_id', 'Choose a termination reason when bulk status is Terminated.');
+            }
+
+            if (! $this->filled('termination_date')) {
+                $validator->errors()->add('termination_date', 'Enter a termination date when bulk status is Terminated.');
+            }
+        });
+    }
+
+    private function validateEmploymentStatus($validator): void
+    {
+        if (! $this->filled('employment_status_id')) {
+            return;
+        }
+
+        $isAllowed = EmploymentStatus::whereKey($this->input('employment_status_id'))
+            ->where('is_active', true)
+            ->whereIn('name', ['Active', 'Terminated'])
+            ->exists();
+
+        if (! $isAllowed) {
+            $validator->errors()->add('employment_status_id', 'Employment status must be Active or Terminated.');
+        }
+    }
+
+    private function isTerminatedStatus(null|int|string $statusId): bool
+    {
+        if (! $statusId) {
+            return false;
+        }
+
+        return EmploymentStatus::whereKey($statusId)
+            ->where(function ($query) {
+                $query->where('code', 'TERMINATED')
+                    ->orWhere('name', 'Terminated');
+            })
+            ->exists();
     }
 }

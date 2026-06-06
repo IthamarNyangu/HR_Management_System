@@ -56,22 +56,22 @@
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label class="form-label required" for="first_name">First Name</label>
-                        <input id="first_name" type="text" name="first_name" value="{{ old('first_name') }}" class="form-control @error('first_name') is-invalid @enderror">
+                        <input id="first_name" type="text" name="first_name" value="{{ old('first_name') }}" class="form-control @error('first_name') is-invalid @enderror" required>
                         @error('first_name') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
                     <div class="col-md-6">
                         <label class="form-label required" for="last_name">Last Name</label>
-                        <input id="last_name" type="text" name="last_name" value="{{ old('last_name') }}" class="form-control @error('last_name') is-invalid @enderror">
+                        <input id="last_name" type="text" name="last_name" value="{{ old('last_name') }}" class="form-control @error('last_name') is-invalid @enderror" required>
                         @error('last_name') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
                     <div class="col-md-6">
                         <label class="form-label required" for="email">Email</label>
-                        <input id="email" type="email" name="email" value="{{ old('email') }}" class="form-control @error('email') is-invalid @enderror">
+                        <input id="email" type="email" name="email" value="{{ old('email') }}" class="form-control @error('email') is-invalid @enderror" required>
                         @error('email') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
                     <div class="col-md-6">
                         <label class="form-label required" for="phone">Phone</label>
-                        <input id="phone" type="text" name="phone" value="{{ old('phone') }}" class="form-control @error('phone') is-invalid @enderror">
+                        <input id="phone" type="text" name="phone" value="{{ old('phone') }}" class="form-control @error('phone') is-invalid @enderror" required>
                         @error('phone') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
                     <div class="col-md-4">
@@ -97,7 +97,7 @@
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label class="form-label required" for="highest_qualification">Highest Qualification</label>
-                        <input id="highest_qualification" type="text" name="highest_qualification" value="{{ old('highest_qualification') }}" class="form-control @error('highest_qualification') is-invalid @enderror">
+                        <input id="highest_qualification" type="text" name="highest_qualification" value="{{ old('highest_qualification') }}" class="form-control @error('highest_qualification') is-invalid @enderror" required>
                         @error('highest_qualification') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
                     <div class="col-md-6">
@@ -121,7 +121,7 @@
             <section class="mb-4">
                 <h2 class="section-title">Motivation</h2>
                 <label class="form-label required" for="motivation">Why are you interested in this role?</label>
-                <textarea id="motivation" name="motivation" rows="5" class="form-control @error('motivation') is-invalid @enderror">{{ old('motivation') }}</textarea>
+                <textarea id="motivation" name="motivation" rows="5" class="form-control @error('motivation') is-invalid @enderror" required>{{ old('motivation') }}</textarea>
                 @error('motivation') <div class="invalid-feedback">{{ $message }}</div> @enderror
             </section>
 
@@ -130,19 +130,19 @@
                 <div class="row g-3">
                     <div class="col-md-4">
                         <label class="form-label required" for="cv">CV</label>
-                        <input id="cv" type="file" name="cv" class="form-control @error('cv') is-invalid @enderror" accept=".pdf,.doc,.docx">
+                        <input id="cv" type="file" name="cv" class="form-control @error('cv') is-invalid @enderror" accept=".pdf,.doc,.docx" required>
                         <div class="form-text">PDF, DOC, or DOCX. Maximum 10 MB.</div>
                         @error('cv') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
                     <div class="col-md-4">
                         <label class="form-label required" for="cover_letter">Cover Letter</label>
-                        <input id="cover_letter" type="file" name="cover_letter" class="form-control @error('cover_letter') is-invalid @enderror" accept=".pdf,.doc,.docx">
+                        <input id="cover_letter" type="file" name="cover_letter" class="form-control @error('cover_letter') is-invalid @enderror" accept=".pdf,.doc,.docx" required>
                         <div class="form-text">PDF, DOC, or DOCX. Maximum 10 MB.</div>
                         @error('cover_letter') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
                     <div class="col-md-4">
                         <label class="form-label required" for="education_certificates">Education Certificates</label>
-                        <input id="education_certificates" type="file" name="education_certificates" class="form-control @error('education_certificates') is-invalid @enderror" accept=".pdf">
+                        <input id="education_certificates" type="file" name="education_certificates" class="form-control @error('education_certificates') is-invalid @enderror" accept=".pdf" required>
                         <div class="form-text">One combined PDF. Maximum 10 MB.</div>
                         @error('education_certificates') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
@@ -159,7 +159,7 @@
             <section class="mb-4">
                 <h2 class="section-title">Consent</h2>
                 <div class="form-check">
-                    <input id="consent" type="checkbox" name="consent" value="1" class="form-check-input @error('consent') is-invalid @enderror" @checked(old('consent'))>
+                    <input id="consent" type="checkbox" name="consent" value="1" class="form-check-input @error('consent') is-invalid @enderror" @checked(old('consent')) required>
                     <label for="consent" class="form-check-label required">I confirm that the information provided is accurate and consent to Right to Care Zambia processing my application documents for recruitment purposes.</label>
                     @error('consent') <div class="invalid-feedback">{{ $message }}</div> @enderror
                 </div>

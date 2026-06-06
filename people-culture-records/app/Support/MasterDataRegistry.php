@@ -18,6 +18,7 @@ use App\Models\Project;
 use App\Models\PromotionType;
 use App\Models\Province;
 use App\Models\RelocationReason;
+use App\Models\TerminationReason;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 
@@ -35,6 +36,7 @@ class MasterDataRegistry
             'job-titles' => ['label' => 'Job Titles', 'icon' => 'bi-briefcase', 'model' => JobTitle::class],
             'departments' => ['label' => 'Departments', 'icon' => 'bi-diagram-3', 'model' => Department::class],
             'employment-statuses' => ['label' => 'Employment Statuses', 'icon' => 'bi-patch-check', 'model' => EmploymentStatus::class],
+            'termination-reasons' => ['label' => 'Termination Reasons', 'icon' => 'bi-person-x', 'model' => TerminationReason::class],
             'employment-types' => ['label' => 'Employment Types', 'icon' => 'bi-clock-history', 'model' => EmploymentType::class],
             'projects' => ['label' => 'Projects', 'icon' => 'bi-folder2-open', 'model' => Project::class],
             'offence-categories' => ['label' => 'Offence Categories', 'icon' => 'bi-exclamation-triangle', 'model' => OffenceCategory::class],

@@ -33,6 +33,9 @@ class Employee extends Model
         'district_id',
         'facility_id',
         'employment_status_id',
+        'termination_reason_id',
+        'termination_date',
+        'termination_comment',
         'hire_date',
         'supervisor_name',
         'supervisor_employee_id',
@@ -53,7 +56,9 @@ class Employee extends Model
             'date_of_birth' => EncryptedDate::class,
             'national_id' => 'encrypted',
             'notes' => 'encrypted',
+            'termination_comment' => 'encrypted',
             'hire_date' => 'date',
+            'termination_date' => 'date',
             'deleted_at' => 'datetime',
         ];
     }
@@ -91,6 +96,11 @@ class Employee extends Model
     public function employmentStatus(): BelongsTo
     {
         return $this->belongsTo(EmploymentStatus::class);
+    }
+
+    public function terminationReason(): BelongsTo
+    {
+        return $this->belongsTo(TerminationReason::class);
     }
 
     public function createdBy(): BelongsTo

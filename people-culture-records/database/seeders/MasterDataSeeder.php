@@ -16,6 +16,7 @@ use App\Models\PenaltyType;
 use App\Models\Project;
 use App\Models\PromotionType;
 use App\Models\RelocationReason;
+use App\Models\TerminationReason;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Seeder;
 
@@ -43,8 +44,16 @@ class MasterDataSeeder extends Seeder
         ],
         EmploymentStatus::class => [
             ['name' => 'Active', 'code' => 'ACTIVE'],
-            ['name' => 'On Leave', 'code' => 'LEAVE'],
-            ['name' => 'Separated', 'code' => 'SEP'],
+            ['name' => 'Terminated', 'code' => 'TERMINATED'],
+        ],
+        TerminationReason::class => [
+            ['name' => 'Resignation', 'code' => 'RESIGNATION'],
+            ['name' => 'End of Contract', 'code' => 'END_OF_CONTRACT'],
+            ['name' => 'Deceased', 'code' => 'DECEASED'],
+            ['name' => 'Redundancy', 'code' => 'REDUNDANCY'],
+            ['name' => 'Dismissed', 'code' => 'DISMISSED'],
+            ['name' => 'Discharged', 'code' => 'DISCHARGED'],
+            ['name' => 'Ill Health', 'code' => 'ILL_HEALTH'],
         ],
         EmploymentType::class => [
             ['name' => 'Full-time', 'code' => 'FULL_TIME'],
@@ -110,6 +119,9 @@ class MasterDataSeeder extends Seeder
                 );
             }
         }
+
+        EmploymentStatus::whereNotIn('name', ['Active', 'Terminated'])
+            ->update(['is_active' => false]);
 
         AppointmentType::where('name', '!=', 'Interim / Acting Appointment')
             ->update(['is_active' => false]);

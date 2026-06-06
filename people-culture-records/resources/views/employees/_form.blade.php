@@ -3,6 +3,9 @@
     $canViewSensitivePersonalData = auth()->user()->can('viewSensitivePersonalData', $employee);
     $supervisorOption = $selectedSupervisorOption ?? null;
     $supervisorSearchValue = old('supervisor_search', $supervisorOption['text'] ?? old('supervisor_name', $employee->supervisor_name));
+    $selectedEmploymentStatusId = old('employment_status_id', $employee->employment_status_id ?? $activeEmploymentStatusId ?? null);
+    $terminatedStatusIds = collect($terminatedEmploymentStatusIds ?? [])->map(fn ($id) => (string) $id)->all();
+    $isTerminatedSelected = in_array((string) $selectedEmploymentStatusId, $terminatedStatusIds, true);
 @endphp
 
 @push('styles')
@@ -164,7 +167,13 @@
         <select id="employment_status_id" name="employment_status_id" class="form-select">
             <option value="">Select status</option>
             @foreach ($employmentStatuses as $employmentStatus)
-                <option value="{{ $employmentStatus->id }}" @selected((string) old('employment_status_id', $employee->employment_status_id) === (string) $employmentStatus->id)>{{ $employmentStatus->name }}</option>
+                <option
+                    value="{{ $employmentStatus->id }}"
+                    data-terminated="{{ in_array((string) $employmentStatus->id, $terminatedStatusIds, true) ? '1' : '0' }}"
+                    @selected((string) $selectedEmploymentStatusId === (string) $employmentStatus->id)
+                >
+                    {{ $employmentStatus->name }}
+                </option>
             @endforeach
         </select>
     </div>
@@ -196,6 +205,45 @@
         @error('supervisor_name')
             <div class="invalid-feedback d-block">{{ $message }}</div>
         @enderror
+    </div>
+
+    <div class="col-12 {{ $isTerminatedSelected ? '' : 'd-none' }}" data-termination-panel>
+        <div class="border rounded-2 bg-light p-3">
+            <div class="d-flex flex-column flex-md-row justify-content-between gap-2 mb-3">
+                <div>
+                    <div class="fw-semibold">Termination Details</div>
+                    <div class="small text-muted">Required when employment status is Terminated. This does not archive the employee record.</div>
+                </div>
+            </div>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label for="termination_date" class="form-label">Termination Date</label>
+                    <input id="termination_date" name="termination_date" type="date" class="form-control @error('termination_date') is-invalid @enderror" value="{{ old('termination_date', $employee->termination_date?->format('Y-m-d')) }}" data-termination-required>
+                    @error('termination_date')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+                <div class="col-md-4">
+                    <label for="termination_reason_id" class="form-label">Termination Reason</label>
+                    <select id="termination_reason_id" name="termination_reason_id" class="form-select @error('termination_reason_id') is-invalid @enderror" data-termination-required>
+                        <option value="">Select reason</option>
+                        @foreach ($terminationReasons as $terminationReason)
+                            <option value="{{ $terminationReason->id }}" @selected((string) old('termination_reason_id', $employee->termination_reason_id) === (string) $terminationReason->id)>{{ $terminationReason->name }}</option>
+                        @endforeach
+                    </select>
+                    @error('termination_reason_id')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+                <div class="col-md-4">
+                    <label for="termination_comment" class="form-label">Termination Comment</label>
+                    <textarea id="termination_comment" name="termination_comment" rows="2" class="form-control @error('termination_comment') is-invalid @enderror">{{ old('termination_comment', $employee->termination_comment) }}</textarea>
+                    @error('termination_comment')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+            </div>
+        </div>
     </div>
 
     @if ($canViewSensitivePersonalData)
@@ -231,6 +279,9 @@
         const district = form.querySelector('[data-district-select]');
         const facility = form.querySelector('[data-facility-select]');
         const supervisorPicker = form.querySelector('[data-smart-employee-select]');
+        const employmentStatus = form.querySelector('#employment_status_id');
+        const terminationPanel = form.querySelector('[data-termination-panel]');
+        const terminationRequiredFields = form.querySelectorAll('[data-termination-required]');
 
         function filterDistricts() {
             const provinceId = province.value;
@@ -265,6 +316,21 @@
         province.addEventListener('change', filterDistricts);
         district.addEventListener('change', filterFacilities);
         filterDistricts();
+
+        function toggleTerminationPanel() {
+            if (!employmentStatus || !terminationPanel) return;
+
+            const selectedOption = employmentStatus.selectedOptions[0];
+            const isTerminated = selectedOption?.dataset.terminated === '1';
+
+            terminationPanel.classList.toggle('d-none', !isTerminated);
+            terminationRequiredFields.forEach(function (field) {
+                field.required = isTerminated;
+            });
+        }
+
+        employmentStatus?.addEventListener('change', toggleTerminationPanel);
+        toggleTerminationPanel();
 
         function renderSelected(picker, employee) {
             const selected = picker.querySelector('[data-smart-selected]');

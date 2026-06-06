@@ -59,6 +59,11 @@
                     <div class="col-md-6"><strong>Job Title:</strong> {{ $employee->jobTitle?->name ?? '-' }}</div>
                     <div class="col-md-6"><strong>Status:</strong> {{ $employee->employmentStatus?->name ?? '-' }}</div>
                     <div class="col-md-6"><strong>Hire Date:</strong> {{ $employee->hire_date?->format('d M Y') ?? '-' }}</div>
+                    @if ($employee->termination_date || $employee->terminationReason || $employee->termination_comment)
+                        <div class="col-md-6"><strong>Termination Date:</strong> {{ $employee->termination_date?->format('d M Y') ?? '-' }}</div>
+                        <div class="col-md-6"><strong>Termination Reason:</strong> {{ $employee->terminationReason?->name ?? '-' }}</div>
+                        <div class="col-md-6"><strong>Termination Comment:</strong> {{ $employee->termination_comment ?: '-' }}</div>
+                    @endif
                     <div class="col-md-6">
                         <strong>Line Manager:</strong>
                         @if ($employee->supervisor)
