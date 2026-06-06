@@ -18,6 +18,25 @@
         .employee-index-table td {
             white-space: nowrap;
         }
+
+        .employee-index-table tbody tr.employee-row-clickable {
+            cursor: pointer;
+        }
+
+        .employee-index-table tbody tr.employee-row-clickable:focus {
+            outline: 2px solid rgba(37, 99, 235, .45);
+            outline-offset: -2px;
+        }
+
+        .employee-index-table tbody tr.employee-row-terminated {
+            --bs-table-bg: #fff5f5;
+            --bs-table-hover-bg: #ffecec;
+            --bs-table-color: #1f2937;
+        }
+
+        .employee-index-table tbody tr.employee-row-terminated td {
+            border-color: #f3d4d4;
+        }
     </style>
 @endpush
 
@@ -208,7 +227,17 @@
                 </thead>
                 <tbody>
                     @forelse ($employees as $employee)
-                        <tr>
+                        @php
+                            $isTerminated = in_array((string) $employee->employment_status_id, $terminatedStatusIds, true)
+                                || strtoupper((string) $employee->employmentStatus?->code) === 'TERMINATED'
+                                || strcasecmp((string) $employee->employmentStatus?->name, 'Terminated') === 0;
+                        @endphp
+                        <tr
+                            class="employee-row-clickable {{ $isTerminated ? 'employee-row-terminated' : '' }}"
+                            data-employee-profile-url="{{ route('employees.show', $employee) }}"
+                            tabindex="0"
+                            aria-label="Open profile for {{ $employee->display_name }}"
+                        >
                             @if ($canBulkUpdateEmployees)
                                 <td>
                                     @canany(['update', 'archive'], $employee)
@@ -222,9 +251,15 @@
                             <td>{{ $employee->facility?->name ?? '-' }}</td>
                             <td>{{ $employee->project?->name ?? '-' }}</td>
                             <td>{{ $employee->jobTitle?->name ?? '-' }}</td>
-                            <td>{{ $employee->employmentStatus?->name ?? '-' }}</td>
                             <td>
-                                <div class="d-inline-flex gap-2 flex-nowrap">
+                                @if ($isTerminated)
+                                    <span class="badge text-bg-danger-subtle text-danger-emphasis border border-danger-subtle">Terminated</span>
+                                @else
+                                    {{ $employee->employmentStatus?->name ?? '-' }}
+                                @endif
+                            </td>
+                            <td>
+                                <div class="d-inline-flex gap-2 flex-nowrap" data-no-row-click>
                                     @can('view', $employee)
                                         <a href="{{ route('employees.show', $employee) }}" class="btn btn-sm btn-secondary">View</a>
                                     @endcan
@@ -259,6 +294,33 @@
 @push('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('[data-employee-profile-url]').forEach(function (row) {
+                const openProfile = function () {
+                    window.location.href = row.dataset.employeeProfileUrl;
+                };
+
+                const isInteractiveTarget = function (target) {
+                    return Boolean(target.closest('a, button, input, select, textarea, form, label, [data-no-row-click]'));
+                };
+
+                row.addEventListener('click', function (event) {
+                    if (isInteractiveTarget(event.target)) {
+                        return;
+                    }
+
+                    openProfile();
+                });
+
+                row.addEventListener('keydown', function (event) {
+                    if (!['Enter', ' '].includes(event.key) || isInteractiveTarget(event.target)) {
+                        return;
+                    }
+
+                    event.preventDefault();
+                    openProfile();
+                });
+            });
+
             const bulkForm = document.getElementById('bulkEmployeeForm');
 
             if (! bulkForm) {
