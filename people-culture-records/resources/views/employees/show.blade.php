@@ -11,7 +11,7 @@
 
 @section('page-actions')
     <div class="d-flex gap-2">
-        <a href="{{ route('organisation-chart.index', ['search' => $employee->employee_no]) }}" class="btn btn-secondary btn-md">View in Chart</a>
+        <a href="{{ route('employees.reporting-structure', ['search' => $employee->employee_no]) }}" class="btn btn-secondary btn-md">View Reporting Structure</a>
         @can('update', $employee)
             <a href="{{ route('employees.edit', $employee) }}" class="btn btn-primary btn-md">Edit Employee</a>
         @endcan

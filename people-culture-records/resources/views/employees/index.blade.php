@@ -41,7 +41,8 @@
 @endpush
 
 @section('page-actions')
-    <div class="d-flex gap-2">
+    <div class="d-flex flex-wrap gap-2">
+        <a href="{{ route('employees.reporting-structure') }}" class="btn btn-secondary btn-md">Reporting Structure</a>
         <a href="{{ route('employees.archived') }}" class="btn btn-secondary btn-md">Archived</a>
         @can('create', App\Models\Employee::class)
             <a href="{{ route('employees.create') }}" class="btn btn-primary btn-md">New Employee</a>

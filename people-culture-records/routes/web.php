@@ -127,8 +127,7 @@ Route::middleware(['auth', 'active', 'password.changed'])->group(function () use
     });
 
     Route::get('/employees/search', EmployeeSearchController::class)->name('employees.search');
-    Route::get('/organisation-chart', OrganisationChartController::class)->name('organisation-chart.index');
-    Route::post('/organisation-chart/link-line-managers', [OrganisationChartController::class, 'linkLineManagers'])->name('organisation-chart.link-line-managers');
+    Route::get('/organisation-chart', [OrganisationChartController::class, 'placeholder'])->name('organisation-chart.index');
 
     Route::get('/recruitment', [JobOpeningController::class, 'dashboard'])->name('recruitment.index');
     Route::get('/recruitment/applications', [JobApplicationController::class, 'index'])->name('recruitment.applications.index');
@@ -145,6 +144,9 @@ Route::middleware(['auth', 'active', 'password.changed'])->group(function () use
         ->names('recruitment.job-openings')
         ->except(['destroy']);
 
+    Route::get('/employees/reporting-structure', [OrganisationChartController::class, 'reportingStructure'])->name('employees.reporting-structure');
+    Route::post('/employees/reporting-structure/link-line-managers', [OrganisationChartController::class, 'linkLineManagers'])->name('employees.reporting-structure.link-line-managers');
+    Route::post('/organisation-chart/link-line-managers', [OrganisationChartController::class, 'linkLineManagers'])->name('organisation-chart.link-line-managers');
     Route::get('/employees/archived', [EmployeeController::class, 'archived'])->name('employees.archived');
     Route::post('/employees/bulk-action', [EmployeeBulkActionController::class, 'handle'])->name('employees.bulk-action');
     Route::patch('/employees/{employee}/archive', [EmployeeController::class, 'archive'])->name('employees.archive');

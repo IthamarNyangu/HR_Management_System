@@ -1,11 +1,18 @@
 @extends('layouts.app')
 
-@section('title', 'Organisation Chart')
-@section('page-title', 'Organisation Chart')
+@php
+    $pageTitle = $pageTitle ?? 'Reporting Structure';
+    $indexRoute = $indexRoute ?? 'employees.reporting-structure';
+    $linkRoute = $linkRoute ?? 'employees.reporting-structure.link-line-managers';
+@endphp
+
+@section('title', $pageTitle)
+@section('page-title', $pageTitle)
 
 @section('breadcrumb')
     <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
-    <li class="breadcrumb-item active" aria-current="page">Organisation Chart</li>
+    <li class="breadcrumb-item"><a href="{{ route('employees.index') }}">Employees</a></li>
+    <li class="breadcrumb-item active" aria-current="page">{{ $pageTitle }}</li>
 @endsection
 
 @push('styles')
@@ -168,7 +175,7 @@
 @endpush
 
 @section('content')
-    <form method="GET" action="{{ route('organisation-chart.index') }}" class="bg-white border rounded-2 p-3 mb-3">
+    <form method="GET" action="{{ route($indexRoute) }}" class="bg-white border rounded-2 p-3 mb-3">
         <div class="row g-3 align-items-end">
             <div class="col-md-6 col-xl-2">
                 <input name="search" type="search" class="form-control" value="{{ request('search') }}" placeholder="Search employee, title, location, line manager">
@@ -207,7 +214,7 @@
             </div>
             <div class="col-12 col-xl-2 d-flex flex-wrap gap-2 justify-content-start justify-content-xl-end">
                 <button type="submit" class="btn btn-primary btn-md">Filter</button>
-                <a href="{{ route('organisation-chart.index') }}" class="btn btn-secondary btn-md">Reset</a>
+                <a href="{{ route($indexRoute) }}" class="btn btn-secondary btn-md">Reset</a>
             </div>
         </div>
     </form>
@@ -248,7 +255,7 @@
             </div>
             <div class="d-flex flex-wrap gap-2 align-self-start">
                 @if (auth()->user()->isAdmin() || auth()->user()->isHrManager())
-                    <form method="POST" action="{{ route('organisation-chart.link-line-managers') }}" data-confirm="true" data-confirm-title="Auto-link line managers?" data-confirm-message="The system will match unlinked line manager text to employee records using the employee number at the start of the line manager field. Unmatched records will remain unlinked. Do you want to continue?" data-confirm-button="Auto-link line managers">
+                    <form method="POST" action="{{ route($linkRoute) }}" data-confirm="true" data-confirm-title="Auto-link line managers?" data-confirm-message="The system will match unlinked line manager text to employee records using the employee number at the start of the line manager field. Unmatched records will remain unlinked. Do you want to continue?" data-confirm-button="Auto-link line managers">
                         @csrf
                         <button type="submit" class="btn btn-primary-outline btn-md">Auto-link Line Managers</button>
                     </form>
@@ -259,7 +266,7 @@
 
         @if (! $hasFilters)
             <div class="text-center text-muted py-5">
-                <div class="h5 text-body mb-2">Search or apply a filter to view the organisation chart.</div>
+                <div class="h5 text-body mb-2">Search or apply a filter to view the reporting structure.</div>
                 <p class="mb-0">Start with an employee name, employee number, province, department, project, or facility.</p>
             </div>
         @elseif ($rootEmployees->count() === 0)

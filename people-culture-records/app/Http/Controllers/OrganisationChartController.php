@@ -21,6 +21,18 @@ class OrganisationChartController extends Controller
 {
     public function __invoke(Request $request): View
     {
+        return $this->reportingStructure($request);
+    }
+
+    public function placeholder(Request $request): View
+    {
+        Gate::authorize('viewAny', Employee::class);
+
+        return view('organisation-chart.placeholder');
+    }
+
+    public function reportingStructure(Request $request): View
+    {
         Gate::authorize('viewAny', Employee::class);
 
         $hasFilters = collect(['search', 'province_id', 'department_id', 'project_id', 'facility_id'])
@@ -76,6 +88,9 @@ class OrganisationChartController extends Controller
         );
 
         return view('organisation-chart.index', [
+            'pageTitle' => 'Reporting Structure',
+            'indexRoute' => 'employees.reporting-structure',
+            'linkRoute' => 'employees.reporting-structure.link-line-managers',
             'employees' => $employees,
             'rootEmployees' => $paginatedRootEmployees,
             'childrenBySupervisor' => $childrenBySupervisor,

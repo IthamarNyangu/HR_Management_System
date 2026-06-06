@@ -36,12 +36,23 @@ class OrganisationChartTest extends TestCase
         $this->mansa = District::create(['province_id' => $this->luapula->id, 'name' => 'Mansa', 'code' => 'LUA-MAN', 'is_active' => true]);
     }
 
-    public function test_unauthenticated_users_cannot_access_organisation_chart(): void
+    public function test_unauthenticated_users_cannot_access_reporting_structure(): void
     {
-        $this->get(route('organisation-chart.index'))->assertRedirect('/login');
+        $this->get(route('employees.reporting-structure'))->assertRedirect('/login');
     }
 
-    public function test_admin_can_view_organisation_chart(): void
+    public function test_organisation_chart_sidebar_route_is_a_future_placeholder(): void
+    {
+        $admin = $this->user($this->adminRole);
+
+        $this->actingAs($admin)
+            ->get(route('organisation-chart.index'))
+            ->assertOk()
+            ->assertSee('Organisation Chart')
+            ->assertSee('Open Reporting Structure');
+    }
+
+    public function test_admin_can_view_reporting_structure(): void
     {
         $admin = $this->user($this->adminRole);
         $supervisor = $this->employee(['employee_no' => 'SUP-001', 'first_name' => 'Mary', 'last_name' => 'Banda']);
@@ -54,26 +65,26 @@ class OrganisationChartTest extends TestCase
         ]);
 
         $this->actingAs($admin)
-            ->get(route('organisation-chart.index', ['province_id' => $this->northern->id]))
+            ->get(route('employees.reporting-structure', ['province_id' => $this->northern->id]))
             ->assertOk()
-            ->assertSee('Organisation Chart')
+            ->assertSee('Reporting Structure')
             ->assertSee($supervisor->full_name)
             ->assertSee($employee->full_name);
     }
 
-    public function test_organisation_chart_waits_for_search_or_filter_before_showing_employees(): void
+    public function test_reporting_structure_waits_for_search_or_filter_before_showing_employees(): void
     {
         $admin = $this->user($this->adminRole);
         $employee = $this->employee(['employee_no' => 'EMP-001', 'first_name' => 'Grace', 'last_name' => 'Mwansa']);
 
         $this->actingAs($admin)
-            ->get(route('organisation-chart.index'))
+            ->get(route('employees.reporting-structure'))
             ->assertOk()
-            ->assertSee('Search or apply a filter to view the organisation chart.')
+            ->assertSee('Search or apply a filter to view the reporting structure.')
             ->assertDontSee($employee->employee_no);
     }
 
-    public function test_hr_officer_only_sees_assigned_province_in_organisation_chart(): void
+    public function test_hr_officer_only_sees_assigned_province_in_reporting_structure(): void
     {
         $officer = $this->user($this->officerRole, $this->northern);
 
@@ -81,7 +92,7 @@ class OrganisationChartTest extends TestCase
         $this->employee(['employee_no' => 'LUA-001', 'first_name' => 'Luapula', 'province_id' => $this->luapula->id, 'district_id' => $this->mansa->id]);
 
         $this->actingAs($officer)
-            ->get(route('organisation-chart.index', ['province_id' => $this->northern->id]))
+            ->get(route('employees.reporting-structure', ['province_id' => $this->northern->id]))
             ->assertOk()
             ->assertSee('NOR-001')
             ->assertDontSee('LUA-001');
@@ -157,9 +168,9 @@ class OrganisationChartTest extends TestCase
         ]);
 
         $this->actingAs($admin)
-            ->from(route('organisation-chart.index', ['province_id' => $this->northern->id]))
-            ->post(route('organisation-chart.link-line-managers'))
-            ->assertRedirect(route('organisation-chart.index', ['province_id' => $this->northern->id]))
+            ->from(route('employees.reporting-structure', ['province_id' => $this->northern->id]))
+            ->post(route('employees.reporting-structure.link-line-managers'))
+            ->assertRedirect(route('employees.reporting-structure', ['province_id' => $this->northern->id]))
             ->assertSessionHas('success');
 
         $this->assertSame($lineManager->id, $employee->fresh()->supervisor_employee_id);
