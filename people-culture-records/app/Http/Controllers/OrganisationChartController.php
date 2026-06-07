@@ -3,8 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Department;
+use App\Http\Requests\StoreOrganisationChartRequest;
+use App\Http\Requests\UpdateOrganisationChartRequest;
+use App\Models\District;
 use App\Models\Employee;
 use App\Models\Facility;
+use App\Models\JobTitle;
+use App\Models\OrganisationChart;
+use App\Models\OrganisationChartNode;
 use App\Models\Project;
 use App\Models\Province;
 use App\Services\ActivityLogger;
@@ -13,6 +19,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -24,11 +31,167 @@ class OrganisationChartController extends Controller
         return $this->reportingStructure($request);
     }
 
-    public function placeholder(Request $request): View
+    public function index(Request $request): View
     {
-        Gate::authorize('viewAny', Employee::class);
+        Gate::authorize('viewAny', OrganisationChart::class);
 
-        return view('organisation-chart.placeholder');
+        $charts = OrganisationChart::query()
+            ->visibleTo($request->user())
+            ->with(['project', 'createdBy'])
+            ->withCount('nodes')
+            ->when($request->filled('search'), function ($query) use ($request) {
+                $search = $request->string('search');
+
+                $query->where(function ($query) use ($search) {
+                    $query->where('title', 'like', "%{$search}%")
+                        ->orWhere('description', 'like', "%{$search}%")
+                        ->orWhereHas('project', fn ($query) => $query->where('name', 'like', "%{$search}%"));
+                });
+            })
+            ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')))
+            ->when($request->filled('project_id'), fn ($query) => $query->where('project_id', $request->integer('project_id')))
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
+
+        return view('organisation-chart.charts-index', $this->chartFormData($request) + compact('charts'));
+    }
+
+    public function create(Request $request): View
+    {
+        Gate::authorize('create', OrganisationChart::class);
+
+        $organisationChart = new OrganisationChart([
+            'status' => OrganisationChart::STATUS_DRAFT,
+            'effective_date' => now()->toDateString(),
+        ]);
+
+        return view('organisation-chart.create', $this->chartFormData($request) + compact('organisationChart'));
+    }
+
+    public function store(StoreOrganisationChartRequest $request, ActivityLogger $activity): RedirectResponse
+    {
+        $data = $this->chartData($request->validated());
+        $data['created_by'] = $request->user()->id;
+        $data['updated_by'] = $request->user()->id;
+
+        $organisationChart = OrganisationChart::create($data);
+
+        $activity->log(
+            'organisation_chart_created',
+            "{$request->user()->name} created organisation chart {$organisationChart->title}.",
+            $organisationChart,
+            user: $request->user(),
+            request: $request,
+        );
+
+        return redirect()
+            ->route('organisation-chart.edit', $organisationChart)
+            ->with('success', 'Organisation chart created. Add chart boxes to build the structure.');
+    }
+
+    public function show(OrganisationChart $organisationChart): View
+    {
+        Gate::authorize('view', $organisationChart);
+
+        $organisationChart->load(['project', 'nodes' => fn ($query) => $query->with($this->nodeRelations())]);
+
+        $nodes = $organisationChart->nodes;
+        $childrenByParent = $nodes->whereNotNull('parent_id')->groupBy('parent_id');
+        $rootNodes = $nodes->whereNull('parent_id')->values();
+
+        return view('organisation-chart.show', [
+            'organisationChart' => $organisationChart,
+            'rootNodes' => $rootNodes,
+            'childrenByParent' => $childrenByParent,
+            'nodeTypes' => OrganisationChartNode::TYPES,
+        ]);
+    }
+
+    public function edit(Request $request, OrganisationChart $organisationChart): View
+    {
+        Gate::authorize('update', $organisationChart);
+
+        $organisationChart->load(['project', 'nodes' => fn ($query) => $query->with($this->nodeRelations())]);
+
+        return view('organisation-chart.edit', $this->chartFormData($request) + compact('organisationChart'));
+    }
+
+    public function update(UpdateOrganisationChartRequest $request, OrganisationChart $organisationChart, ActivityLogger $activity): RedirectResponse
+    {
+        DB::transaction(function () use ($request, $organisationChart): void {
+            $data = $this->chartData($request->validated());
+            $data['updated_by'] = $request->user()->id;
+
+            $organisationChart->update($data);
+            $this->syncNodes($organisationChart, (array) $request->validated('nodes', []));
+        });
+
+        $activity->log(
+            'organisation_chart_updated',
+            "{$request->user()->name} updated organisation chart {$organisationChart->title}.",
+            $organisationChart,
+            user: $request->user(),
+            request: $request,
+        );
+
+        return redirect()->route('organisation-chart.show', $organisationChart)->with('success', 'Organisation chart updated successfully.');
+    }
+
+    public function archive(Request $request, OrganisationChart $organisationChart, ActivityLogger $activity): RedirectResponse
+    {
+        Gate::authorize('archive', $organisationChart);
+
+        $organisationChart->update(['archived_by' => $request->user()->id]);
+        $organisationChart->delete();
+
+        $activity->log(
+            'organisation_chart_archived',
+            "{$request->user()->name} archived organisation chart {$organisationChart->title}.",
+            $organisationChart,
+            user: $request->user(),
+            request: $request,
+        );
+
+        return redirect()->route('organisation-chart.index')->with('success', 'Organisation chart archived successfully.');
+    }
+
+    public function archived(Request $request): View
+    {
+        Gate::authorize('viewAny', OrganisationChart::class);
+
+        $charts = OrganisationChart::onlyTrashed()
+            ->visibleTo($request->user())
+            ->with(['project', 'archivedBy'])
+            ->withCount('nodes')
+            ->latest('deleted_at')
+            ->paginate(10)
+            ->withQueryString();
+
+        return view('organisation-chart.archived', compact('charts'));
+    }
+
+    public function restore(Request $request, int $id, ActivityLogger $activity): RedirectResponse
+    {
+        $organisationChart = OrganisationChart::withTrashed()->findOrFail($id);
+
+        Gate::authorize('restore', $organisationChart);
+
+        $organisationChart->restore();
+        $organisationChart->update([
+            'archived_by' => null,
+            'updated_by' => $request->user()->id,
+        ]);
+
+        $activity->log(
+            'organisation_chart_restored',
+            "{$request->user()->name} restored organisation chart {$organisationChart->title}.",
+            $organisationChart,
+            user: $request->user(),
+            request: $request,
+        );
+
+        return redirect()->route('organisation-chart.show', $organisationChart)->with('success', 'Organisation chart restored successfully.');
     }
 
     public function reportingStructure(Request $request): View
@@ -200,5 +363,138 @@ class OrganisationChartController extends Controller
                 ->count(),
             'top_level' => $rootEmployees->count(),
         ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function chartFormData(Request $request): array
+    {
+        return [
+            'projects' => Project::where('is_active', true)->orderBy('name')->get(),
+            'departments' => Department::where('is_active', true)->orderBy('name')->get(),
+            'provinces' => Province::where('is_active', true)->orderBy('name')->get(),
+            'districts' => District::with('province')->where('is_active', true)->orderBy('name')->get(),
+            'facilities' => Facility::with('district')->where('is_active', true)->orderBy('name')->get(),
+            'jobTitles' => JobTitle::where('is_active', true)->orderBy('name')->get(),
+            'employees' => Employee::query()
+                ->visibleTo($request->user())
+                ->with(['jobTitle', 'province'])
+                ->orderBy('last_name')
+                ->orderBy('first_name')
+                ->limit(2500)
+                ->get(),
+            'statuses' => OrganisationChart::STATUSES,
+            'nodeTypes' => OrganisationChartNode::TYPES,
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
+    private function chartData(array $data): array
+    {
+        foreach (['project_id', 'effective_date', 'description'] as $field) {
+            if (array_key_exists($field, $data) && blank($data[$field])) {
+                $data[$field] = null;
+            }
+        }
+
+        return Arr::only($data, [
+            'title',
+            'project_id',
+            'status',
+            'effective_date',
+            'description',
+            'created_by',
+            'updated_by',
+            'archived_by',
+        ]);
+    }
+
+    /**
+     * @return array<string>
+     */
+    private function nodeRelations(): array
+    {
+        return [
+            'employee',
+            'jobTitle',
+            'project',
+            'department',
+            'province',
+            'district',
+            'facility',
+        ];
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $nodes
+     */
+    private function syncNodes(OrganisationChart $organisationChart, array $nodes): void
+    {
+        foreach ($nodes as $index => $node) {
+            $nodeId = filled($node['id'] ?? null) ? (int) $node['id'] : null;
+
+            if ((bool) ($node['_delete'] ?? false)) {
+                if ($nodeId) {
+                    $organisationChart->nodes()->whereKey($nodeId)->delete();
+                }
+
+                continue;
+            }
+
+            $data = $this->nodeData($node, $index);
+
+            if ($nodeId) {
+                $organisationChart->nodes()->whereKey($nodeId)->update($data);
+                continue;
+            }
+
+            $organisationChart->nodes()->create($data);
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
+    private function nodeData(array $data, int $index): array
+    {
+        foreach ([
+            'parent_id',
+            'subtitle',
+            'planned_positions',
+            'employee_id',
+            'job_title_id',
+            'project_id',
+            'department_id',
+            'province_id',
+            'district_id',
+            'facility_id',
+        ] as $field) {
+            if (array_key_exists($field, $data) && blank($data[$field])) {
+                $data[$field] = null;
+            }
+        }
+
+        $data['sort_order'] = filled($data['sort_order'] ?? null) ? (int) $data['sort_order'] : ($index + 1);
+
+        return Arr::only($data, [
+            'parent_id',
+            'label',
+            'subtitle',
+            'node_type',
+            'planned_positions',
+            'employee_id',
+            'job_title_id',
+            'project_id',
+            'department_id',
+            'province_id',
+            'district_id',
+            'facility_id',
+            'sort_order',
+        ]);
     }
 }

@@ -2,7 +2,7 @@
     $items = [
         ['label' => 'Dashboard', 'icon' => 'bi-speedometer2', 'route' => 'dashboard', 'active' => request()->routeIs('dashboard'), 'enabled' => true],
         ['label' => 'Employees', 'icon' => 'bi-people', 'route' => 'employees.index', 'active' => request()->routeIs('employees.*'), 'enabled' => auth()->user()->can('viewAny', App\Models\Employee::class)],
-        ['label' => 'Organisation Chart', 'icon' => 'bi-diagram-3', 'route' => 'organisation-chart.index', 'active' => request()->routeIs('organisation-chart.*'), 'enabled' => auth()->user()->can('viewAny', App\Models\Employee::class)],
+        ['label' => 'Organisation Chart', 'icon' => 'bi-diagram-3', 'route' => 'organisation-chart.index', 'active' => request()->routeIs('organisation-chart.*'), 'enabled' => auth()->user()->can('viewAny', App\Models\OrganisationChart::class)],
         ['label' => 'Disciplinary Cases', 'icon' => 'bi-shield-exclamation', 'route' => 'disciplinary-cases.index', 'active' => request()->routeIs('disciplinary-cases.*'), 'enabled' => auth()->user()->can('viewAny', App\Models\DisciplinaryCase::class)],
         ['label' => 'Staff Promotions', 'icon' => 'bi-graph-up-arrow', 'route' => 'staff-promotions.index', 'active' => request()->routeIs('staff-promotions.*'), 'enabled' => auth()->user()->can('viewAny', App\Models\StaffPromotion::class)],
         ['label' => 'Staff Relocations', 'icon' => 'bi-geo-alt', 'route' => 'staff-relocations.index', 'active' => request()->routeIs('staff-relocations.*'), 'enabled' => auth()->user()->can('viewAny', App\Models\StaffRelocation::class)],

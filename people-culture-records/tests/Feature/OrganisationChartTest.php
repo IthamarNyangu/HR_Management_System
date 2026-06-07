@@ -5,7 +5,10 @@ namespace Tests\Feature;
 use App\Models\District;
 use App\Models\Employee;
 use App\Models\JobTitle;
+use App\Models\OrganisationChart;
+use App\Models\OrganisationChartNode;
 use App\Models\Province;
+use App\Models\Project;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -41,15 +44,91 @@ class OrganisationChartTest extends TestCase
         $this->get(route('employees.reporting-structure'))->assertRedirect('/login');
     }
 
-    public function test_organisation_chart_sidebar_route_is_a_future_placeholder(): void
+    public function test_organisation_chart_sidebar_route_lists_project_charts(): void
     {
         $admin = $this->user($this->adminRole);
+        $chart = OrganisationChart::create([
+            'title' => 'USAID Action HIV Project Management Overview',
+            'status' => OrganisationChart::STATUS_PUBLISHED,
+            'created_by' => $admin->id,
+            'updated_by' => $admin->id,
+        ]);
 
         $this->actingAs($admin)
             ->get(route('organisation-chart.index'))
             ->assertOk()
             ->assertSee('Organisation Chart')
-            ->assertSee('Open Reporting Structure');
+            ->assertSee($chart->title);
+    }
+
+    public function test_admin_can_create_edit_and_view_clickable_project_chart_boxes(): void
+    {
+        $admin = $this->user($this->adminRole);
+        $project = Project::create(['name' => 'USAID Action HIV', 'code' => 'USAID-AHIV', 'is_active' => true]);
+        $employee = $this->employee(['employee_no' => '22866', 'first_name' => 'Paul', 'last_name' => 'Chinyemba']);
+
+        $response = $this->actingAs($admin)
+            ->post(route('organisation-chart.store'), [
+                'title' => 'RTCZ USAID Action HIV Project Management Overview',
+                'project_id' => $project->id,
+                'status' => OrganisationChart::STATUS_DRAFT,
+                'effective_date' => '2026-06-01',
+                'description' => 'Project leadership structure.',
+            ]);
+
+        $chart = OrganisationChart::firstOrFail();
+        $response->assertRedirect(route('organisation-chart.edit', $chart));
+
+        $this->actingAs($admin)
+            ->put(route('organisation-chart.update', $chart), [
+                'title' => $chart->title,
+                'project_id' => $project->id,
+                'status' => OrganisationChart::STATUS_PUBLISHED,
+                'effective_date' => '2026-06-01',
+                'description' => 'Project leadership structure.',
+                'nodes' => [
+                    [
+                        'label' => 'Chief of Party',
+                        'subtitle' => 'USAID ACTION HIV Project',
+                        'node_type' => OrganisationChartNode::TYPE_KEY_POSITION,
+                        'planned_positions' => 1,
+                        'employee_id' => $employee->id,
+                        'sort_order' => 1,
+                    ],
+                ],
+            ])
+            ->assertRedirect(route('organisation-chart.show', $chart));
+
+        $this->assertDatabaseHas('organisation_chart_nodes', [
+            'organisation_chart_id' => $chart->id,
+            'label' => 'Chief of Party',
+            'employee_id' => $employee->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('organisation-chart.show', $chart))
+            ->assertOk()
+            ->assertSee('Chief of Party')
+            ->assertSee($employee->full_name)
+            ->assertSee(route('employees.show', $employee), false);
+    }
+
+    public function test_hr_officer_can_view_but_cannot_create_organisation_charts(): void
+    {
+        $officer = $this->user($this->officerRole, $this->northern);
+        $chart = OrganisationChart::create([
+            'title' => 'Internal Project Chart',
+            'status' => OrganisationChart::STATUS_PUBLISHED,
+        ]);
+
+        $this->actingAs($officer)
+            ->get(route('organisation-chart.show', $chart))
+            ->assertOk()
+            ->assertSee($chart->title);
+
+        $this->actingAs($officer)
+            ->get(route('organisation-chart.create'))
+            ->assertForbidden();
     }
 
     public function test_admin_can_view_reporting_structure(): void
