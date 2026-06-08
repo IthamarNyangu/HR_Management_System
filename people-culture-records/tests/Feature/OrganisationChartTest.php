@@ -193,6 +193,30 @@ class OrganisationChartTest extends TestCase
             ]);
     }
 
+    public function test_organisation_chart_edit_page_includes_drag_and_drop_controls(): void
+    {
+        $admin = $this->user($this->adminRole);
+        $chart = OrganisationChart::create([
+            'title' => 'USAID Action HIV Project Management Overview',
+            'status' => OrganisationChart::STATUS_DRAFT,
+            'created_by' => $admin->id,
+            'updated_by' => $admin->id,
+        ]);
+
+        $chart->nodes()->create([
+            'label' => 'Chief of Party',
+            'node_type' => OrganisationChartNode::TYPE_KEY_POSITION,
+            'sort_order' => 1,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('organisation-chart.edit', $chart))
+            ->assertOk()
+            ->assertSee('data-org-node-drag-handle', false)
+            ->assertSee('Drop a saved box here to make it top level.')
+            ->assertSee('Drag saved boxes onto another saved box');
+    }
+
     public function test_admin_can_view_reporting_structure(): void
     {
         $admin = $this->user($this->adminRole);

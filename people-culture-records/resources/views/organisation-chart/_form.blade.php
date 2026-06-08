@@ -55,6 +55,25 @@
             background: #f8fafc;
             padding: .7rem;
         }
+        .org-node-drag-handle { cursor: grab; }
+        .org-node-drag-handle:active { cursor: grabbing; }
+        .org-node-editor.is-dragging {
+            opacity: .58;
+            box-shadow: 0 .8rem 1.8rem rgba(23, 32, 51, .12);
+        }
+        .org-node-editor.is-drop-target,
+        .org-root-drop-zone.is-drop-target {
+            border-color: #2563eb !important;
+            background: #eff6ff !important;
+            box-shadow: 0 0 0 .2rem rgba(37, 99, 235, .12);
+        }
+        .org-root-drop-zone {
+            border: 1px dashed #a8b4c5;
+            border-radius: .5rem;
+            background: #f8fafc;
+            color: #475467;
+            padding: .85rem 1rem;
+        }
     </style>
 @endpush
 
@@ -119,10 +138,16 @@
             <div class="d-flex flex-column flex-lg-row justify-content-between gap-3 mb-3">
                 <div>
                     <h2 class="h5 mb-1">Chart Boxes</h2>
-                    <p class="text-muted mb-0">Create the project structure by linking each box to a parent box. Boxes can also link to employees or employee list filters.</p>
+                    <p class="text-muted mb-0">Create the project structure by linking each box to a parent box. Drag saved boxes onto another saved box to quickly update Reports To.</p>
                 </div>
                 <button type="button" class="btn btn-primary-outline btn-md align-self-start" data-add-org-node>Add Box</button>
             </div>
+
+            <div class="org-root-drop-zone mb-3" data-org-root-drop>
+                Drop a saved box here to make it top level.
+            </div>
+
+            <div class="alert alert-info py-2 px-3 d-none" data-org-drag-message role="status"></div>
 
             <div data-org-node-list>
                 @forelse ($nodeRows as $index => $node)
@@ -166,7 +191,10 @@
                 const list = document.querySelector('[data-org-node-list]');
                 const template = document.querySelector('[data-org-node-template]');
                 const addButton = document.querySelector('[data-add-org-node]');
+                const rootDropZone = document.querySelector('[data-org-root-drop]');
+                const dragMessage = document.querySelector('[data-org-drag-message]');
                 let nextIndex = {{ $nodeRows->count() }};
+                let draggedRow = null;
 
                 if (!list || !template || !addButton) {
                     return;
@@ -386,6 +414,93 @@
                     scope.querySelectorAll('[data-org-employee-picker]').forEach(initializeEmployeePicker);
                 }
 
+                function nodeLabel(row) {
+                    const labelInput = row?.querySelector('input[name$="[label]"]');
+                    const label = labelInput?.value?.trim() || row?.dataset.nodeLabel || 'Chart box';
+
+                    return label;
+                }
+
+                function showDragMessage(message, type = 'info') {
+                    if (!dragMessage) {
+                        return;
+                    }
+
+                    dragMessage.className = `alert alert-${type} py-2 px-3`;
+                    dragMessage.textContent = message;
+
+                    window.clearTimeout(showDragMessage.timer);
+                    showDragMessage.timer = window.setTimeout(function () {
+                        dragMessage.classList.add('d-none');
+                    }, 4500);
+                }
+
+                function parentSelect(row) {
+                    return row?.querySelector('select[name$="[parent_id]"]');
+                }
+
+                function sortInput(row) {
+                    return row?.querySelector('input[name$="[sort_order]"]');
+                }
+
+                function refreshSiblingSortOrders(parentId) {
+                    const rows = Array.from(list.querySelectorAll('[data-org-node-row]'));
+                    let sortOrder = 1;
+
+                    rows.forEach(function (row) {
+                        const select = parentSelect(row);
+
+                        if (!select || String(select.value || '') !== String(parentId || '')) {
+                            return;
+                        }
+
+                        const input = sortInput(row);
+                        if (input) {
+                            input.value = sortOrder;
+                        }
+
+                        sortOrder++;
+                    });
+                }
+
+                function clearDropTargets() {
+                    list.querySelectorAll('.is-drop-target').forEach(function (row) {
+                        row.classList.remove('is-drop-target');
+                    });
+                    rootDropZone?.classList.remove('is-drop-target');
+                }
+
+                function updateParentByDrop(row, parentId, parentLabel) {
+                    const select = parentSelect(row);
+
+                    if (!select) {
+                        showDragMessage('This box cannot be moved right now.', 'warning');
+                        return false;
+                    }
+
+                    if (parentId && String(row.dataset.nodeId || '') === String(parentId)) {
+                        showDragMessage('A chart box cannot report to itself.', 'warning');
+                        return false;
+                    }
+
+                    if (parentId && !Array.from(select.options).some((option) => option.value === String(parentId))) {
+                        showDragMessage('Save the target box first before using it as a parent.', 'warning');
+                        return false;
+                    }
+
+                    select.value = parentId || '';
+
+                    if (parentId) {
+                        showDragMessage(`${nodeLabel(row)} now reports to ${parentLabel}.`);
+                    } else {
+                        showDragMessage(`${nodeLabel(row)} is now top level.`);
+                    }
+
+                    refreshSiblingSortOrders(parentId || '');
+
+                    return true;
+                }
+
                 initializeEmployeePickers(document);
 
                 addButton.addEventListener('click', function () {
@@ -415,6 +530,95 @@
                     }
 
                     removeButton.closest('[data-org-node-row]')?.remove();
+                });
+
+                list.addEventListener('dragstart', function (event) {
+                    const handle = event.target.closest('[data-org-node-drag-handle]');
+
+                    if (!handle) {
+                        return;
+                    }
+
+                    const row = handle.closest('[data-org-node-row]');
+
+                    if (!row?.dataset.nodeId) {
+                        event.preventDefault();
+                        showDragMessage('Save this box before dragging it.', 'warning');
+                        return;
+                    }
+
+                    draggedRow = row;
+                    row.classList.add('is-dragging');
+                    event.dataTransfer.effectAllowed = 'move';
+                    event.dataTransfer.setData('text/plain', row.dataset.nodeId);
+                });
+
+                list.addEventListener('dragover', function (event) {
+                    if (!draggedRow) {
+                        return;
+                    }
+
+                    const targetRow = event.target.closest('[data-org-node-row]');
+
+                    if (!targetRow || targetRow === draggedRow || !targetRow.dataset.nodeId) {
+                        return;
+                    }
+
+                    event.preventDefault();
+                    clearDropTargets();
+                    targetRow.classList.add('is-drop-target');
+                });
+
+                list.addEventListener('drop', function (event) {
+                    if (!draggedRow) {
+                        return;
+                    }
+
+                    const targetRow = event.target.closest('[data-org-node-row]');
+
+                    if (!targetRow || targetRow === draggedRow || !targetRow.dataset.nodeId) {
+                        return;
+                    }
+
+                    event.preventDefault();
+
+                    if (updateParentByDrop(draggedRow, targetRow.dataset.nodeId, nodeLabel(targetRow))) {
+                        targetRow.after(draggedRow);
+                        refreshSiblingSortOrders(targetRow.dataset.nodeId);
+                    }
+
+                    clearDropTargets();
+                });
+
+                list.addEventListener('dragend', function () {
+                    draggedRow?.classList.remove('is-dragging');
+                    draggedRow = null;
+                    clearDropTargets();
+                });
+
+                rootDropZone?.addEventListener('dragover', function (event) {
+                    if (!draggedRow) {
+                        return;
+                    }
+
+                    event.preventDefault();
+                    clearDropTargets();
+                    rootDropZone.classList.add('is-drop-target');
+                });
+
+                rootDropZone?.addEventListener('drop', function (event) {
+                    if (!draggedRow) {
+                        return;
+                    }
+
+                    event.preventDefault();
+
+                    if (updateParentByDrop(draggedRow, '', 'Top level')) {
+                        list.prepend(draggedRow);
+                        refreshSiblingSortOrders('');
+                    }
+
+                    clearDropTargets();
                 });
 
                 document.addEventListener('click', function (event) {

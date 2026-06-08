@@ -17,7 +17,12 @@
     ] : null;
 @endphp
 
-<div class="org-node-editor border rounded-2 p-3 mb-3 bg-light" data-org-node-row>
+<div
+    class="org-node-editor border rounded-2 p-3 mb-3 bg-light"
+    data-org-node-row
+    data-node-id="{{ $nodeId }}"
+    data-node-label="{{ $nodeLabel ?: 'New chart box' }}"
+>
     <div class="d-flex flex-column flex-lg-row justify-content-between gap-2 mb-3">
         <div>
             <div class="fw-semibold">{{ $nodeLabel ?: 'New chart box' }}</div>
@@ -25,12 +30,17 @@
         </div>
         <div class="d-flex gap-2 align-items-start">
             @if ($nodeId)
+                <button type="button" class="btn btn-sm btn-secondary org-node-drag-handle" draggable="true" data-org-node-drag-handle title="Drag this saved box onto another saved box to update Reports To" {{ $disabled }}>
+                    <i class="bi bi-grip-vertical" aria-hidden="true"></i>
+                    Drag
+                </button>
                 <input type="hidden" name="nodes[{{ $index }}][id]" value="{{ $nodeId }}" {{ $disabled }}>
                 <label class="form-check-label small text-danger-emphasis">
                     <input type="checkbox" name="nodes[{{ $index }}][_delete]" value="1" class="form-check-input me-1" {{ $disabled }}>
                     Remove
                 </label>
             @else
+                <span class="badge text-bg-light border text-muted align-self-center">Save before drag/drop</span>
                 <button type="button" class="btn btn-sm btn-outline-danger" data-remove-new-node {{ $disabled }}>Remove</button>
             @endif
         </div>
