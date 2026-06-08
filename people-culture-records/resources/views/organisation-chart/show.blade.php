@@ -1,16 +1,29 @@
 @extends('layouts.app')
 
-@section('title', $organisationChart->title)
-@section('page-title', $organisationChart->title)
+@php
+    $chartDisplayTitle = Str::contains(Str::lower($organisationChart->title), 'management overview')
+        ? $organisationChart->title
+        : trim($organisationChart->title.' Management Overview');
+    $chartDownloadFilename = Str::slug($chartDisplayTitle.' org-chart').'.png';
+@endphp
+
+@section('title', $chartDisplayTitle)
+@section('page-title', $chartDisplayTitle)
 
 @section('breadcrumb')
     <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
     <li class="breadcrumb-item"><a href="{{ route('organisation-chart.index') }}">Organisation Chart</a></li>
-    <li class="breadcrumb-item active" aria-current="page">{{ $organisationChart->title }}</li>
+    <li class="breadcrumb-item active" aria-current="page">{{ $chartDisplayTitle }}</li>
 @endsection
 
 @section('page-actions')
     <div class="d-flex flex-wrap gap-2">
+        @if ($rootNodes->isNotEmpty())
+            <button type="button" class="btn btn-secondary btn-md" data-download-org-chart-png data-chart-filename="{{ $chartDownloadFilename }}">
+                <i class="bi bi-download" aria-hidden="true"></i>
+                Download PNG
+            </button>
+        @endif
         @can('update', $organisationChart)
             <a href="{{ route('organisation-chart.designer', $organisationChart) }}" class="btn btn-primary-outline btn-md">Open Designer</a>
             <a href="{{ route('organisation-chart.edit', $organisationChart) }}" class="btn btn-primary btn-md">Edit Chart</a>
@@ -234,7 +247,7 @@
             </div>
         @else
             <div class="formal-org-shell">
-                <div class="formal-org-canvas">
+                <div class="formal-org-canvas" data-org-chart-canvas>
                     <div class="formal-org-children" style="margin-top: 0;">
                         @foreach ($rootNodes as $node)
                             @include('organisation-chart._chart-node', [
@@ -294,9 +307,132 @@
 @endsection
 
 @push('scripts')
+    <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            const downloadButton = document.querySelector('[data-download-org-chart-png]');
+            const chartCanvas = document.querySelector('[data-org-chart-canvas]');
             const modalElement = document.getElementById('orgNodeActionModal');
+
+            function waitForPaint() {
+                return new Promise(function (resolve) {
+                    requestAnimationFrame(function () {
+                        requestAnimationFrame(resolve);
+                    });
+                });
+            }
+
+            function buildExportCanvas() {
+                if (!chartCanvas) {
+                    return null;
+                }
+
+                const wrapper = document.createElement('div');
+                const header = document.createElement('div');
+                const title = document.createElement('div');
+                const subtitle = document.createElement('div');
+                const clonedCanvas = chartCanvas.cloneNode(true);
+                const chartWidth = Math.ceil(Math.max(chartCanvas.scrollWidth, chartCanvas.getBoundingClientRect().width, 960));
+
+                wrapper.dataset.orgChartExportSurface = 'true';
+                wrapper.style.position = 'fixed';
+                wrapper.style.left = '0';
+                wrapper.style.top = '0';
+                wrapper.style.zIndex = '2147483647';
+                wrapper.style.background = '#ffffff';
+                wrapper.style.color = '#111827';
+                wrapper.style.padding = '24px';
+                wrapper.style.width = `${chartWidth + 48}px`;
+                wrapper.style.minHeight = '1px';
+                wrapper.style.pointerEvents = 'none';
+                wrapper.style.boxShadow = '0 0 0 9999px rgba(255, 255, 255, .96)';
+
+                header.style.marginBottom = '18px';
+                title.style.fontSize = '22px';
+                title.style.fontWeight = '700';
+                title.style.lineHeight = '1.2';
+                title.textContent = @json($chartDisplayTitle);
+                subtitle.style.color = '#4b5563';
+                subtitle.style.fontSize = '14px';
+                subtitle.style.marginTop = '4px';
+                subtitle.textContent = @json(collect([
+                    $organisationChart->project?->name ?? 'Organisation-wide',
+                    $organisationChart->effective_date ? 'Effective '.$organisationChart->effective_date->format('d M Y') : null,
+                ])->filter()->implode(' | '));
+
+                clonedCanvas.style.margin = '0';
+                clonedCanvas.style.padding = '1rem';
+                clonedCanvas.style.width = `${chartWidth}px`;
+                clonedCanvas.style.minWidth = `${chartWidth}px`;
+
+                header.appendChild(title);
+                header.appendChild(subtitle);
+                wrapper.appendChild(header);
+                wrapper.appendChild(clonedCanvas);
+                document.body.appendChild(wrapper);
+
+                return wrapper;
+            }
+
+            function downloadPng(dataUrl, filename) {
+                const link = document.createElement('a');
+
+                link.download = filename || 'organisation-chart.png';
+                link.href = dataUrl;
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+            }
+
+            downloadButton?.addEventListener('click', async function () {
+                if (!window.htmlToImage || !chartCanvas) {
+                    alert('PNG download is not ready. Please check your internet connection and refresh the page.');
+                    return;
+                }
+
+                const originalText = downloadButton.innerHTML;
+                let exportCanvas = null;
+
+                try {
+                    downloadButton.disabled = true;
+                    downloadButton.innerHTML = '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span> Preparing PNG';
+
+                    if (document.fonts?.ready) {
+                        await document.fonts.ready;
+                    }
+
+                    exportCanvas = buildExportCanvas();
+                    await waitForPaint();
+
+                    const exportWidth = Math.ceil(exportCanvas.scrollWidth || exportCanvas.getBoundingClientRect().width);
+                    const exportHeight = Math.ceil(exportCanvas.scrollHeight || exportCanvas.getBoundingClientRect().height);
+
+                    const dataUrl = await window.htmlToImage.toPng(exportCanvas, {
+                        backgroundColor: '#ffffff',
+                        cacheBust: true,
+                        pixelRatio: 2,
+                        width: exportWidth,
+                        height: exportHeight,
+                        canvasWidth: exportWidth * 2,
+                        canvasHeight: exportHeight * 2,
+                        style: {
+                            margin: '0',
+                        },
+                    });
+
+                    if (!dataUrl || dataUrl.length < 2000) {
+                        throw new Error('The generated PNG was empty.');
+                    }
+
+                    downloadPng(dataUrl, downloadButton.dataset.chartFilename || 'organisation-chart.png');
+                } catch (error) {
+                    alert('The chart could not be downloaded as PNG. Please try again after the page finishes loading.');
+                } finally {
+                    exportCanvas?.remove();
+                    downloadButton.disabled = false;
+                    downloadButton.innerHTML = originalText;
+                }
+            });
 
             if (!modalElement) {
                 return;
