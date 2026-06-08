@@ -118,6 +118,7 @@ class OrganisationChartTest extends TestCase
             ->assertSee('dataset.orgChartExportSurface', false)
             ->assertSee('requestAnimationFrame', false)
             ->assertSee('html-to-image', false)
+            ->assertDontSee('formal-org-legend', false)
             ->assertSee('Chief of Party')
             ->assertSee($employee->full_name)
             ->assertSee(route('employees.show', $employee), false);

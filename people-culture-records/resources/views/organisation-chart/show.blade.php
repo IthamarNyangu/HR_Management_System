@@ -175,19 +175,6 @@
             border-color: #9f2d14;
         }
 
-        .formal-org-legend {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
-            gap: .75rem;
-        }
-
-        .formal-org-legend-swatch {
-            width: 1.75rem;
-            height: 1.25rem;
-            border: 3px solid #9f2d14;
-            background: #fff;
-        }
-
         @media (max-width: 768px) {
             .formal-org-canvas {
                 min-width: 42rem;
@@ -204,7 +191,7 @@
 @section('content')
     <section class="bg-white border rounded-2 p-4 mb-3">
         <div class="row g-3 align-items-start">
-            <div class="col-lg-8">
+            <div class="col-lg-12">
                 <div class="d-flex flex-wrap gap-2 mb-2">
                     <span class="badge text-bg-{{ $organisationChart->status === 'published' ? 'success' : 'secondary' }}">{{ ucfirst($organisationChart->status) }}</span>
                     <span class="badge text-bg-light border">{{ $organisationChart->project?->name ?? 'Organisation-wide' }}</span>
@@ -215,24 +202,6 @@
                 @if ($organisationChart->description)
                     <p class="text-muted mb-0">{{ $organisationChart->description }}</p>
                 @endif
-            </div>
-            <div class="col-lg-4">
-                <div class="formal-org-legend">
-                    @foreach ($nodeTypes as $value => $label)
-                        <div class="d-flex align-items-center gap-2 small">
-                            <span class="formal-org-legend-swatch {{ [
-                                'central_head_office' => 'org-node-central',
-                                'regional_level' => 'org-node-regional',
-                                'provincial_level' => 'org-node-provincial',
-                                'hub_facility' => 'org-node-hub',
-                                'key_position' => 'org-node-key',
-                                'external_partner' => 'org-node-external',
-                                'support_unit' => 'org-node-support',
-                            ][$value] ?? 'org-node-support' }}"></span>
-                            <span>{{ $label }}</span>
-                        </div>
-                    @endforeach
-                </div>
             </div>
         </div>
     </section>
