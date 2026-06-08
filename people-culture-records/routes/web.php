@@ -147,6 +147,9 @@ Route::middleware(['auth', 'active', 'password.changed'])->group(function () use
     Route::post('/employees/reporting-structure/link-line-managers', [OrganisationChartController::class, 'linkLineManagers'])->name('employees.reporting-structure.link-line-managers');
     Route::post('/organisation-chart/link-line-managers', [OrganisationChartController::class, 'linkLineManagers'])->name('organisation-chart.link-line-managers');
     Route::get('/organisation-chart/archived', [OrganisationChartController::class, 'archived'])->name('organisation-chart.archived');
+    Route::get('/organisation-chart/{organisation_chart}/designer', [OrganisationChartController::class, 'designer'])->name('organisation-chart.designer');
+    Route::patch('/organisation-chart/{organisation_chart}/layout', [OrganisationChartController::class, 'updateLayout'])->name('organisation-chart.layout.update');
+    Route::post('/organisation-chart/{organisation_chart}/nodes/{node}/duplicate', [OrganisationChartController::class, 'duplicateNode'])->name('organisation-chart.nodes.duplicate');
     Route::patch('/organisation-chart/{organisation_chart}/archive', [OrganisationChartController::class, 'archive'])->name('organisation-chart.archive');
     Route::patch('/organisation-chart/{id}/restore', [OrganisationChartController::class, 'restore'])->whereNumber('id')->name('organisation-chart.restore');
     Route::resource('organisation-chart', OrganisationChartController::class)

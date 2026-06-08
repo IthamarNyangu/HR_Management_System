@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Department;
 use App\Http\Requests\StoreOrganisationChartRequest;
+use App\Http\Requests\UpdateOrganisationChartLayoutRequest;
 use App\Http\Requests\UpdateOrganisationChartRequest;
 use App\Models\District;
 use App\Models\Employee;
@@ -117,6 +118,25 @@ class OrganisationChartController extends Controller
         return view('organisation-chart.edit', $this->chartFormData($request) + compact('organisationChart'));
     }
 
+    public function designer(OrganisationChart $organisationChart): View
+    {
+        Gate::authorize('update', $organisationChart);
+
+        $organisationChart->load(['project', 'nodes' => fn ($query) => $query->with($this->nodeRelations())]);
+
+        $nodes = $organisationChart->nodes;
+        $childrenByParent = $nodes->whereNotNull('parent_id')->groupBy('parent_id');
+        $rootNodes = $nodes->whereNull('parent_id')->values();
+
+        return view('organisation-chart.designer', [
+            'organisationChart' => $organisationChart,
+            'nodes' => $nodes,
+            'rootNodes' => $rootNodes,
+            'childrenByParent' => $childrenByParent,
+            'nodeTypes' => OrganisationChartNode::TYPES,
+        ]);
+    }
+
     public function update(UpdateOrganisationChartRequest $request, OrganisationChart $organisationChart, ActivityLogger $activity): RedirectResponse
     {
         DB::transaction(function () use ($request, $organisationChart): void {
@@ -136,6 +156,73 @@ class OrganisationChartController extends Controller
         );
 
         return redirect()->route('organisation-chart.show', $organisationChart)->with('success', 'Organisation chart updated successfully.');
+    }
+
+    public function updateLayout(UpdateOrganisationChartLayoutRequest $request, OrganisationChart $organisationChart, ActivityLogger $activity): RedirectResponse
+    {
+        DB::transaction(function () use ($request, $organisationChart): void {
+            foreach ($request->validated('nodes') as $node) {
+                $organisationChart->nodes()
+                    ->whereKey($node['id'])
+                    ->update([
+                        'parent_id' => blank($node['parent_id'] ?? null) ? null : (int) $node['parent_id'],
+                        'sort_order' => (int) $node['sort_order'],
+                    ]);
+            }
+
+            $organisationChart->update(['updated_by' => $request->user()->id]);
+        });
+
+        $activity->log(
+            'organisation_chart_layout_updated',
+            "{$request->user()->name} updated the layout for organisation chart {$organisationChart->title}.",
+            $organisationChart,
+            user: $request->user(),
+            request: $request,
+        );
+
+        return redirect()->route('organisation-chart.designer', $organisationChart)->with('success', 'Organisation chart layout updated successfully.');
+    }
+
+    public function duplicateNode(Request $request, OrganisationChart $organisationChart, OrganisationChartNode $node, ActivityLogger $activity): RedirectResponse
+    {
+        Gate::authorize('update', $organisationChart);
+        abort_unless((int) $node->organisation_chart_id === (int) $organisationChart->id, 404);
+
+        $copy = null;
+
+        DB::transaction(function () use ($request, $organisationChart, $node, &$copy): void {
+            $copy = $node->replicate();
+            $copy->organisation_chart_id = $organisationChart->id;
+            $copy->label = $this->duplicateNodeLabel($organisationChart, $node);
+            $copy->employee_id = null;
+            $copy->sort_order = ((int) $organisationChart->nodes()
+                ->where('parent_id', $node->parent_id)
+                ->max('sort_order')) + 1;
+            $copy->save();
+
+            $organisationChart->update(['updated_by' => $request->user()->id]);
+        });
+
+        $activity->log(
+            'organisation_chart_box_duplicated',
+            "{$request->user()->name} duplicated chart box {$node->label} in {$organisationChart->title}.",
+            $copy,
+            [
+                'source_node_id' => $node->id,
+                'new_node_id' => $copy?->id,
+            ],
+            user: $request->user(),
+            request: $request,
+        );
+
+        $redirectUrl = $request->string('redirect_to')->toString() === 'designer'
+            ? route('organisation-chart.designer', $organisationChart).'#node-'.$copy?->id
+            : route('organisation-chart.edit', $organisationChart).'#node-'.$copy?->id;
+
+        return redirect()
+            ->to($redirectUrl)
+            ->with('success', 'Chart box duplicated. Review the copied label and link it to the correct employee before publishing.');
     }
 
     public function archive(Request $request, OrganisationChart $organisationChart, ActivityLogger $activity): RedirectResponse
@@ -427,6 +514,23 @@ class OrganisationChartController extends Controller
             'district',
             'facility',
         ];
+    }
+
+    private function duplicateNodeLabel(OrganisationChart $organisationChart, OrganisationChartNode $node): string
+    {
+        $baseLabel = str($node->label)->limit(245, '')->toString();
+        $label = "{$baseLabel} Copy";
+        $suffix = 2;
+
+        while ($organisationChart->nodes()
+            ->where('parent_id', $node->parent_id)
+            ->where('label', $label)
+            ->exists()) {
+            $label = "{$baseLabel} Copy {$suffix}";
+            $suffix++;
+        }
+
+        return $label;
     }
 
     /**

@@ -12,6 +12,7 @@
 @section('page-actions')
     <div class="d-flex flex-wrap gap-2">
         @can('update', $organisationChart)
+            <a href="{{ route('organisation-chart.designer', $organisationChart) }}" class="btn btn-primary-outline btn-md">Open Designer</a>
             <a href="{{ route('organisation-chart.edit', $organisationChart) }}" class="btn btn-primary btn-md">Edit Chart</a>
         @endcan
         <a href="{{ route('organisation-chart.index') }}" class="btn btn-secondary btn-md">Back</a>
@@ -55,6 +56,8 @@
         .formal-org-card-link {
             color: inherit;
             text-decoration: none;
+            border: 0;
+            background: transparent;
             width: 100%;
             min-height: 100%;
             padding: .85rem .7rem;
@@ -62,10 +65,11 @@
             flex-direction: column;
             justify-content: center;
             gap: .15rem;
+            cursor: pointer;
         }
 
-        a.formal-org-card-link:hover,
-        a.formal-org-card-link:focus {
+        .formal-org-card-link:hover,
+        .formal-org-card-link:focus {
             box-shadow: 0 0 0 .25rem rgba(37, 99, 235, .14);
             outline: 2px solid #2563eb;
             outline-offset: 3px;
@@ -244,4 +248,105 @@
             </div>
         @endif
     </section>
+
+    <div class="modal fade" id="orgNodeActionModal" tabindex="-1" aria-labelledby="orgNodeActionModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div>
+                        <h2 class="modal-title h5" id="orgNodeActionModalLabel">Chart Box</h2>
+                        <div class="small text-muted" data-org-node-modal-subtitle></div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted mb-3">What would you like to do with this chart box?</p>
+                    <div class="d-grid gap-2">
+                        <a href="#" class="btn btn-secondary btn-md justify-content-start d-none" data-org-node-employee-link>
+                            <i class="bi bi-person-vcard" aria-hidden="true"></i>
+                            View Employee Profile
+                        </a>
+                        <a href="#" class="btn btn-secondary btn-md justify-content-start d-none" data-org-node-filter-link>
+                            <i class="bi bi-people" aria-hidden="true"></i>
+                            View Matching Employees
+                        </a>
+                        @can('update', $organisationChart)
+                            <a href="#" class="btn btn-primary-outline btn-md justify-content-start" data-org-node-edit-link>
+                                <i class="bi bi-pencil-square" aria-hidden="true"></i>
+                                Edit Box
+                            </a>
+                            <form method="POST" action="#" data-org-node-duplicate-form data-confirm="true" data-confirm-title="Duplicate chart box?" data-confirm-message="This will create a copied box without the linked employee. You should review and update the copied details before publishing. Do you want to continue?" data-confirm-button="Duplicate box">
+                                @csrf
+                                <button type="submit" class="btn btn-secondary btn-md justify-content-start w-100">
+                                    <i class="bi bi-copy" aria-hidden="true"></i>
+                                    Duplicate Box
+                                </button>
+                            </form>
+                        @endcan
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-md" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
+
+@push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const modalElement = document.getElementById('orgNodeActionModal');
+
+            if (!modalElement) {
+                return;
+            }
+
+            const modal = new bootstrap.Modal(modalElement);
+            const title = modalElement.querySelector('#orgNodeActionModalLabel');
+            const subtitle = modalElement.querySelector('[data-org-node-modal-subtitle]');
+            const employeeLink = modalElement.querySelector('[data-org-node-employee-link]');
+            const filterLink = modalElement.querySelector('[data-org-node-filter-link]');
+            const editLink = modalElement.querySelector('[data-org-node-edit-link]');
+            const duplicateForm = modalElement.querySelector('[data-org-node-duplicate-form]');
+
+            function toggleLink(link, url) {
+                if (!link) {
+                    return;
+                }
+
+                if (url) {
+                    link.href = url;
+                    link.classList.remove('d-none');
+                    return;
+                }
+
+                link.href = '#';
+                link.classList.add('d-none');
+            }
+
+            document.querySelectorAll('[data-org-node-action]').forEach(function (button) {
+                button.addEventListener('click', function () {
+                    title.textContent = button.dataset.nodeLabel || 'Chart Box';
+                    subtitle.textContent = button.dataset.nodeSubtitle || '';
+                    toggleLink(employeeLink, button.dataset.employeeUrl || '');
+                    toggleLink(filterLink, button.dataset.filterUrl || '');
+
+                    if (editLink) {
+                        editLink.href = button.dataset.editUrl || '#';
+                    }
+
+                    if (duplicateForm) {
+                        duplicateForm.action = button.dataset.duplicateUrl || '#';
+                    }
+
+                    modal.show();
+                });
+            });
+
+            duplicateForm?.addEventListener('submit', function () {
+                modal.hide();
+            });
+        });
+    </script>
+@endpush

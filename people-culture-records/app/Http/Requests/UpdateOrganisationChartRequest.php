@@ -112,6 +112,7 @@ class UpdateOrganisationChartRequest extends FormRequest
 
                 $chartNodeIds = $chart->nodes()->pluck('id')->map(fn ($id) => (int) $id)->all();
                 $parentMap = [];
+                $boxKeys = [];
 
                 foreach ((array) $this->input('nodes', []) as $index => $node) {
                     $nodeId = filled($node['id'] ?? null) ? (int) $node['id'] : null;
@@ -124,6 +125,19 @@ class UpdateOrganisationChartRequest extends FormRequest
 
                     if ($nodeId && ! $isDelete) {
                         $parentMap[$nodeId] = $parentId;
+                    }
+
+                    if (! $isDelete && filled($node['label'] ?? null)) {
+                        $boxKey = $this->boxDuplicateKey($node);
+
+                        if (isset($boxKeys[$boxKey])) {
+                            $validator->errors()->add(
+                                "nodes.{$index}.label",
+                                'This chart already has an identical box. Change the label, linked employee, or reporting position before saving.'
+                            );
+                        }
+
+                        $boxKeys[$boxKey] = true;
                     }
 
                     if ($parentId && ! in_array($parentId, $chartNodeIds, true)) {
@@ -177,5 +191,28 @@ class UpdateOrganisationChartRequest extends FormRequest
                 }
             },
         ];
+    }
+
+    /**
+     * @param array<string, mixed> $node
+     */
+    private function boxDuplicateKey(array $node): string
+    {
+        $value = fn (string $field) => filled($node[$field] ?? null) ? (string) $node[$field] : '';
+        $text = fn (string $field) => str((string) ($node[$field] ?? ''))->trim()->lower()->toString();
+
+        return implode('|', [
+            $value('parent_id'),
+            $text('label'),
+            $text('subtitle'),
+            $value('node_type'),
+            $value('employee_id'),
+            $value('job_title_id'),
+            $value('project_id'),
+            $value('department_id'),
+            $value('province_id'),
+            $value('district_id'),
+            $value('facility_id'),
+        ]);
     }
 }

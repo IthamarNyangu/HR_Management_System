@@ -19,12 +19,12 @@ class OrganisationChartPolicy
 
     public function create(User $user): bool
     {
-        return $user->is_active && ($user->isAdmin() || $user->isHrManager());
+        return $this->canManage($user);
     }
 
     public function update(User $user, OrganisationChart $organisationChart): bool
     {
-        return $user->is_active && ($user->isAdmin() || $user->isHrManager());
+        return $this->canManage($user);
     }
 
     public function archive(User $user, OrganisationChart $organisationChart): bool
@@ -33,6 +33,11 @@ class OrganisationChartPolicy
     }
 
     public function restore(User $user, OrganisationChart $organisationChart): bool
+    {
+        return $this->canManage($user);
+    }
+
+    private function canManage(User $user): bool
     {
         return $user->is_active && ($user->isAdmin() || $user->isHrManager());
     }

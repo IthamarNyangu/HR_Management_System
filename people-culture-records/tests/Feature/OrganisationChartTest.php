@@ -19,7 +19,9 @@ class OrganisationChartTest extends TestCase
     use RefreshDatabase;
 
     private Role $adminRole;
+    private Role $managerRole;
     private Role $officerRole;
+    private Role $viewerRole;
     private Province $northern;
     private Province $luapula;
     private District $kasama;
@@ -30,7 +32,9 @@ class OrganisationChartTest extends TestCase
         parent::setUp();
 
         $this->adminRole = Role::create(['name' => 'Admin', 'code' => 'ADMIN', 'is_active' => true]);
+        $this->managerRole = Role::create(['name' => 'HR Manager', 'code' => 'HRM', 'is_active' => true]);
         $this->officerRole = Role::create(['name' => 'HR Officer', 'code' => 'HRO', 'is_active' => true]);
+        $this->viewerRole = Role::create(['name' => 'Viewer', 'code' => 'VIEWER', 'is_active' => true]);
 
         $this->northern = Province::create(['name' => 'Northern', 'code' => 'NOR', 'is_active' => true]);
         $this->luapula = Province::create(['name' => 'Luapula', 'code' => 'LUA', 'is_active' => true]);
@@ -131,6 +135,106 @@ class OrganisationChartTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_hr_manager_can_manage_organisation_charts(): void
+    {
+        $manager = $this->user($this->managerRole);
+        $chart = OrganisationChart::create([
+            'title' => 'USAID Action HIV Project Management Overview',
+            'status' => OrganisationChart::STATUS_DRAFT,
+            'created_by' => $manager->id,
+            'updated_by' => $manager->id,
+        ]);
+        $node = $chart->nodes()->create([
+            'label' => 'Chief of Party',
+            'node_type' => OrganisationChartNode::TYPE_KEY_POSITION,
+            'sort_order' => 1,
+        ]);
+
+        $this->actingAs($manager)
+            ->get(route('organisation-chart.create'))
+            ->assertOk();
+
+        $this->actingAs($manager)
+            ->get(route('organisation-chart.edit', $chart))
+            ->assertOk();
+
+        $this->actingAs($manager)
+            ->get(route('organisation-chart.designer', $chart))
+            ->assertOk();
+
+        $this->actingAs($manager)
+            ->post(route('organisation-chart.nodes.duplicate', [$chart, $node]))
+            ->assertRedirect();
+    }
+
+    public function test_hr_officer_and_viewer_have_read_only_organisation_chart_access(): void
+    {
+        $chart = OrganisationChart::create([
+            'title' => 'USAID Action HIV Project Management Overview',
+            'status' => OrganisationChart::STATUS_PUBLISHED,
+        ]);
+        $node = $chart->nodes()->create([
+            'label' => 'Chief of Party',
+            'node_type' => OrganisationChartNode::TYPE_KEY_POSITION,
+            'sort_order' => 1,
+        ]);
+
+        foreach ([$this->user($this->officerRole, $this->northern), $this->user($this->viewerRole, $this->northern)] as $user) {
+            $this->actingAs($user)
+                ->get(route('organisation-chart.index'))
+                ->assertOk()
+                ->assertSee($chart->title)
+                ->assertDontSee('New Chart')
+                ->assertDontSee(route('organisation-chart.archived'), false)
+                ->assertDontSee(route('organisation-chart.archive', $chart), false);
+
+            $this->actingAs($user)
+                ->get(route('organisation-chart.show', $chart))
+                ->assertOk()
+                ->assertSee($chart->title)
+                ->assertDontSee('Open Designer')
+                ->assertDontSee('Edit Chart')
+                ->assertDontSee('Edit Box')
+                ->assertDontSee('Duplicate Box');
+
+            $this->actingAs($user)
+                ->get(route('organisation-chart.create'))
+                ->assertForbidden();
+
+            $this->actingAs($user)
+                ->get(route('organisation-chart.edit', $chart))
+                ->assertForbidden();
+
+            $this->actingAs($user)
+                ->get(route('organisation-chart.designer', $chart))
+                ->assertForbidden();
+
+            $this->actingAs($user)
+                ->put(route('organisation-chart.update', $chart), [
+                    'title' => $chart->title,
+                    'status' => OrganisationChart::STATUS_PUBLISHED,
+                    'nodes' => [],
+                ])
+                ->assertForbidden();
+
+            $this->actingAs($user)
+                ->patch(route('organisation-chart.layout.update', $chart), [
+                    'nodes' => [
+                        ['id' => $node->id, 'parent_id' => null, 'sort_order' => 1],
+                    ],
+                ])
+                ->assertForbidden();
+
+            $this->actingAs($user)
+                ->post(route('organisation-chart.nodes.duplicate', [$chart, $node]))
+                ->assertForbidden();
+
+            $this->actingAs($user)
+                ->patch(route('organisation-chart.archive', $chart))
+                ->assertForbidden();
+        }
+    }
+
     public function test_organisation_chart_box_linked_employee_field_is_searchable(): void
     {
         $admin = $this->user($this->adminRole);
@@ -215,6 +319,204 @@ class OrganisationChartTest extends TestCase
             ->assertSee('data-org-node-drag-handle', false)
             ->assertSee('Drop a saved box here to make it top level.')
             ->assertSee('Drag saved boxes onto another saved box');
+    }
+
+    public function test_saved_chart_boxes_are_collapsed_on_edit_page(): void
+    {
+        $admin = $this->user($this->adminRole);
+        $chart = OrganisationChart::create([
+            'title' => 'USAID Action HIV Project Management Overview',
+            'status' => OrganisationChart::STATUS_DRAFT,
+            'created_by' => $admin->id,
+            'updated_by' => $admin->id,
+        ]);
+
+        $chart->nodes()->create([
+            'label' => 'Chief of Party',
+            'node_type' => OrganisationChartNode::TYPE_KEY_POSITION,
+            'sort_order' => 1,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('organisation-chart.edit', $chart))
+            ->assertOk()
+            ->assertSee('Show Details')
+            ->assertSee('Reports to: Top level')
+            ->assertSee('No linked employee')
+            ->assertSee('openNodeFromHash', false)
+            ->assertSee('window.location.hash', false);
+    }
+
+    public function test_chart_box_click_opens_action_options_instead_of_direct_navigation(): void
+    {
+        $admin = $this->user($this->adminRole);
+        $employee = $this->employee(['employee_no' => '22866', 'first_name' => 'Paul', 'last_name' => 'Chinyemba']);
+        $chart = OrganisationChart::create([
+            'title' => 'USAID Action HIV Project Management Overview',
+            'status' => OrganisationChart::STATUS_PUBLISHED,
+            'created_by' => $admin->id,
+            'updated_by' => $admin->id,
+        ]);
+        $node = $chart->nodes()->create([
+            'label' => 'Chief of Party',
+            'node_type' => OrganisationChartNode::TYPE_KEY_POSITION,
+            'employee_id' => $employee->id,
+            'sort_order' => 1,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('organisation-chart.show', $chart))
+            ->assertOk()
+            ->assertSee('data-org-node-action', false)
+            ->assertSee('View Employee Profile')
+            ->assertSee('Edit Box')
+            ->assertSee('Duplicate Box')
+            ->assertSee(route('employees.show', $employee), false)
+            ->assertSee(route('organisation-chart.nodes.duplicate', [$chart, $node]), false);
+    }
+
+    public function test_admin_can_duplicate_chart_box_without_copying_linked_employee(): void
+    {
+        $admin = $this->user($this->adminRole);
+        $employee = $this->employee(['employee_no' => '22866', 'first_name' => 'Paul', 'last_name' => 'Chinyemba']);
+        $chart = OrganisationChart::create([
+            'title' => 'USAID Action HIV Project Management Overview',
+            'status' => OrganisationChart::STATUS_DRAFT,
+            'created_by' => $admin->id,
+            'updated_by' => $admin->id,
+        ]);
+        $node = $chart->nodes()->create([
+            'label' => 'Chief of Party',
+            'node_type' => OrganisationChartNode::TYPE_KEY_POSITION,
+            'employee_id' => $employee->id,
+            'sort_order' => 1,
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('organisation-chart.nodes.duplicate', [$chart, $node]))
+            ->assertRedirect(route('organisation-chart.edit', $chart).'#node-'.OrganisationChartNode::latest('id')->first()->id);
+
+        $copy = $chart->nodes()->where('label', 'Chief of Party Copy')->firstOrFail();
+
+        $this->assertNull($copy->employee_id);
+        $this->assertSame($node->parent_id, $copy->parent_id);
+        $this->assertDatabaseHas('activity_logs', [
+            'action' => 'organisation_chart_box_duplicated',
+            'user_id' => $admin->id,
+        ]);
+    }
+
+    public function test_exact_duplicate_chart_boxes_are_rejected(): void
+    {
+        $admin = $this->user($this->adminRole);
+        $chart = OrganisationChart::create([
+            'title' => 'USAID Action HIV Project Management Overview',
+            'status' => OrganisationChart::STATUS_DRAFT,
+            'created_by' => $admin->id,
+            'updated_by' => $admin->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->from(route('organisation-chart.edit', $chart))
+            ->put(route('organisation-chart.update', $chart), [
+                'title' => $chart->title,
+                'status' => OrganisationChart::STATUS_DRAFT,
+                'nodes' => [
+                    [
+                        'label' => 'Chief of Party',
+                        'node_type' => OrganisationChartNode::TYPE_KEY_POSITION,
+                        'sort_order' => 1,
+                    ],
+                    [
+                        'label' => 'Chief of Party',
+                        'node_type' => OrganisationChartNode::TYPE_KEY_POSITION,
+                        'sort_order' => 2,
+                    ],
+                ],
+            ])
+            ->assertRedirect(route('organisation-chart.edit', $chart))
+            ->assertSessionHasErrors([
+                'nodes.1.label' => 'This chart already has an identical box. Change the label, linked employee, or reporting position before saving.',
+            ]);
+    }
+
+    public function test_designer_layout_can_update_parent_and_sort_order(): void
+    {
+        $admin = $this->user($this->adminRole);
+        $chart = OrganisationChart::create([
+            'title' => 'USAID Action HIV Project Management Overview',
+            'status' => OrganisationChart::STATUS_DRAFT,
+            'created_by' => $admin->id,
+            'updated_by' => $admin->id,
+        ]);
+        $chief = $chart->nodes()->create([
+            'label' => 'Chief of Party',
+            'node_type' => OrganisationChartNode::TYPE_KEY_POSITION,
+            'sort_order' => 1,
+        ]);
+        $technical = $chart->nodes()->create([
+            'label' => 'Technical Director',
+            'node_type' => OrganisationChartNode::TYPE_KEY_POSITION,
+            'sort_order' => 2,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('organisation-chart.designer', $chart))
+            ->assertOk()
+            ->assertSee('Organisation Chart Designer')
+            ->assertSee('Save Layout')
+            ->assertSee('Edit Box Details')
+            ->assertSee('data-designer-card', false)
+            ->assertSee('data-designer-duplicate', false)
+            ->assertSee('Duplicate')
+            ->assertSee('Drop under')
+            ->assertSee('Drop beside')
+            ->assertDontSee('Designer Tools')
+            ->assertDontSee('Box Types');
+
+        $this->actingAs($admin)
+            ->patch(route('organisation-chart.layout.update', $chart), [
+                'nodes' => [
+                    ['id' => $chief->id, 'parent_id' => null, 'sort_order' => 1],
+                    ['id' => $technical->id, 'parent_id' => $chief->id, 'sort_order' => 1],
+                ],
+            ])
+            ->assertRedirect(route('organisation-chart.designer', $chart));
+
+        $this->assertDatabaseHas('organisation_chart_nodes', [
+            'id' => $technical->id,
+            'parent_id' => $chief->id,
+            'sort_order' => 1,
+        ]);
+    }
+
+    public function test_admin_can_duplicate_chart_box_from_designer(): void
+    {
+        $admin = $this->user($this->adminRole);
+        $employee = $this->employee(['employee_no' => '22866', 'first_name' => 'Paul', 'last_name' => 'Chinyemba']);
+        $chart = OrganisationChart::create([
+            'title' => 'USAID Action HIV Project Management Overview',
+            'status' => OrganisationChart::STATUS_DRAFT,
+            'created_by' => $admin->id,
+            'updated_by' => $admin->id,
+        ]);
+        $node = $chart->nodes()->create([
+            'label' => 'Chief of Party',
+            'node_type' => OrganisationChartNode::TYPE_KEY_POSITION,
+            'employee_id' => $employee->id,
+            'sort_order' => 1,
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('organisation-chart.nodes.duplicate', [$chart, $node]), [
+                'redirect_to' => 'designer',
+            ])
+            ->assertRedirect(route('organisation-chart.designer', $chart).'#node-'.OrganisationChartNode::latest('id')->first()->id);
+
+        $copy = $chart->nodes()->where('label', 'Chief of Party Copy')->firstOrFail();
+
+        $this->assertNull($copy->employee_id);
+        $this->assertSame($node->parent_id, $copy->parent_id);
     }
 
     public function test_admin_can_view_reporting_structure(): void

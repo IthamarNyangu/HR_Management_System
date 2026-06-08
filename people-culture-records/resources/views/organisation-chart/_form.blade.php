@@ -74,6 +74,12 @@
             color: #475467;
             padding: .85rem 1rem;
         }
+        .org-node-editor [data-bs-toggle="collapse"] .bi-chevron-down {
+            transition: transform .15s ease;
+        }
+        .org-node-editor [data-bs-toggle="collapse"][aria-expanded="true"] .bi-chevron-down {
+            transform: rotate(180deg);
+        }
     </style>
 @endpush
 
@@ -414,6 +420,58 @@
                     scope.querySelectorAll('[data-org-employee-picker]').forEach(initializeEmployeePicker);
                 }
 
+                function initializeNodeCollapseButtons(scope) {
+                    scope.querySelectorAll('[data-org-node-row]').forEach(function (row) {
+                        const body = row.querySelector('[data-org-node-body]');
+                        const button = row.querySelector('[data-bs-toggle="collapse"]');
+                        const label = button?.querySelector('[data-collapse-label]');
+
+                        if (!body || !button || button.dataset.collapseInitialized === 'true') {
+                            return;
+                        }
+
+                        button.dataset.collapseInitialized = 'true';
+
+                        body.addEventListener('shown.bs.collapse', function () {
+                            button.setAttribute('aria-expanded', 'true');
+                            if (label) {
+                                label.textContent = 'Hide Details';
+                            }
+                        });
+
+                        body.addEventListener('hidden.bs.collapse', function () {
+                            button.setAttribute('aria-expanded', 'false');
+                            if (label) {
+                                label.textContent = 'Show Details';
+                            }
+                        });
+                    });
+                }
+
+                function openNodeFromHash() {
+                    const hash = window.location.hash;
+
+                    if (!hash || !hash.startsWith('#node-')) {
+                        return;
+                    }
+
+                    const selector = window.CSS && CSS.escape
+                        ? `#${CSS.escape(hash.slice(1))}`
+                        : hash;
+                    const row = document.querySelector(selector);
+                    const body = row?.querySelector('[data-org-node-body]');
+
+                    if (!row || !body) {
+                        return;
+                    }
+
+                    bootstrap.Collapse.getOrCreateInstance(body, { toggle: false }).show();
+
+                    window.setTimeout(function () {
+                        row.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }, 120);
+                }
+
                 function nodeLabel(row) {
                     const labelInput = row?.querySelector('input[name$="[label]"]');
                     const label = labelInput?.value?.trim() || row?.dataset.nodeLabel || 'Chart box';
@@ -502,6 +560,8 @@
                 }
 
                 initializeEmployeePickers(document);
+                initializeNodeCollapseButtons(document);
+                openNodeFromHash();
 
                 addButton.addEventListener('click', function () {
                     const html = template.innerHTML.replaceAll('__INDEX__', String(nextIndex));
@@ -519,6 +579,7 @@
 
                     list.appendChild(row);
                     initializeEmployeePickers(row);
+                    initializeNodeCollapseButtons(row);
                     nextIndex++;
                 });
 

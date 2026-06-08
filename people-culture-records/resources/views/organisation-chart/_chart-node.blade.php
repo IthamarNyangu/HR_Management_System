@@ -8,8 +8,12 @@
         'district_id' => $node->district_id,
         'facility_id' => $node->facility_id,
     ];
-    $filterUrl = route('employees.index', array_filter($filters, fn ($value) => filled($value)));
-    $nodeUrl = $node->employee ? route('employees.show', $node->employee) : (collect($filters)->filter(fn ($value) => filled($value))->isNotEmpty() ? $filterUrl : null);
+    $hasEmployeeFilters = collect($filters)->filter(fn ($value) => filled($value))->isNotEmpty();
+    $filterUrl = $hasEmployeeFilters ? route('employees.index', array_filter($filters, fn ($value) => filled($value))) : '';
+    $employeeUrl = $node->employee ? route('employees.show', $node->employee) : '';
+    $editUrl = route('organisation-chart.edit', $organisationChart).'#node-'.$node->id;
+    $duplicateUrl = route('organisation-chart.nodes.duplicate', [$organisationChart, $node]);
+    $canUpdateChart = auth()->user()?->can('update', $organisationChart) ?? false;
     $nodeClasses = [
         'central_head_office' => 'org-node-central',
         'regional_level' => 'org-node-regional',
@@ -24,11 +28,19 @@
 
 <div class="formal-org-node">
     <div class="formal-org-card {{ $cardClass }}">
-        @if ($nodeUrl)
-            <a href="{{ $nodeUrl }}" class="formal-org-card-link" title="Open linked system record">
-        @else
-            <div class="formal-org-card-link">
-        @endif
+        <button
+            type="button"
+            class="formal-org-card-link"
+            title="Choose what to do with this chart box"
+            data-org-node-action
+            data-node-label="{{ $node->label }}"
+            data-node-subtitle="{{ $node->subtitle }}"
+            data-employee-url="{{ $employeeUrl }}"
+            data-filter-url="{{ $filterUrl }}"
+            data-edit-url="{{ $editUrl }}"
+            data-duplicate-url="{{ $duplicateUrl }}"
+            data-can-update="{{ $canUpdateChart ? '1' : '0' }}"
+        >
             <div class="formal-org-label">{{ $node->label }}</div>
             @if ($node->subtitle)
                 <div class="formal-org-subtitle">{{ $node->subtitle }}</div>
@@ -39,11 +51,7 @@
             @if ($node->employee)
                 <div class="formal-org-linked">{{ $node->employee->employee_no }} - {{ $node->employee->full_name }}</div>
             @endif
-        @if ($nodeUrl)
-            </a>
-        @else
-            </div>
-        @endif
+        </button>
     </div>
 
     @if ($children->isNotEmpty())

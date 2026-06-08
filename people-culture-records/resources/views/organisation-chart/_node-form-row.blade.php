@@ -3,6 +3,10 @@
     $disabled = $isTemplate ? 'disabled' : '';
     $nodeId = data_get($node, 'id');
     $nodeLabel = old("nodes.$index.label", data_get($node, 'label'));
+    $nodeType = old("nodes.$index.node_type", data_get($node, 'node_type', App\Models\OrganisationChartNode::TYPE_SUPPORT_UNIT));
+    $nodeTypeLabel = $nodeTypes[$nodeType] ?? 'Chart Box';
+    $parentId = old("nodes.$index.parent_id", data_get($node, 'parent_id'));
+    $parentLabel = $parentId ? $parentNodes->firstWhere('id', (int) $parentId)?->label : null;
     $selectedEmployeeId = old("nodes.$index.employee_id", data_get($node, 'employee_id'));
     $selectedEmployee = $selectedEmployeeId ? $employees->firstWhere('id', (int) $selectedEmployeeId) : null;
     $selectedEmployeeOption = $selectedEmployee ? [
@@ -15,18 +19,48 @@
             $selectedEmployee->facility?->name,
         ])->filter()->implode(' | '),
     ] : null;
+    $hasNodeErrors = collect(array_keys($errors->getMessages()))
+        ->contains(fn (string $key) => str_starts_with($key, "nodes.$index."));
+    $isOpen = $isTemplate || blank($nodeId) || $hasNodeErrors;
+    $collapseId = $isTemplate ? 'org-node-body-__INDEX__' : "org-node-body-$index";
 @endphp
 
 <div
+    id="{{ $nodeId ? 'node-'.$nodeId : 'node-row-'.$index }}"
     class="org-node-editor border rounded-2 p-3 mb-3 bg-light"
     data-org-node-row
     data-node-id="{{ $nodeId }}"
     data-node-label="{{ $nodeLabel ?: 'New chart box' }}"
 >
     <div class="d-flex flex-column flex-lg-row justify-content-between gap-2 mb-3">
-        <div>
-            <div class="fw-semibold">{{ $nodeLabel ?: 'New chart box' }}</div>
-            <div class="small text-muted">Choose where this box sits, what it represents, and what it should link to.</div>
+        <div class="min-w-0">
+            <div class="d-flex flex-wrap gap-2 align-items-center mb-1">
+                <button
+                    type="button"
+                    class="btn btn-sm btn-secondary"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#{{ $collapseId }}"
+                    aria-expanded="{{ $isOpen ? 'true' : 'false' }}"
+                    aria-controls="{{ $collapseId }}"
+                    {{ $disabled }}
+                >
+                    <i class="bi bi-chevron-down" aria-hidden="true"></i>
+                    <span data-collapse-label>{{ $isOpen ? 'Hide Details' : 'Show Details' }}</span>
+                </button>
+                <div class="fw-semibold">{{ $nodeLabel ?: 'New chart box' }}</div>
+                @if ($hasNodeErrors)
+                    <span class="badge text-bg-danger">Needs attention</span>
+                @endif
+            </div>
+            <div class="d-flex flex-wrap gap-2 small text-muted">
+                <span>{{ $nodeTypeLabel }}</span>
+                <span>Reports to: {{ $parentLabel ?: 'Top level' }}</span>
+                @if ($selectedEmployeeOption)
+                    <span>Linked: {{ $selectedEmployeeOption['text'] }}</span>
+                @else
+                    <span>No linked employee</span>
+                @endif
+            </div>
         </div>
         <div class="d-flex gap-2 align-items-start">
             @if ($nodeId)
@@ -46,6 +80,7 @@
         </div>
     </div>
 
+    <div id="{{ $collapseId }}" class="collapse {{ $isOpen ? 'show' : '' }}" data-org-node-body>
     <div class="row g-3">
         <div class="col-md-6 col-xl-4">
             <label class="form-label">Box Label <span class="text-danger">*</span></label>
@@ -181,5 +216,6 @@
                 <div class="invalid-feedback d-block">{{ $message }}</div>
             @enderror
         </div>
+    </div>
     </div>
 </div>
