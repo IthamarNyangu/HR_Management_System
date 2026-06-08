@@ -131,6 +131,68 @@ class OrganisationChartTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_organisation_chart_box_linked_employee_field_is_searchable(): void
+    {
+        $admin = $this->user($this->adminRole);
+        $jobTitle = JobTitle::create(['name' => 'Chief of Party', 'code' => 'COP', 'is_active' => true]);
+        $employee = $this->employee([
+            'employee_no' => '22866',
+            'first_name' => 'Paul',
+            'last_name' => 'Chinyemba',
+            'job_title_id' => $jobTitle->id,
+        ]);
+        $chart = OrganisationChart::create([
+            'title' => 'USAID Action HIV Project Management Overview',
+            'status' => OrganisationChart::STATUS_DRAFT,
+            'created_by' => $admin->id,
+            'updated_by' => $admin->id,
+        ]);
+
+        $chart->nodes()->create([
+            'label' => 'Chief of Party',
+            'node_type' => OrganisationChartNode::TYPE_KEY_POSITION,
+            'employee_id' => $employee->id,
+            'sort_order' => 1,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('organisation-chart.edit', $chart))
+            ->assertOk()
+            ->assertSee('data-org-employee-picker', false)
+            ->assertSee('Search employee number, name, job title, or location')
+            ->assertSee('22866 - Paul Chinyemba')
+            ->assertSee('Chief of Party');
+    }
+
+    public function test_organisation_chart_box_validation_uses_friendly_messages(): void
+    {
+        $admin = $this->user($this->adminRole);
+        $chart = OrganisationChart::create([
+            'title' => 'USAID Action HIV Project Management Overview',
+            'status' => OrganisationChart::STATUS_DRAFT,
+            'created_by' => $admin->id,
+            'updated_by' => $admin->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->from(route('organisation-chart.edit', $chart))
+            ->put(route('organisation-chart.update', $chart), [
+                'title' => $chart->title,
+                'status' => OrganisationChart::STATUS_DRAFT,
+                'nodes' => [
+                    [
+                        'label' => '',
+                        'node_type' => OrganisationChartNode::TYPE_SUPPORT_UNIT,
+                        'sort_order' => 1,
+                    ],
+                ],
+            ])
+            ->assertRedirect(route('organisation-chart.edit', $chart))
+            ->assertSessionHasErrors([
+                'nodes.0.label' => 'Box label is required.',
+            ]);
+    }
+
     public function test_admin_can_view_reporting_structure(): void
     {
         $admin = $this->user($this->adminRole);

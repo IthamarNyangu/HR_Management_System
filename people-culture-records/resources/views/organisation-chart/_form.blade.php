@@ -19,6 +19,45 @@
     ])->values()->all()));
 @endphp
 
+@push('styles')
+    <style>
+        .org-employee-picker { position: relative; }
+        .org-employee-results {
+            position: absolute;
+            z-index: 1060;
+            top: calc(100% + .35rem);
+            left: 0;
+            right: 0;
+            max-height: 18rem;
+            overflow-y: auto;
+            border: 1px solid #d8e0ec;
+            border-radius: .5rem;
+            background: #fff;
+            box-shadow: 0 .8rem 1.8rem rgba(23, 32, 51, .14);
+        }
+        .org-employee-option {
+            width: 100%;
+            border: 0;
+            border-bottom: 1px solid #eef2f7;
+            background: #fff;
+            padding: .7rem .85rem;
+            text-align: left;
+        }
+        .org-employee-option:hover,
+        .org-employee-option:focus {
+            background: #f3f6fa;
+            outline: none;
+        }
+        .org-employee-option:last-child { border-bottom: 0; }
+        .org-employee-selected {
+            border: 1px solid #d8e0ec;
+            border-radius: .5rem;
+            background: #f8fafc;
+            padding: .7rem;
+        }
+    </style>
+@endpush
+
 <form method="POST" action="{{ $action }}">
     @csrf
     @if (($method ?? 'POST') !== 'POST')
@@ -139,6 +178,216 @@
                     });
                 }
 
+                function clearEmployeeResults(picker) {
+                    picker.querySelector('[data-org-employee-results]')?.classList.add('d-none');
+                }
+
+                function renderSelectedEmployee(picker, employee) {
+                    const selected = picker.querySelector('[data-org-employee-selected]');
+                    const selectedText = picker.querySelector('[data-org-employee-selected-text]');
+                    const selectedDetails = picker.querySelector('[data-org-employee-selected-details]');
+
+                    if (!selected || !selectedText || !selectedDetails) {
+                        return;
+                    }
+
+                    if (!employee) {
+                        selected.classList.add('d-none');
+                        selectedText.textContent = '';
+                        selectedDetails.textContent = '';
+                        return;
+                    }
+
+                    selectedText.textContent = employee.text || '';
+                    selectedDetails.textContent = employee.details || '';
+                    selected.classList.remove('d-none');
+                }
+
+                function selectEmployee(picker, employee) {
+                    const input = picker.querySelector('[data-org-employee-input]');
+                    const idInput = picker.querySelector('[data-org-employee-id]');
+
+                    if (!input || !idInput) {
+                        return;
+                    }
+
+                    input.value = employee.text || '';
+                    idInput.value = employee.id || '';
+                    picker.dataset.selectedEmployee = JSON.stringify(employee);
+                    renderSelectedEmployee(picker, employee);
+                    clearEmployeeResults(picker);
+                }
+
+                function renderEmployeeResults(picker, employees) {
+                    const results = picker.querySelector('[data-org-employee-results]');
+
+                    if (!results) {
+                        return;
+                    }
+
+                    results.innerHTML = '';
+
+                    if (!employees.length) {
+                        const empty = document.createElement('div');
+                        empty.className = 'px-3 py-2 text-muted small';
+                        empty.textContent = 'No employees found.';
+                        results.appendChild(empty);
+                        results.classList.remove('d-none');
+                        return;
+                    }
+
+                    employees.forEach(function (employee) {
+                        const button = document.createElement('button');
+                        const primary = document.createElement('div');
+                        const details = document.createElement('div');
+
+                        button.type = 'button';
+                        button.className = 'org-employee-option';
+                        primary.className = 'fw-semibold';
+                        details.className = 'small text-muted';
+                        primary.textContent = employee.text || '';
+                        details.textContent = employee.details || 'No job/location details recorded';
+
+                        button.appendChild(primary);
+                        button.appendChild(details);
+
+                        if (employee.email) {
+                            const email = document.createElement('div');
+                            email.className = 'small text-muted';
+                            email.textContent = employee.email;
+                            button.appendChild(email);
+                        }
+
+                        button.addEventListener('click', function () {
+                            selectEmployee(picker, employee);
+                        });
+
+                        results.appendChild(button);
+                    });
+
+                    results.classList.remove('d-none');
+                }
+
+                function initializeEmployeePicker(picker) {
+                    if (!picker || picker.dataset.initialized === 'true') {
+                        return;
+                    }
+
+                    picker.dataset.initialized = 'true';
+
+                    const input = picker.querySelector('[data-org-employee-input]');
+                    const idInput = picker.querySelector('[data-org-employee-id]');
+                    const clearButton = picker.querySelector('[data-org-employee-clear]');
+                    const url = picker.dataset.url;
+                    let abortController = null;
+                    let searchTimer = null;
+
+                    try {
+                        const selected = JSON.parse(picker.dataset.selected || 'null');
+                        if (selected) {
+                            picker.dataset.selectedEmployee = JSON.stringify(selected);
+                        }
+                    } catch (error) {
+                        picker.dataset.selectedEmployee = '';
+                    }
+
+                    input?.addEventListener('input', function () {
+                        const query = input.value.trim();
+
+                        if (idInput) {
+                            idInput.value = '';
+                        }
+
+                        picker.dataset.selectedEmployee = '';
+                        renderSelectedEmployee(picker, null);
+                        clearTimeout(searchTimer);
+
+                        if (query.length < 1) {
+                            clearEmployeeResults(picker);
+                            return;
+                        }
+
+                        searchTimer = setTimeout(function () {
+                            if (abortController) {
+                                abortController.abort();
+                            }
+
+                            abortController = new AbortController();
+
+                            const results = picker.querySelector('[data-org-employee-results]');
+                            if (results) {
+                                results.innerHTML = '';
+
+                                const loading = document.createElement('div');
+                                loading.className = 'px-3 py-2 text-muted small';
+                                loading.textContent = 'Searching employees...';
+                                results.appendChild(loading);
+                                results.classList.remove('d-none');
+                            }
+
+                            fetch(`${url}?q=${encodeURIComponent(query)}&limit=10`, {
+                                headers: { 'Accept': 'application/json' },
+                                signal: abortController.signal,
+                            })
+                                .then(function (response) {
+                                    if (!response.ok) {
+                                        throw new Error('Employee search failed.');
+                                    }
+
+                                    return response.json();
+                                })
+                                .then(function (employees) {
+                                    renderEmployeeResults(picker, employees);
+                                })
+                                .catch(function (error) {
+                                    if (error.name === 'AbortError') {
+                                        return;
+                                    }
+
+                                    const results = picker.querySelector('[data-org-employee-results]');
+                                    if (!results) {
+                                        return;
+                                    }
+
+                                    results.innerHTML = '';
+
+                                    const message = document.createElement('div');
+                                    message.className = 'px-3 py-2 text-danger small';
+                                    message.textContent = 'Unable to search employees right now.';
+                                    results.appendChild(message);
+                                    results.classList.remove('d-none');
+                                });
+                        }, 220);
+                    });
+
+                    input?.addEventListener('focus', function () {
+                        if (input.value.trim().length >= 1 && !idInput?.value) {
+                            input.dispatchEvent(new Event('input'));
+                        }
+                    });
+
+                    clearButton?.addEventListener('click', function () {
+                        if (input) {
+                            input.value = '';
+                            input.focus();
+                        }
+
+                        if (idInput) {
+                            idInput.value = '';
+                        }
+
+                        picker.dataset.selectedEmployee = '';
+                        renderSelectedEmployee(picker, null);
+                        clearEmployeeResults(picker);
+                    });
+                }
+
+                function initializeEmployeePickers(scope) {
+                    scope.querySelectorAll('[data-org-employee-picker]').forEach(initializeEmployeePicker);
+                }
+
+                initializeEmployeePickers(document);
+
                 addButton.addEventListener('click', function () {
                     const html = template.innerHTML.replaceAll('__INDEX__', String(nextIndex));
                     const wrapper = document.createElement('div');
@@ -154,6 +403,7 @@
                     }
 
                     list.appendChild(row);
+                    initializeEmployeePickers(row);
                     nextIndex++;
                 });
 
@@ -165,6 +415,14 @@
                     }
 
                     removeButton.closest('[data-org-node-row]')?.remove();
+                });
+
+                document.addEventListener('click', function (event) {
+                    document.querySelectorAll('[data-org-employee-picker]').forEach(function (picker) {
+                        if (!picker.contains(event.target)) {
+                            clearEmployeeResults(picker);
+                        }
+                    });
                 });
             });
         </script>

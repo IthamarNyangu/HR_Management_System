@@ -3,6 +3,18 @@
     $disabled = $isTemplate ? 'disabled' : '';
     $nodeId = data_get($node, 'id');
     $nodeLabel = old("nodes.$index.label", data_get($node, 'label'));
+    $selectedEmployeeId = old("nodes.$index.employee_id", data_get($node, 'employee_id'));
+    $selectedEmployee = $selectedEmployeeId ? $employees->firstWhere('id', (int) $selectedEmployeeId) : null;
+    $selectedEmployeeOption = $selectedEmployee ? [
+        'id' => $selectedEmployee->id,
+        'text' => $selectedEmployee->display_name,
+        'details' => collect([
+            $selectedEmployee->jobTitle?->name,
+            $selectedEmployee->province?->name,
+            $selectedEmployee->district?->name,
+            $selectedEmployee->facility?->name,
+        ])->filter()->implode(' | '),
+    ] : null;
 @endphp
 
 <div class="org-node-editor border rounded-2 p-3 mb-3 bg-light" data-org-node-row>
@@ -67,18 +79,35 @@
         </div>
         <div class="col-md-6 col-xl-4">
             <label class="form-label">Linked Employee</label>
-            <select name="nodes[{{ $index }}][employee_id]" class="form-select" {{ $disabled }}>
-                <option value="">No specific employee</option>
-                @foreach ($employees as $employee)
-                    <option value="{{ $employee->id }}" @selected((string) old("nodes.$index.employee_id", data_get($node, 'employee_id')) === (string) $employee->id)>
-                        {{ $employee->employee_no }} - {{ $employee->full_name }}{{ $employee->jobTitle ? ' - '.$employee->jobTitle->name : '' }}
-                    </option>
-                @endforeach
-            </select>
-            <div class="form-text">Use this for people such as a Country Director serving as Chief of Party.</div>
+            <div class="org-employee-picker" data-org-employee-picker data-url="{{ route('employees.search') }}" data-selected='@json($selectedEmployeeOption)'>
+                <input
+                    type="search"
+                    class="form-control @error("nodes.$index.employee_id") is-invalid @enderror"
+                    value="{{ $selectedEmployeeOption['text'] ?? '' }}"
+                    placeholder="Search employee number, name, job title, or location"
+                    autocomplete="off"
+                    data-org-employee-input
+                    {{ $disabled }}
+                >
+                <input type="hidden" name="nodes[{{ $index }}][employee_id]" value="{{ $selectedEmployeeId }}" data-org-employee-id {{ $disabled }}>
+                <div class="org-employee-results d-none" data-org-employee-results role="listbox"></div>
+                <div class="org-employee-selected mt-2 {{ $selectedEmployeeOption ? '' : 'd-none' }}" data-org-employee-selected>
+                    <div class="d-flex justify-content-between gap-2 align-items-start">
+                        <div class="min-w-0">
+                            <div class="fw-semibold text-truncate" data-org-employee-selected-text>{{ $selectedEmployeeOption['text'] ?? '' }}</div>
+                            <div class="small text-muted" data-org-employee-selected-details>{{ $selectedEmployeeOption['details'] ?? '' }}</div>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-secondary flex-shrink-0" data-org-employee-clear {{ $disabled }}>Clear</button>
+                    </div>
+                </div>
+            </div>
+            <div class="form-text">Use this for people such as a Country Director serving as Chief of Party. Leave blank for generic boxes.</div>
+            @error("nodes.$index.employee_id")
+                <div class="invalid-feedback d-block">{{ $message }}</div>
+            @enderror
         </div>
         <div class="col-md-6 col-xl-2">
-            <label class="form-label">Sort Order</label>
+            <label class="form-label">Display Order</label>
             <input type="number" min="0" name="nodes[{{ $index }}][sort_order]" value="{{ old("nodes.$index.sort_order", data_get($node, 'sort_order', $index === '__INDEX__' ? '' : $index + 1)) }}" class="form-control" {{ $disabled }}>
         </div>
 

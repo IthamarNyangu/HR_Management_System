@@ -51,6 +51,55 @@ class UpdateOrganisationChartRequest extends FormRequest
         ];
     }
 
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'nodes.*.label.required' => 'Box label is required.',
+            'nodes.*.label.max' => 'Box label must be 255 characters or fewer.',
+            'nodes.*.node_type.required' => 'Box type is required.',
+            'nodes.*.node_type.in' => 'Choose a valid box type.',
+            'nodes.*.planned_positions.integer' => 'Planned positions must be a whole number.',
+            'nodes.*.planned_positions.min' => 'Planned positions cannot be negative.',
+            'nodes.*.planned_positions.max' => 'Planned positions must be 9,999 or fewer.',
+            'nodes.*.sort_order.integer' => 'Sort order must be a whole number.',
+            'nodes.*.sort_order.min' => 'Sort order cannot be negative.',
+            'nodes.*.sort_order.max' => 'Sort order must be 9,999 or fewer.',
+            'nodes.*.employee_id.exists' => 'Choose a valid linked employee from the search results.',
+            'nodes.*.job_title_id.exists' => 'Choose a valid job title.',
+            'nodes.*.project_id.exists' => 'Choose a valid project.',
+            'nodes.*.department_id.exists' => 'Choose a valid department.',
+            'nodes.*.province_id.exists' => 'Choose a valid province.',
+            'nodes.*.district_id.exists' => 'Choose a valid district.',
+            'nodes.*.facility_id.exists' => 'Choose a valid facility.',
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function attributes(): array
+    {
+        return [
+            'title' => 'chart title',
+            'status' => 'chart status',
+            'effective_date' => 'effective date',
+            'nodes.*.label' => 'box label',
+            'nodes.*.node_type' => 'box type',
+            'nodes.*.planned_positions' => 'planned positions',
+            'nodes.*.employee_id' => 'linked employee',
+            'nodes.*.job_title_id' => 'job title link',
+            'nodes.*.project_id' => 'project link',
+            'nodes.*.department_id' => 'department link',
+            'nodes.*.province_id' => 'province link',
+            'nodes.*.district_id' => 'district link',
+            'nodes.*.facility_id' => 'facility link',
+            'nodes.*.sort_order' => 'sort order',
+        ];
+    }
+
     public function after(): array
     {
         return [

@@ -379,7 +379,7 @@ class OrganisationChartController extends Controller
             'jobTitles' => JobTitle::where('is_active', true)->orderBy('name')->get(),
             'employees' => Employee::query()
                 ->visibleTo($request->user())
-                ->with(['jobTitle', 'province'])
+                ->with(['jobTitle', 'province', 'district', 'facility'])
                 ->orderBy('last_name')
                 ->orderBy('first_name')
                 ->limit(2500)
