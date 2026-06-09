@@ -9,6 +9,7 @@ use App\Models\Employee;
 use App\Models\JobApplication;
 use App\Models\JobApplicationDocument;
 use App\Models\JobOpening;
+use App\Models\StaffEstablishmentPlan;
 use App\Models\StaffPromotion;
 use App\Models\StaffRelocation;
 use App\Models\TemporaryAppointment;
@@ -155,6 +156,14 @@ class ActivityLogger
                 'province_name' => $subject->province?->name,
                 'facility_id' => $subject->facility_id,
                 'facility_name' => $subject->facility?->name,
+            ];
+        }
+
+        if ($subject instanceof StaffEstablishmentPlan) {
+            return [
+                'reference_no' => $subject->reference_no,
+                'project_id' => $subject->project_id,
+                'project_name' => $subject->project?->name,
             ];
         }
 

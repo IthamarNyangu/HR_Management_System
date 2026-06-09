@@ -69,6 +69,12 @@
                             Add Job Opening
                         </a>
                     @endcan
+                    @can('viewAny', App\Models\StaffEstablishmentPlan::class)
+                        <a href="{{ route('staff-establishment.index') }}" class="btn btn-primary-outline btn-md">
+                            <i class="bi bi-building-check" aria-hidden="true"></i>
+                            Staff Establishment
+                        </a>
+                    @endcan
                     @can('view-reports')
                         <a href="{{ route('reports.index') }}" class="btn btn-secondary btn-md">
                             <i class="bi bi-file-earmark-spreadsheet" aria-hidden="true"></i>
@@ -258,6 +264,34 @@
             </div>
             <div class="row row-cols-1 row-cols-sm-2 row-cols-xl-4 g-3">
                 @foreach ($recruitmentOverview as $card)
+                    <div class="col">
+                        <div class="summary-tile h-100">
+                            <div class="summary-label">{{ $card['label'] }}</div>
+                            <div class="summary-value">{{ $card['value'] }}</div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </section>
+
+        <section class="bg-white border rounded-2 p-3">
+            <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
+                <div>
+                    <h2 class="h5 mb-1">Staff Establishment Overview</h2>
+                    <p class="text-muted small mb-0">
+                        @if ($latestEstablishmentPlan)
+                            Based on {{ $latestEstablishmentPlan->title }} - {{ $latestEstablishmentPlan->effective_month?->format('M Y') }}.
+                        @else
+                            No establishment plan has been created yet.
+                        @endif
+                    </p>
+                </div>
+                @can('viewAny', App\Models\StaffEstablishmentPlan::class)
+                    <a href="{{ route('staff-establishment.index') }}" class="btn btn-secondary btn-sm">Open staff establishment</a>
+                @endcan
+            </div>
+            <div class="row row-cols-1 row-cols-sm-2 row-cols-xl-4 g-3">
+                @foreach ($staffEstablishmentOverview as $card)
                     <div class="col">
                         <div class="summary-tile h-100">
                             <div class="summary-label">{{ $card['label'] }}</div>

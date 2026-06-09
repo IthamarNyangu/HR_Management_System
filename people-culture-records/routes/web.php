@@ -19,6 +19,7 @@ use App\Http\Controllers\PublicCareerController;
 use App\Http\Controllers\PublicJobApplicationController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ReportExportController;
+use App\Http\Controllers\StaffEstablishmentController;
 use App\Http\Controllers\Api\PublicJobOpeningController;
 use App\Http\Controllers\Recruitment\JobApplicationController;
 use App\Http\Controllers\Recruitment\JobApplicationDocumentController;
@@ -127,6 +128,15 @@ Route::middleware(['auth', 'active', 'password.changed'])->group(function () use
     });
 
     Route::get('/employees/search', EmployeeSearchController::class)->name('employees.search');
+
+    Route::get('/staff-establishment/archived', [StaffEstablishmentController::class, 'archived'])->name('staff-establishment.archived');
+    Route::get('/staff-establishment/{staff_establishment_plan}/export/excel', [StaffEstablishmentController::class, 'exportExcel'])->name('staff-establishment.export.excel');
+    Route::get('/staff-establishment/{staff_establishment_plan}/export/pdf', [StaffEstablishmentController::class, 'exportPdf'])->name('staff-establishment.export.pdf');
+    Route::patch('/staff-establishment/{staff_establishment_plan}/archive', [StaffEstablishmentController::class, 'archive'])->name('staff-establishment.archive');
+    Route::patch('/staff-establishment/{id}/restore', [StaffEstablishmentController::class, 'restore'])->whereNumber('id')->name('staff-establishment.restore');
+    Route::resource('staff-establishment', StaffEstablishmentController::class)
+        ->parameters(['staff-establishment' => 'staff_establishment_plan'])
+        ->except(['destroy']);
 
     Route::get('/recruitment', [JobOpeningController::class, 'dashboard'])->name('recruitment.index');
     Route::get('/recruitment/applications', [JobApplicationController::class, 'index'])->name('recruitment.applications.index');

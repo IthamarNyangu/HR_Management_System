@@ -8,16 +8,18 @@ use App\Models\DisciplinaryCase;
 use App\Models\Employee;
 use App\Models\EmploymentStatus;
 use App\Models\JobOpening;
+use App\Models\StaffEstablishmentPlan;
 use App\Models\StaffPromotion;
 use App\Models\StaffRelocation;
 use App\Models\AppointmentStatus;
 use App\Models\TemporaryAppointment;
+use App\Services\StaffEstablishmentMetricsService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
-    public function __invoke(Request $request): View
+    public function __invoke(Request $request, StaffEstablishmentMetricsService $establishmentMetrics): View
     {
         $user = $request->user();
         $employeeQuery = Employee::query()->visibleTo($user);
@@ -153,6 +155,18 @@ class DashboardController extends Controller
             ['label' => 'Closed Jobs This Month', 'value' => (clone $jobOpeningQuery)->where('status', JobOpening::STATUS_CLOSED)->whereYear('closed_at', now()->year)->whereMonth('closed_at', now()->month)->count()],
         ];
 
+        $latestEstablishmentPlan = $establishmentMetrics->latestVisiblePlan($user);
+        $establishmentSummary = $latestEstablishmentPlan
+            ? $establishmentMetrics->summaryForPlan($latestEstablishmentPlan, $user)
+            : ['budgeted' => 0, 'filled' => 0, 'vacant' => 0, 'overstaffed' => 0, 'vacancy_rate' => 0.0];
+
+        $staffEstablishmentOverview = [
+            ['label' => 'Budgeted Positions', 'value' => $establishmentSummary['budgeted']],
+            ['label' => 'Filled Positions', 'value' => $establishmentSummary['filled']],
+            ['label' => 'Vacancies', 'value' => $establishmentSummary['vacant']],
+            ['label' => 'Vacancy Rate', 'value' => $establishmentSummary['vacancy_rate'].'%'],
+        ];
+
         $latestRelocations = StaffRelocation::query()
             ->visibleTo($user)
             ->with(['employee', 'fromProvince', 'toProvince'])
@@ -181,6 +195,8 @@ class DashboardController extends Controller
             'temporaryAppointmentOverview',
             'latestTemporaryAppointments',
             'recruitmentOverview',
+            'latestEstablishmentPlan',
+            'staffEstablishmentOverview',
             'recentActivities',
             'submittedStatus',
             'activeCaseStatus',
