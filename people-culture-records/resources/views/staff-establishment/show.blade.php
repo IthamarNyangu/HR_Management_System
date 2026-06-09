@@ -111,6 +111,10 @@
                     </tbody>
                 </table>
             </div>
+
+            <div class="mt-3">
+                {{ $rows->links() }}
+            </div>
         </section>
     </div>
 @endsection

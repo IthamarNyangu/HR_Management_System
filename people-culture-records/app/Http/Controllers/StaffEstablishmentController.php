@@ -20,6 +20,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -106,7 +107,7 @@ class StaffEstablishmentController extends Controller
         $staffEstablishmentPlan->load(['project', 'createdBy', 'updatedBy', 'approvedBy']);
         $lines = $metrics->visibleLines($staffEstablishmentPlan, $request->user());
         $summary = $metrics->summaryForLines($lines, $request->user());
-        $rows = $metrics->rowsForPlan($staffEstablishmentPlan, $request->user());
+        $rows = $this->paginateRows($metrics->rowsForPlan($staffEstablishmentPlan, $request->user()), $request);
 
         return view('staff-establishment.show', [
             'plan' => $staffEstablishmentPlan,
@@ -356,6 +357,30 @@ class StaffEstablishmentController extends Controller
             ],
             user: $request->user(),
             request: $request,
+        );
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $rows
+     * @return LengthAwarePaginator<int, array<string, mixed>>
+     */
+    private function paginateRows(array $rows, Request $request): LengthAwarePaginator
+    {
+        $perPage = 10;
+        $page = max((int) $request->query('page', 1), 1);
+        $items = collect($rows);
+        $query = $request->query();
+        unset($query['page']);
+
+        return new LengthAwarePaginator(
+            $items->forPage($page, $perPage)->values(),
+            $items->count(),
+            $perPage,
+            $page,
+            [
+                'path' => $request->url(),
+                'query' => $query,
+            ],
         );
     }
 }

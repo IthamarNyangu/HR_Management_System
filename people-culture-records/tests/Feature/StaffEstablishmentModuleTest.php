@@ -192,6 +192,40 @@ class StaffEstablishmentModuleTest extends TestCase
             ->assertSee('2');
     }
 
+    public function test_establishment_and_vacancies_table_is_paginated_to_ten_rows(): void
+    {
+        $admin = $this->user($this->adminRole);
+        $plan = $this->plan($admin);
+
+        foreach (range(1, 11) as $number) {
+            $jobTitle = JobTitle::create([
+                'name' => sprintf('Establishment Role %02d', $number),
+                'code' => sprintf('ER%02d', $number),
+                'is_active' => true,
+            ]);
+
+            $plan->lines()->create([
+                'job_title_id' => $jobTitle->id,
+                'province_id' => $this->northern->id,
+                'district_id' => $this->kasama->id,
+                'budgeted_positions' => 1,
+            ]);
+        }
+
+        $this->actingAs($admin)
+            ->get(route('staff-establishment.show', $plan))
+            ->assertOk()
+            ->assertSee('Establishment Role 01')
+            ->assertSee('Establishment Role 10')
+            ->assertDontSee('Establishment Role 11');
+
+        $this->actingAs($admin)
+            ->get(route('staff-establishment.show', ['staff_establishment_plan' => $plan, 'page' => 2]))
+            ->assertOk()
+            ->assertSee('Establishment Role 11')
+            ->assertDontSee('Establishment Role 01');
+    }
+
     public function test_location_validation_rejects_district_outside_province(): void
     {
         $admin = $this->user($this->adminRole);
