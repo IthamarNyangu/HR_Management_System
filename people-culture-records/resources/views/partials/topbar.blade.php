@@ -6,7 +6,7 @@
 
     <div class="d-flex justify-content-between align-items-center gap-3">
         <div class="d-flex align-items-center gap-2">
-            <img src="{{ asset('images/RTCZ.png') }}" alt="right to care zambia logo" class="topbar-logo">
+            <img src="{{ asset('images/right-to-care-zambia-logo.png') }}" alt="right to care zambia logo" class="topbar-logo">
             <div>
                 <div class="fw-semibold text-dark lh-sm">Right to Care Zambia</div>
             </div>

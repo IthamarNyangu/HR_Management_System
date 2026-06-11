@@ -3,7 +3,9 @@
 namespace App\Providers;
 
 use App\Actions\Fortify\ResetUserPassword;
+use App\Mail\PasswordResetMail;
 use App\Models\User;
+use Illuminate\Auth\Notifications\ResetPassword as ResetPasswordNotification;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -28,6 +30,15 @@ class FortifyServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
+        ResetPasswordNotification::toMailUsing(function (User $notifiable, string $token): PasswordResetMail {
+            $resetUrl = url(route('password.reset', [
+                'token' => $token,
+                'email' => $notifiable->getEmailForPasswordReset(),
+            ], false));
+            $expiresInMinutes = (int) config('auth.passwords.'.config('auth.defaults.passwords').'.expire', 60);
+
+            return new PasswordResetMail($notifiable, $resetUrl, $expiresInMinutes);
+        });
 
         Fortify::loginView(fn () => view('auth.login'));
         Fortify::requestPasswordResetLinkView(fn () => view('auth.forgot-password'));

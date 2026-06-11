@@ -2,11 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Mail\SystemTestMail;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
@@ -82,5 +84,31 @@ class PasswordResetEmailTest extends TestCase
 
         $this->assertTrue(Hash::check('NewPassword@2026', $user->password));
         $this->assertFalse($user->must_change_password);
+    }
+
+    public function test_branded_test_email_can_render(): void
+    {
+        $html = (new SystemTestMail())->render();
+
+        $this->assertStringContainsString('People &amp; Culture Records Management System', $html);
+        $this->assertStringContainsString('Electronic Communications Policy of Right to Care', $html);
+    }
+
+    public function test_mail_test_command_only_sends_to_allowed_recipients(): void
+    {
+        Mail::fake();
+        config(['mail.test_allowed_recipients' => ['ithamar.nyangu@righttocare-zambia.org']]);
+
+        $this->artisan('mail:test', ['to' => 'Ithamar.Nyangu@righttocare-zambia.org'])
+            ->assertExitCode(0);
+
+        Mail::assertSent(SystemTestMail::class, fn (SystemTestMail $mail): bool => $mail->hasTo('ithamar.nyangu@righttocare-zambia.org'));
+
+        Mail::fake();
+
+        $this->artisan('mail:test', ['to' => 'someone@example.test'])
+            ->assertExitCode(1);
+
+        Mail::assertNothingSent();
     }
 }

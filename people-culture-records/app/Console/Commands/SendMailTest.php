@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Mail\SystemTestMail;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Mail;
 use Throwable;
@@ -32,14 +33,7 @@ class SendMailTest extends Command
         }
 
         try {
-            Mail::raw(
-                "This is a controlled test email from the People & Culture Records Management System.\n\nIf you received this, SMTP is configured correctly.",
-                function ($message) use ($to) {
-                    $message
-                        ->to($to)
-                        ->subject((string) $this->option('subject'));
-                },
-            );
+            Mail::to($to)->send(new SystemTestMail((string) $this->option('subject')));
         } catch (Throwable $exception) {
             $this->error('Mail test failed: '.$exception->getMessage());
 

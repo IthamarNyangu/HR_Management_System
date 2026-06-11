@@ -4,12 +4,12 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Careers - Right to Care Zambia</title>
-    <link rel="icon" type="image/png" href="{{ asset('images/RTCZ.png') }}">
+    <link rel="icon" type="image/png" href="{{ asset('images/right-to-care-zambia-logo.png') }}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body { background: #f7f8fb; color: #172033; }
         .career-header { background: #fff; border-bottom: 1px solid #e7eaf0; }
-        .career-logo { width: 46px; height: 46px; object-fit: contain; }
+        .career-logo { width: 58px; height: 58px; object-fit: contain; }
         .job-card { border: 1px solid #e1e7f0; border-radius: .5rem; background: #fff; transition: border-color .15s ease, box-shadow .15s ease; }
         .job-card:hover { border-color: #b8c7dd; box-shadow: 0 .6rem 1.4rem rgba(23, 32, 51, .08); }
         .text-danger { color: #c01818 !important; }
@@ -18,7 +18,7 @@
 <body>
     <header class="career-header">
         <div class="container py-3 d-flex align-items-center gap-3">
-            <img src="{{ asset('images/RTCZ.png') }}" alt="Right to Care Zambia" class="career-logo">
+            <img src="{{ asset('images/right-to-care-zambia-logo.png') }}" alt="Right to Care Zambia" class="career-logo">
             <div>
                 <div class="fw-semibold">Right to Care Zambia</div>
                 <div class="small text-muted">Careers</div>

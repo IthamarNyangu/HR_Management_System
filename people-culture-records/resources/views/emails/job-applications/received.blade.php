@@ -1,15 +1,34 @@
-<p>Dear {{ $application->full_name }},</p>
+@extends('emails.layout', [
+    'title' => 'Application received',
+    'preheader' => 'Your application has been received by Right to Care Zambia.',
+])
 
-<p>Thank you for applying for <strong>{{ $application->jobOpening?->title }}</strong>.</p>
+@section('content')
+    <p style="margin:0 0 18px;"><strong>Dear {{ $application->full_name }},</strong></p>
 
-<p>
-    <strong>Application reference:</strong> {{ $application->reference_no }}<br>
-    <strong>Closing date:</strong> {{ $application->jobOpening?->closing_date?->format('d M Y') }}
-</p>
+    <p style="margin:0 0 18px;">
+        Thank you for applying for <strong>{{ $application->jobOpening?->title }}</strong>.
+    </p>
 
-<p>You can withdraw your application using this secure link:</p>
-<p><a href="{{ $withdrawalUrl }}">{{ $withdrawalUrl }}</a></p>
+    <p style="margin:0 0 18px;">
+        <strong>Application reference:</strong> {{ $application->reference_no }}<br>
+        <strong>Closing date:</strong> {{ $application->jobOpening?->closing_date?->format('d M Y') }}
+    </p>
 
-<p>If you do not hear from us within 4 weeks after the closing date, please consider your application unsuccessful.</p>
+    <p style="margin:0 0 18px;">
+        You can withdraw your application using this secure link:
+    </p>
 
-<p>Regards,<br>Right to Care Zambia People &amp; Culture</p>
+    <p style="margin:0 0 18px;">
+        <a href="{{ $withdrawalUrl }}" style="color:#2563eb; word-break:break-all;">{{ $withdrawalUrl }}</a>
+    </p>
+
+    <p style="margin:0 0 24px;">
+        If you do not hear from us within 4 weeks after the closing date, please consider your application unsuccessful.
+    </p>
+
+    <p style="margin:0;">
+        Regards,<br>
+        Right to Care Zambia People &amp; Culture
+    </p>
+@endsection
