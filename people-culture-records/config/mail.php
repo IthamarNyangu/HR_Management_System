@@ -115,4 +115,19 @@ return [
         'name' => env('MAIL_FROM_NAME', env('APP_NAME', 'Laravel')),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Controlled Local Mail Test Recipients
+    |--------------------------------------------------------------------------
+    |
+    | The mail:test Artisan command uses this allow-list so local SMTP testing
+    | cannot accidentally send messages to broad employee lists.
+    |
+    */
+
+    'test_allowed_recipients' => array_values(array_filter(array_map(
+        fn (string $email): string => mb_strtolower(trim($email)),
+        explode(',', (string) env('MAIL_TEST_ALLOWED_RECIPIENTS', '')),
+    ))),
+
 ];

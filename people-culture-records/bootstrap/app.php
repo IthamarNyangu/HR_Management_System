@@ -19,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
         \App\Console\Commands\AutoCompleteTemporaryAppointments::class,
         \App\Console\Commands\NotifyTemporaryAppointmentsEndingSoon::class,
         \App\Console\Commands\SyncEmployeeImportMasterData::class,
+        \App\Console\Commands\SendMailTest::class,
     ])
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
