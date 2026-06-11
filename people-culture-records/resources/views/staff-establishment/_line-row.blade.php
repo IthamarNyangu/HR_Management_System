@@ -8,7 +8,7 @@
     <div class="row g-3 align-items-end">
         <div class="col-md-6 col-xl-3">
             <label class="form-label">Job Title <span class="text-danger">*</span></label>
-            <select name="lines[{{ $index }}][job_title_id]" class="form-select @error("lines.$index.job_title_id") is-invalid @enderror" required data-line-job-title @disabled($disabled)>
+            <select name="lines[{{ $index }}][job_title_id]" class="form-select @error("lines.$index.job_title_id") is-invalid @enderror" data-line-job-title @disabled($disabled)>
                 <option value="">Select job title</option>
                 @foreach ($jobTitles as $jobTitle)
                     <option value="{{ $jobTitle->id }}" @selected((string) data_get($line, 'job_title_id') === (string) $jobTitle->id)>{{ $jobTitle->name }}</option>
@@ -48,7 +48,7 @@
         </div>
         <div class="col-md-6 col-xl-2">
             <label class="form-label">Budgeted Positions <span class="text-danger">*</span></label>
-            <input name="lines[{{ $index }}][budgeted_positions]" type="number" min="0" class="form-control @error("lines.$index.budgeted_positions") is-invalid @enderror" value="{{ data_get($line, 'budgeted_positions', 0) }}" required @disabled($disabled)>
+            <input name="lines[{{ $index }}][budgeted_positions]" type="number" min="0" class="form-control @error("lines.$index.budgeted_positions") is-invalid @enderror" value="{{ data_get($line, 'budgeted_positions', 0) }}" @disabled($disabled)>
             @error("lines.$index.budgeted_positions")<div class="invalid-feedback">{{ $message }}</div>@enderror
         </div>
         <div class="col-md-4 col-xl-1">

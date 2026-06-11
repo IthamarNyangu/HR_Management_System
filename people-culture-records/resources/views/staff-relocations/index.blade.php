@@ -9,8 +9,13 @@
 @endsection
 
 @section('page-actions')
-    <div class="d-flex gap-2">
+    <div class="d-flex flex-wrap gap-2">
         <a href="{{ route('staff-relocations.archived') }}" class="btn btn-secondary btn-md">Archived</a>
+        @include('partials.module-export-buttons', [
+            'paginator' => $relocations,
+            'excelRoute' => 'reports.relocations.export.excel',
+            'pdfRoute' => 'reports.relocations.export.pdf',
+        ])
         @can('create', App\Models\StaffRelocation::class)
             <a href="{{ route('staff-relocations.create') }}" class="btn btn-primary btn-md">New Relocation</a>
         @endcan

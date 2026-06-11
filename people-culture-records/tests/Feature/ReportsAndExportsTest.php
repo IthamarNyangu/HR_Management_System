@@ -132,6 +132,27 @@ class ReportsAndExportsTest extends TestCase
             ->assertSee(route('reports.employees.export.excel', ['search' => 'NOR']), false);
     }
 
+    public function test_employee_module_export_buttons_follow_current_results(): void
+    {
+        $admin = $this->user($this->adminRole);
+
+        $this->actingAs($admin)
+            ->get(route('employees.index', ['search' => 'NOR-001']))
+            ->assertOk()
+            ->assertSee('Export Excel')
+            ->assertSee('Export PDF')
+            ->assertSee(route('reports.employees.export.excel', ['search' => 'NOR-001']), false)
+            ->assertSee(route('reports.employees.export.pdf', ['search' => 'NOR-001']), false);
+
+        $this->actingAs($admin)
+            ->get(route('employees.index', ['search' => 'NO-MATCH']))
+            ->assertOk()
+            ->assertSee('Export Excel')
+            ->assertSee('Export PDF')
+            ->assertDontSee(route('reports.employees.export.excel', ['search' => 'NO-MATCH']), false)
+            ->assertDontSee(route('reports.employees.export.pdf', ['search' => 'NO-MATCH']), false);
+    }
+
     public function test_excel_export_route_works_and_logs_activity(): void
     {
         Excel::fake();

@@ -89,6 +89,42 @@ class StaffEstablishmentModuleTest extends TestCase
             ->assertSee('2');
     }
 
+    public function test_admin_can_save_draft_plan_before_entering_establishment_lines(): void
+    {
+        $admin = $this->user($this->adminRole);
+        $payload = $this->payload([
+            'title' => 'Draft June 2026 Establishment',
+            'status' => StaffEstablishmentPlan::STATUS_DRAFT,
+        ]);
+        unset($payload['lines']);
+
+        $this->actingAs($admin)
+            ->post(route('staff-establishment.store'), $payload)
+            ->assertRedirect();
+
+        $plan = StaffEstablishmentPlan::firstOrFail();
+
+        $this->assertDatabaseHas('staff_establishment_plans', [
+            'id' => $plan->id,
+            'title' => 'Draft June 2026 Establishment',
+            'status' => StaffEstablishmentPlan::STATUS_DRAFT,
+        ]);
+        $this->assertDatabaseCount('staff_establishment_lines', 0);
+    }
+
+    public function test_approved_plan_still_requires_establishment_lines(): void
+    {
+        $admin = $this->user($this->adminRole);
+        $payload = $this->payload();
+        unset($payload['lines']);
+
+        $this->actingAs($admin)
+            ->from(route('staff-establishment.create'))
+            ->post(route('staff-establishment.store'), $payload)
+            ->assertRedirect(route('staff-establishment.create'))
+            ->assertSessionHasErrors('lines');
+    }
+
     public function test_hr_officer_only_sees_assigned_province_lines(): void
     {
         $admin = $this->user($this->adminRole);
@@ -151,14 +187,21 @@ class StaffEstablishmentModuleTest extends TestCase
         $this->actingAs($admin)
             ->get(route('staff-establishment.create'))
             ->assertOk()
-            ->assertSee('Establishment Matrix')
-            ->assertSee('Preview Generated Lines')
             ->assertSee('Overall Budgeted Number')
-            ->assertSee('Total Current Establishment')
+            ->assertSee('Total Vacancies')
+            ->assertSee('Total Current')
+            ->assertSee('Establishment')
             ->assertSee('Budgeted Staff')
-            ->assertSee('Excel Import')
-            ->assertSee('Coming Later')
-            ->assertSee('Current Establishment Lines')
+            ->assertSee('Exports')
+            ->assertSee('Export Excel')
+            ->assertSee('Export PDF')
+            ->assertSee('Save the establishment plan first to enable exports.')
+            ->assertDontSee('Establishment Matrix')
+            ->assertDontSee('Preview Generated Lines')
+            ->assertDontSee('Excel Import')
+            ->assertDontSee('Project Scope')
+            ->assertDontSee('Coming Later')
+            ->assertDontSee('Current Establishment Lines')
             ->assertDontSee('Generate Job Title Lines')
             ->assertDontSee('Build Matrix')
             ->assertDontSee('Include zero-budget lines')

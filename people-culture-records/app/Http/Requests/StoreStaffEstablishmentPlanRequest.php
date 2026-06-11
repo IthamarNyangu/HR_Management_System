@@ -44,7 +44,7 @@ class StoreStaffEstablishmentPlanRequest extends FormRequest
             'matrix_skipped_count' => ['nullable', 'integer', 'min:0'],
             'matrix_selected_job_titles' => ['nullable', 'string', 'max:2000'],
             'matrix_selected_locations' => ['nullable', 'string', 'max:2000'],
-            'lines' => ['required', 'array', 'min:1'],
+            'lines' => ['nullable', 'array'],
             'lines.*.id' => ['nullable', 'integer', 'exists:staff_establishment_lines,id'],
             'lines.*.job_title_id' => ['required', 'exists:job_titles,id'],
             'lines.*.province_id' => ['nullable', 'exists:provinces,id'],
@@ -66,9 +66,21 @@ class StoreStaffEstablishmentPlanRequest extends FormRequest
     public function withValidator($validator): void
     {
         $validator->after(function ($validator) {
+            $this->validateApprovedPlanHasLines($validator);
             $this->validateLocations($validator);
             $this->validateDuplicateLines($validator);
         });
+    }
+
+    protected function validateApprovedPlanHasLines($validator): void
+    {
+        if ($this->input('status') !== StaffEstablishmentPlan::STATUS_APPROVED) {
+            return;
+        }
+
+        if (count($this->input('lines', [])) === 0) {
+            $validator->errors()->add('lines', 'Add at least one establishment line before approving this plan.');
+        }
     }
 
     protected function validateLocations($validator): void

@@ -96,40 +96,33 @@
             @error('lines')<div class="alert alert-danger py-2">{{ $message }}</div>@enderror
 
             <div class="row g-3 mb-3">
-                <div class="col-lg-4">
+                <div class="col-lg-12">
                     <div class="border rounded-2 bg-light p-3 h-100">
-                        <h3 class="h6 mb-1">Manual Line</h3>
-                        <p class="text-muted small mb-3">Add one establishment line at a time when HR needs a specific job title and location combination.</p>
-                        <button type="button" class="btn btn-primary-outline btn-md" data-add-establishment-line>Add Manual Line</button>
-                    </div>
-                </div>
-                <div class="col-lg-4">
-                    <div class="border rounded-2 bg-light p-3 h-100">
-                        <h3 class="h6 mb-1">Excel Import</h3>
-                        <p class="text-muted small mb-3">Bulk establishment import will be added after the matrix workflow is stable.</p>
-                        <button type="button" class="btn btn-secondary btn-md" disabled>Coming Later</button>
-                    </div>
-                </div>
-                <div class="col-lg-4">
-                    <div class="border rounded-2 bg-light p-3 h-100">
-                        <h3 class="h6 mb-1">Project Scope</h3>
-                        <p class="text-muted small mb-0">All lines in this plan use the project selected in Plan Details. Leave Project blank for organisation-wide establishment planning.</p>
+                        <h3 class="h6 mb-2">Exports</h3>
+                        @if ($plan->exists)
+                            <div class="d-flex flex-wrap gap-2">
+                                <a href="{{ route('staff-establishment.export.excel', $plan) }}" class="btn btn-primary btn-md">
+                                    <i class="bi bi-file-earmark-excel" aria-hidden="true"></i>
+                                    Export Excel
+                                </a>
+                                <a href="{{ route('staff-establishment.export.pdf', $plan) }}" class="btn btn-secondary btn-md">
+                                    <i class="bi bi-file-earmark-pdf" aria-hidden="true"></i>
+                                    Export PDF
+                                </a>
+                            </div>
+                        @else
+                            <div class="d-flex flex-wrap gap-2 align-items-center">
+                                <button type="button" class="btn btn-secondary btn-md" disabled>Export Excel</button>
+                                <button type="button" class="btn btn-secondary btn-md" disabled>Export PDF</button>
+                                <span class="text-muted small">Save the establishment plan first to enable exports.</span>
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div>
 
             <div class="border rounded-2 bg-light p-3 mb-3" data-matrix-builder>
-                <div class="d-flex flex-column flex-xl-row justify-content-between gap-3">
-                    <div>
-                        <h3 class="h6 mb-1">Establishment Matrix</h3>
-                        <p class="text-muted small mb-0">Positions are listed down the left and provinces are shown across the table, similar to the Excel establishment sheet. Enter budgeted staff numbers greater than 0 only where a position is approved.</p>
-                    </div>
-                    <div class="d-flex flex-wrap gap-2 align-self-start">
-                        <button type="button" class="btn btn-primary btn-md" data-preview-matrix>Preview Generated Lines</button>
-                    </div>
-                </div>
-
-                <div class="row g-3 mt-2">
+                <div class="row g-3">
                     <div class="col-md-4">
                         <div class="summary-tile h-100">
                             <div class="summary-label">Positions</div>
@@ -144,8 +137,8 @@
                     </div>
                     <div class="col-md-4">
                         <div class="summary-tile h-100">
-                            <div class="summary-label">Total Current Establishment</div>
-                            <div class="summary-value" data-matrix-overall-current>0</div>
+                            <div class="summary-label">Total Vacancies</div>
+                            <div class="summary-value" data-matrix-overall-vacancies>0</div>
                         </div>
                     </div>
                 </div>
@@ -157,44 +150,13 @@
                         <table class="table table-sm align-middle mb-0 data-table">
                             <thead data-matrix-table-head></thead>
                             <tbody data-matrix-table-body></tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <div class="border rounded-2 bg-white p-3 mt-3" data-matrix-preview-panel hidden>
-                    <div class="d-flex flex-column flex-lg-row justify-content-between gap-2 mb-3">
-                        <div>
-                            <h4 class="h6 mb-1">Matrix Preview</h4>
-                            <p class="text-muted small mb-0" data-matrix-preview-summary></p>
-                        </div>
-                        <div class="d-flex flex-wrap gap-2">
-                            <button type="button" class="btn btn-primary btn-md" data-confirm-matrix>Confirm Matrix Lines</button>
-                            <button type="button" class="btn btn-secondary btn-md" data-cancel-matrix-preview>Cancel Preview</button>
-                        </div>
-                    </div>
-                    <div class="table-responsive data-table-wrap">
-                        <table class="table table-sm align-middle mb-0 data-table">
-                            <thead>
-                                <tr>
-                                    <th>Status</th>
-                                    <th>Job Title</th>
-                                    <th>Location</th>
-                                    <th>Budgeted</th>
-                                    <th>Note</th>
-                                </tr>
-                            </thead>
-                            <tbody data-matrix-preview-body></tbody>
+                            <tfoot data-matrix-table-foot></tfoot>
                         </table>
                     </div>
                 </div>
             </div>
 
-            <div class="mb-3">
-                <h3 class="h6 mb-1">Current Establishment Lines</h3>
-                <p class="text-muted small mb-0">Review, edit, or remove the lines that will be saved with this plan.</p>
-            </div>
-
-            <div class="d-flex flex-column gap-3" data-establishment-line-list>
+            <div class="d-none" data-establishment-line-list>
                 @foreach ($lineRows as $index => $line)
                     @include('staff-establishment._line-row', [
                         'line' => $line,
@@ -249,14 +211,9 @@
             const matrixTableWrap = form.querySelector('[data-matrix-table-wrap]');
             const matrixTableHead = form.querySelector('[data-matrix-table-head]');
             const matrixTableBody = form.querySelector('[data-matrix-table-body]');
-            const previewMatrixButton = form.querySelector('[data-preview-matrix]');
-            const previewPanel = form.querySelector('[data-matrix-preview-panel]');
-            const previewSummary = form.querySelector('[data-matrix-preview-summary]');
-            const previewBody = form.querySelector('[data-matrix-preview-body]');
-            const confirmMatrixButton = form.querySelector('[data-confirm-matrix]');
-            const cancelMatrixPreviewButton = form.querySelector('[data-cancel-matrix-preview]');
+            const matrixTableFoot = form.querySelector('[data-matrix-table-foot]');
             const matrixOverallBudget = form.querySelector('[data-matrix-overall-budget]');
-            const matrixOverallCurrent = form.querySelector('[data-matrix-overall-current]');
+            const matrixOverallVacancies = form.querySelector('[data-matrix-overall-vacancies]');
             const matrixGeneratedFlag = form.querySelector('[data-matrix-generated-flag]');
             const matrixCreatedCount = form.querySelector('[data-matrix-created-count]');
             const matrixUpdatedCount = form.querySelector('[data-matrix-updated-count]');
@@ -264,7 +221,6 @@
             const matrixSelectedJobTitles = form.querySelector('[data-matrix-selected-job-titles]');
             const matrixSelectedLocations = form.querySelector('[data-matrix-selected-locations]');
             let nextIndex = {{ $lineRows->count() }};
-            let currentPreview = [];
 
             function enableFields(row) {
                 row.querySelectorAll('[disabled]').forEach(function (field) {
@@ -399,6 +355,15 @@
                 return cell;
             }
 
+            function applyStickyHeader(cell, top, zIndex = 4) {
+                cell.style.position = 'sticky';
+                cell.style.top = top;
+                cell.style.zIndex = String(zIndex);
+                cell.style.backgroundClip = 'padding-box';
+
+                return cell;
+            }
+
             const provincePalette = [
                 { background: '#eff6ff', border: '#2563eb' },
                 { background: '#ecfdf5', border: '#15803d' },
@@ -438,23 +403,31 @@
             function buildMatrixTable() {
                 matrixTableHead.innerHTML = '';
                 matrixTableBody.innerHTML = '';
+                matrixTableFoot.innerHTML = '';
 
                 const headRow = document.createElement('tr');
                 const subHeadRow = document.createElement('tr');
                 const fixedHeaders = [
-                    ['Position'],
-                    ['Overall Budgeted', 'Number'],
-                    ['Total Current', 'Establishment'],
-                    ['Total', 'Vacancies'],
+                    { lines: ['Position'], width: '14rem', sticky: true },
+                    { lines: ['Overall Budgeted', 'Number'], width: '7rem' },
+                    { lines: ['Total Current', 'Establishment'], width: '7rem' },
+                    { lines: ['Vacancies'], width: '6rem' },
                 ];
 
-                fixedHeaders.forEach(function (lines, index) {
+                fixedHeaders.forEach(function (header, index) {
                     const th = document.createElement('th');
-                    th.innerHTML = lines.join('<br>');
+                    th.innerHTML = header.lines.join('<br>');
                     th.rowSpan = 2;
-                    th.className = 'text-start align-middle';
-                    th.style.minWidth = index === 0 ? '14rem' : '8rem';
+                    th.className = `${index === 0 ? 'text-start' : 'text-center'} align-middle`;
+                    th.style.minWidth = header.width;
                     th.style.lineHeight = '1.15';
+                    th.style.backgroundColor = '#f8fafc';
+                    applyStickyHeader(th, '0', header.sticky ? 7 : 6);
+
+                    if (header.sticky) {
+                        th.style.left = '0';
+                    }
+
                     headRow.appendChild(th);
                 });
 
@@ -467,14 +440,16 @@
                     th.style.borderLeft = `3px solid ${provincePalette[provinceIndex % provincePalette.length].border}`;
                     th.style.borderRight = `3px solid ${provincePalette[provinceIndex % provincePalette.length].border}`;
                     th.style.backgroundColor = provincePalette[provinceIndex % provincePalette.length].background;
+                    applyStickyHeader(th, '0', 5);
                     headRow.appendChild(th);
 
                     ['Current', 'Budgeted Staff', 'Vacancies'].forEach(function (label, columnIndex) {
                         const subHead = document.createElement('th');
                         subHead.textContent = label;
-                        subHead.className = 'text-start text-nowrap small';
-                        subHead.style.minWidth = '7rem';
+                        subHead.className = 'text-center text-nowrap small';
+                        subHead.style.minWidth = '6.25rem';
                         subHead.style.borderBottom = `3px solid ${provincePalette[provinceIndex % provincePalette.length].border}`;
+                        applyStickyHeader(subHead, '2.35rem', 4);
                         applyProvinceStyle(
                             subHead,
                             provinceIndex,
@@ -492,14 +467,20 @@
                     row.dataset.matrixPositionRow = 'true';
                     row.dataset.jobTitleId = jobTitle.id;
                     row.dataset.jobTitleName = jobTitle.name;
+                    row.title = jobTitle.name;
 
-                    appendMatrixCell(row, jobTitle.name, 'fw-semibold text-nowrap');
-                    appendMatrixCell(row, '0', 'text-start fw-semibold').dataset.rowOverallBudget = 'true';
-                    appendMatrixCell(row, '0', 'text-start').dataset.rowCurrent = 'true';
-                    appendMatrixCell(row, '0', 'text-start').dataset.rowVacancies = 'true';
+                    const positionCell = appendMatrixCell(row, jobTitle.name, 'fw-semibold text-nowrap');
+                    positionCell.style.position = 'sticky';
+                    positionCell.style.left = '0';
+                    positionCell.style.zIndex = '2';
+                    positionCell.style.backgroundColor = '#ffffff';
+
+                    appendMatrixCell(row, '0', 'text-center fw-semibold').dataset.rowOverallBudget = 'true';
+                    appendMatrixCell(row, '0', 'text-center').dataset.rowCurrent = 'true';
+                    appendMatrixCell(row, '0', 'text-center fw-semibold').dataset.rowVacancies = 'true';
 
                     provinces.forEach(function (province, provinceIndex) {
-                        const currentCell = appendMatrixCell(row, '0', 'text-start');
+                        const currentCell = appendMatrixCell(row, '0', 'text-center');
                         currentCell.dataset.matrixCurrent = 'true';
                         applyProvinceStyle(currentCell, provinceIndex, 'first');
 
@@ -509,18 +490,25 @@
                         input.type = 'number';
                         input.min = '0';
                         input.step = '1';
-                        input.className = 'form-control form-control-sm text-start';
+                        input.className = 'form-control form-control-sm text-center';
                         input.placeholder = '0';
                         input.dataset.matrixBudget = 'true';
                         input.dataset.jobTitleId = jobTitle.id;
                         input.dataset.jobTitleName = jobTitle.name;
                         input.dataset.provinceId = province.id;
                         input.dataset.locationLabel = province.name;
+                        input.title = `${jobTitle.name} - ${province.name} budgeted staff`;
+                        const existingValue = existingBudget(jobTitle.id, province.id);
+
+                        if (existingValue !== null) {
+                            input.value = String(existingValue);
+                        }
+
                         input.addEventListener('input', updateMatrixTotals);
                         budgetCell.appendChild(input);
                         row.appendChild(budgetCell);
 
-                        const vacancyCell = appendMatrixCell(row, '0', 'text-start');
+                        const vacancyCell = appendMatrixCell(row, '0', 'text-center');
                         vacancyCell.dataset.matrixVacancy = 'true';
                         applyProvinceStyle(vacancyCell, provinceIndex, 'last');
                     });
@@ -528,6 +516,35 @@
                     matrixTableBody.appendChild(row);
                 });
 
+                const totalsRow = document.createElement('tr');
+                totalsRow.dataset.matrixTotalsRow = 'true';
+                totalsRow.className = 'table-light fw-semibold';
+
+                const totalsLabel = appendMatrixCell(totalsRow, 'Totals', 'text-start');
+                totalsLabel.style.position = 'sticky';
+                totalsLabel.style.left = '0';
+                totalsLabel.style.zIndex = '2';
+                totalsLabel.style.backgroundColor = '#f8fafc';
+
+                appendMatrixCell(totalsRow, '0', 'text-center').dataset.totalOverallBudget = 'true';
+                appendMatrixCell(totalsRow, '0', 'text-center').dataset.totalOverallCurrent = 'true';
+                appendMatrixCell(totalsRow, '0', 'text-center').dataset.totalOverallVacancies = 'true';
+
+                provinces.forEach(function (province, provinceIndex) {
+                    const currentCell = appendMatrixCell(totalsRow, '0', 'text-center');
+                    currentCell.dataset.provinceTotalCurrent = 'true';
+                    applyProvinceStyle(currentCell, provinceIndex, 'first');
+
+                    const budgetCell = appendMatrixCell(totalsRow, '0', 'text-center');
+                    budgetCell.dataset.provinceTotalBudget = 'true';
+                    applyProvinceStyle(budgetCell, provinceIndex);
+
+                    const vacancyCell = appendMatrixCell(totalsRow, '0', 'text-center');
+                    vacancyCell.dataset.provinceTotalVacancies = 'true';
+                    applyProvinceStyle(vacancyCell, provinceIndex, 'last');
+                });
+
+                matrixTableFoot.appendChild(totalsRow);
                 matrixTableWrap.hidden = false;
                 updateMatrixTotals();
             }
@@ -535,6 +552,10 @@
             function updateMatrixTotals() {
                 let overallBudget = 0;
                 let overallCurrent = 0;
+                let overallVacancies = 0;
+                const provinceTotals = provinces.map(function () {
+                    return { current: 0, budget: 0, vacancies: 0 };
+                });
 
                 matrixTableBody.querySelectorAll('[data-matrix-position-row]').forEach(function (row) {
                     let rowBudget = 0;
@@ -554,6 +575,10 @@
                         rowBudget += Number.isFinite(budgeted) ? budgeted : 0;
                         rowCurrent += current;
                         rowVacancies += vacancy;
+
+                        provinceTotals[index].current += current;
+                        provinceTotals[index].budget += Number.isFinite(budgeted) ? budgeted : 0;
+                        provinceTotals[index].vacancies += vacancy;
                     });
 
                     row.querySelector('[data-row-overall-budget]').textContent = String(rowBudget);
@@ -561,33 +586,65 @@
                     row.querySelector('[data-row-vacancies]').textContent = String(rowVacancies);
                     overallBudget += rowBudget;
                     overallCurrent += rowCurrent;
+                    overallVacancies += rowVacancies;
+                });
+
+                matrixTableFoot.querySelector('[data-total-overall-budget]').textContent = String(overallBudget);
+                matrixTableFoot.querySelector('[data-total-overall-current]').textContent = String(overallCurrent);
+                matrixTableFoot.querySelector('[data-total-overall-vacancies]').textContent = String(overallVacancies);
+
+                matrixTableFoot.querySelectorAll('[data-province-total-current]').forEach(function (cell, index) {
+                    cell.textContent = String(provinceTotals[index]?.current || 0);
+                });
+
+                matrixTableFoot.querySelectorAll('[data-province-total-budget]').forEach(function (cell, index) {
+                    cell.textContent = String(provinceTotals[index]?.budget || 0);
+                });
+
+                matrixTableFoot.querySelectorAll('[data-province-total-vacancies]').forEach(function (cell, index) {
+                    cell.textContent = String(provinceTotals[index]?.vacancies || 0);
                 });
 
                 matrixOverallBudget.textContent = String(overallBudget);
-                matrixOverallCurrent.textContent = String(overallCurrent);
-                previewPanel.hidden = true;
+                matrixOverallVacancies.textContent = String(overallVacancies);
             }
 
             function existingRowsByKey() {
                 const rows = new Map();
 
                 list.querySelectorAll('[data-establishment-line]').forEach(function (row) {
-                    const key = lineKey(row);
+                    const key = keyFromParts(
+                        row.querySelector('[data-line-job-title]')?.value || '',
+                        row.querySelector('[data-line-province]')?.value || '',
+                        '',
+                        '',
+                    );
 
-                    if (!key || rows.has(key)) {
+                    if (!key) {
                         return;
                     }
 
-                    rows.set(key, {
-                        row,
-                        budgeted: Number(row.querySelector('input[name$="[budgeted_positions]"]')?.value || 0),
-                    });
+                    if (! rows.has(key)) {
+                        rows.set(key, {
+                            row,
+                            rows: [],
+                            budgeted: 0,
+                        });
+                    }
+
+                    const entry = rows.get(key);
+                    entry.rows.push(row);
+                    entry.budgeted += Number(row.querySelector('input[name$="[budgeted_positions]"]')?.value || 0);
                 });
 
                 return rows;
             }
 
-            function collectMatrixPreview() {
+            function existingBudget(jobTitleId, provinceId) {
+                return existingRowsByKey().get(keyFromParts(jobTitleId, provinceId, '', ''))?.budgeted ?? null;
+            }
+
+            function collectMatrixRows() {
                 if (matrixTableWrap.hidden) {
                     showMatrixMessage('The establishment matrix is not available.');
 
@@ -619,6 +676,7 @@
                         locationLabel: input.dataset.locationLabel,
                         budgeted,
                         existingRow: existing.get(key)?.row || null,
+                        existingRows: existing.get(key)?.rows || [],
                         note: '',
                     };
 
@@ -637,7 +695,13 @@
                     }
 
                     if (rawValue === '' || budgeted === 0) {
-                        item.note = rawValue === '' ? 'Blank budget skipped.' : 'Zero budget skipped.';
+                        if (item.existingRow) {
+                            item.status = 'remove';
+                            item.note = 'Existing line will be removed.';
+                        } else {
+                            item.note = rawValue === '' ? 'Blank budget skipped.' : 'Zero budget skipped.';
+                        }
+
                         preview.push(item);
                         return;
                     }
@@ -670,87 +734,42 @@
                 return preview;
             }
 
-            function badgeClass(status) {
-                if (status === 'create') {
-                    return 'text-bg-success';
-                }
-
-                if (status === 'update') {
-                    return 'text-bg-primary';
-                }
-
-                if (status === 'invalid' || status === 'duplicate') {
-                    return 'text-bg-danger';
-                }
-
-                return 'text-bg-secondary';
+            function hasSavedLines() {
+                return Array.from(list.querySelectorAll('[data-establishment-line]')).some(function (row) {
+                    return row.querySelector('[data-line-job-title]')?.value
+                        && Number(row.querySelector('input[name$="[budgeted_positions]"]')?.value || 0) > 0;
+                });
             }
 
-            function appendCell(row, text) {
-                const cell = document.createElement('td');
-                cell.textContent = text;
-                row.appendChild(cell);
-                return cell;
-            }
-
-            function renderMatrixPreview() {
-                currentPreview = collectMatrixPreview();
-                previewBody.innerHTML = '';
-                showMatrixMessage('');
-
-                if (currentPreview.length === 0) {
-                    return;
-                }
-
-                let createCount = 0;
-                let updateCount = 0;
-                let skippedCount = 0;
-                let invalidCount = 0;
-
-                currentPreview.forEach(function (item) {
-                    const row = document.createElement('tr');
-                    const statusCell = document.createElement('td');
-                    const badge = document.createElement('span');
-                    badge.className = `badge ${badgeClass(item.status)}`;
-                    badge.textContent = item.status.charAt(0).toUpperCase() + item.status.slice(1);
-                    statusCell.appendChild(badge);
-                    row.appendChild(statusCell);
-                    appendCell(row, item.jobTitleName);
-                    appendCell(row, item.locationLabel);
-                    appendCell(row, String(item.budgeted));
-                    appendCell(row, item.note);
-                    previewBody.appendChild(row);
-
-                    if (item.status === 'create') {
-                        createCount++;
-                    } else if (item.status === 'update') {
-                        updateCount++;
-                    } else if (item.status === 'invalid' || item.status === 'duplicate') {
-                        invalidCount++;
-                    } else {
-                        skippedCount++;
-                    }
+            function applyMatrixRowsBeforeSubmit() {
+                const matrixRows = collectMatrixRows();
+                const invalidRows = matrixRows.filter(function (item) {
+                    return item.status === 'invalid' || item.status === 'duplicate';
                 });
 
-                previewSummary.textContent = `${createCount} to create, ${updateCount} to update, ${skippedCount} skipped, ${invalidCount} invalid.`;
-                confirmMatrixButton.disabled = createCount + updateCount === 0 || invalidCount > 0;
-                previewPanel.hidden = false;
-            }
+                if (invalidRows.length > 0) {
+                    showMatrixMessage('Fix the matrix values before saving. Budgeted staff must be whole numbers of zero or higher.');
 
-            function applyMatrixPreview() {
-                const actionableRows = currentPreview.filter(function (item) {
-                    return item.status === 'create' || item.status === 'update';
-                });
-
-                if (actionableRows.length === 0) {
-                    showMatrixMessage('There are no matrix rows to apply.');
-                    return;
+                    return false;
                 }
+
+                const actionableRows = matrixRows.filter(function (item) {
+                    return item.status === 'create' || item.status === 'update' || item.status === 'remove';
+                });
 
                 removeBlankNewRows();
 
                 actionableRows.forEach(function (item) {
+                    if (item.status === 'remove') {
+                        item.existingRows.forEach((row) => row.remove());
+
+                        return;
+                    }
+
                     const row = item.existingRow || createLine();
+                    item.existingRows
+                        .filter((existingRow) => existingRow !== row)
+                        .forEach((existingRow) => existingRow.remove());
                     setRowValue(row, '[data-line-job-title]', item.jobTitleId);
                     setRowValue(row, '[data-line-province]', item.provinceId);
                     filterLocation(row);
@@ -760,20 +779,27 @@
                     filterLocation(row);
                 });
 
-                const createCount = currentPreview.filter((item) => item.status === 'create').length;
-                const updateCount = currentPreview.filter((item) => item.status === 'update').length;
-                const skippedCount = currentPreview.filter((item) => item.status === 'skipped').length;
-                const selectedJobTitleNames = [...new Set(actionableRows.map((item) => item.jobTitleName))].join(', ');
-                const selectedLocationNames = [...new Set(actionableRows.map((item) => item.locationLabel))].join(', ');
+                removeBlankNewRows();
 
-                matrixGeneratedFlag.value = '1';
+                const createCount = matrixRows.filter((item) => item.status === 'create').length;
+                const updateCount = matrixRows.filter((item) => item.status === 'update').length;
+                const skippedCount = matrixRows.filter((item) => item.status === 'skipped').length;
+                const selectedJobTitleNames = [...new Set(actionableRows
+                    .filter((item) => item.status !== 'remove')
+                    .map((item) => item.jobTitleName))].join(', ');
+                const selectedLocationNames = [...new Set(actionableRows
+                    .filter((item) => item.status !== 'remove')
+                    .map((item) => item.locationLabel))].join(', ');
+
+                matrixGeneratedFlag.value = actionableRows.length > 0 ? '1' : '0';
                 matrixCreatedCount.value = String(createCount);
                 matrixUpdatedCount.value = String(updateCount);
                 matrixSkippedCount.value = String(skippedCount);
                 matrixSelectedJobTitles.value = selectedJobTitleNames;
                 matrixSelectedLocations.value = selectedLocationNames;
-                previewPanel.hidden = true;
-                showMatrixMessage(`${createCount} line${createCount === 1 ? '' : 's'} added and ${updateCount} line${updateCount === 1 ? '' : 's'} updated. Save the establishment plan to keep these changes.`);
+                showMatrixMessage('');
+
+                return true;
             }
 
             list.querySelectorAll('[data-establishment-line]').forEach(initializeLine);
@@ -784,10 +810,11 @@
             });
 
             projectSelect?.addEventListener('change', updateMatrixTotals);
-            previewMatrixButton?.addEventListener('click', renderMatrixPreview);
-            confirmMatrixButton?.addEventListener('click', applyMatrixPreview);
-            cancelMatrixPreviewButton?.addEventListener('click', function () {
-                previewPanel.hidden = true;
+            form.addEventListener('submit', function (event) {
+                if (! applyMatrixRowsBeforeSubmit()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
             });
         });
     </script>

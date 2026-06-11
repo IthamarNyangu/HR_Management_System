@@ -25,7 +25,17 @@
                     <h2 class="h5 mb-1">Latest Visible Establishment</h2>
                     <div class="text-muted">{{ $latestPlan->title }} - {{ $latestPlan->effective_month?->format('M Y') }}</div>
                 </div>
-                <a href="{{ route('staff-establishment.show', $latestPlan) }}" class="btn btn-secondary btn-sm align-self-start">Open plan</a>
+                <div class="d-flex flex-wrap gap-2 align-self-start">
+                    <a href="{{ route('staff-establishment.show', $latestPlan) }}" class="btn btn-secondary btn-sm">Open plan</a>
+                    <a href="{{ route('staff-establishment.export.excel', $latestPlan) }}" class="btn btn-primary btn-sm">
+                        <i class="bi bi-file-earmark-excel" aria-hidden="true"></i>
+                        Export Excel
+                    </a>
+                    <a href="{{ route('staff-establishment.export.pdf', $latestPlan) }}" class="btn btn-secondary btn-sm">
+                        <i class="bi bi-file-earmark-pdf" aria-hidden="true"></i>
+                        Export PDF
+                    </a>
+                </div>
             </div>
             <div class="row row-cols-1 row-cols-md-5 g-3">
                 <div class="col"><div class="summary-tile h-100"><div class="summary-label">Budgeted</div><div class="summary-value">{{ $latestSummary['budgeted'] }}</div></div></div>

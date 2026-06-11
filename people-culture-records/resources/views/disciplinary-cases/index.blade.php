@@ -9,8 +9,13 @@
 @endsection
 
 @section('page-actions')
-    <div class="d-flex gap-2">
+    <div class="d-flex flex-wrap gap-2">
         <a href="{{ route('disciplinary-cases.archived') }}" class="btn btn-secondary btn-md">Archived</a>
+        @include('partials.module-export-buttons', [
+            'paginator' => $cases,
+            'excelRoute' => 'reports.disciplinary-cases.export.excel',
+            'pdfRoute' => 'reports.disciplinary-cases.export.pdf',
+        ])
         @can('create', App\Models\DisciplinaryCase::class)
             <a href="{{ route('disciplinary-cases.create') }}" class="btn btn-primary btn-md">New Case</a>
         @endcan
