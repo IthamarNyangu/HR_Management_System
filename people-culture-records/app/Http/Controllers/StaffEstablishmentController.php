@@ -108,13 +108,23 @@ class StaffEstablishmentController extends Controller
         $staffEstablishmentPlan->load(['project', 'createdBy', 'updatedBy', 'approvedBy']);
         $lines = $metrics->visibleLines($staffEstablishmentPlan, $request->user());
         $summary = $metrics->summaryForLines($lines, $request->user());
-        $rows = $this->paginateRows($metrics->rowsForPlan($staffEstablishmentPlan, $request->user()), $request);
+        $viewMode = in_array($request->query('view', 'all'), ['all', 'activity', 'vacancies'], true)
+            ? $request->query('view', 'all')
+            : 'all';
+        $allRows = $metrics->rowsForPlan($staffEstablishmentPlan, $request->user());
+        $filteredRows = match ($viewMode) {
+            'activity' => array_values(array_filter($allRows, fn (array $row) => $row['budgeted'] > 0 || $row['filled'] > 0 || $row['overstaffed'] > 0)),
+            'vacancies' => array_values(array_filter($allRows, fn (array $row) => $row['vacant'] > 0)),
+            default => $allRows,
+        };
+        $rows = $this->paginateRows($filteredRows, $request);
 
         return view('staff-establishment.show', [
             'plan' => $staffEstablishmentPlan,
             'lines' => $lines,
             'summary' => $summary,
             'rows' => $rows,
+            'viewMode' => $viewMode,
         ]);
     }
 

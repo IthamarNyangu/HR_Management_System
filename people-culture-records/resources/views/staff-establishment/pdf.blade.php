@@ -39,9 +39,7 @@
             <tr>
                 <th>Job Title</th>
                 <th>Project</th>
-                <th>Department</th>
                 <th>Province</th>
-                <th>District</th>
                 <th>Budgeted</th>
                 <th>Filled</th>
                 <th>Vacant</th>
@@ -53,9 +51,7 @@
                 <tr>
                     <td>{{ $row['job_title'] }}</td>
                     <td>{{ $row['project'] }}</td>
-                    <td>{{ $row['department'] }}</td>
                     <td>{{ $row['province'] }}</td>
-                    <td>{{ $row['district'] }}</td>
                     <td>{{ $row['budgeted'] }}</td>
                     <td>{{ $row['filled'] }}</td>
                     <td>{{ $row['vacant'] }}</td>
@@ -63,7 +59,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="9">No records found.</td>
+                    <td colspan="7">No records found.</td>
                 </tr>
             @endforelse
         </tbody>

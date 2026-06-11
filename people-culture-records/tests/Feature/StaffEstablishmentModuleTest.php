@@ -209,6 +209,8 @@ class StaffEstablishmentModuleTest extends TestCase
             ->assertDontSee('All facilities');
 
         $this->assertNotContains('Facility', $export->headings());
+        $this->assertNotContains('Department', $export->headings());
+        $this->assertNotContains('District', $export->headings());
         $this->assertNotContains('Notes', $export->headings());
     }
 
@@ -296,6 +298,78 @@ class StaffEstablishmentModuleTest extends TestCase
             'action' => 'establishment_lines_matrix_generated',
             'user_id' => $manager->id,
         ]);
+    }
+
+    public function test_zero_budgeted_positions_are_saved_and_visible_as_establishment_data(): void
+    {
+        $admin = $this->user($this->adminRole);
+
+        $this->actingAs($admin)
+            ->post(route('staff-establishment.store'), $this->payload([
+                'matrix_generated' => '1',
+                'matrix_created_count' => 1,
+                'lines' => [
+                    [
+                        'job_title_id' => $this->jobTitle->id,
+                        'province_id' => $this->northern->id,
+                        'district_id' => null,
+                        'department_id' => null,
+                        'budgeted_positions' => 0,
+                    ],
+                ],
+            ]))
+            ->assertRedirect();
+
+        $plan = StaffEstablishmentPlan::firstOrFail();
+
+        $this->assertDatabaseHas('staff_establishment_lines', [
+            'staff_establishment_plan_id' => $plan->id,
+            'job_title_id' => $this->jobTitle->id,
+            'province_id' => $this->northern->id,
+            'budgeted_positions' => 0,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('staff-establishment.show', $plan))
+            ->assertOk()
+            ->assertSee('Lay Counsellor')
+            ->assertSee('Northern')
+            ->assertSee('0');
+    }
+
+    public function test_staff_establishment_vacancy_can_prefill_recruitment_job_opening(): void
+    {
+        $admin = $this->user($this->adminRole);
+        $plan = $this->plan($admin);
+        $plan->lines()->create([
+            'job_title_id' => $this->jobTitle->id,
+            'province_id' => $this->northern->id,
+            'budgeted_positions' => 2,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('staff-establishment.show', $plan))
+            ->assertOk()
+            ->assertSee('Create Job Opening')
+            ->assertSee(e(route('recruitment.job-openings.create', [
+                'job_title_id' => $this->jobTitle->id,
+                'project_id' => $this->project->id,
+                'province_id' => $this->northern->id,
+                'number_of_positions' => 2,
+            ])), false);
+
+        $this->actingAs($admin)
+            ->get(route('recruitment.job-openings.create', [
+                'job_title_id' => $this->jobTitle->id,
+                'project_id' => $this->project->id,
+                'province_id' => $this->northern->id,
+                'number_of_positions' => 2,
+            ]))
+            ->assertOk()
+            ->assertSee('value="'.$this->jobTitle->id.'" selected', false)
+            ->assertSee('value="'.$this->project->id.'" selected', false)
+            ->assertSee('value="'.$this->northern->id.'" selected', false)
+            ->assertSee('value="2"', false);
     }
 
     public function test_duplicate_matrix_lines_are_rejected(): void

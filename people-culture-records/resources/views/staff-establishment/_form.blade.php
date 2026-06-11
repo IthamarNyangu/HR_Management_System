@@ -500,9 +500,7 @@
                         input.title = `${jobTitle.name} - ${province.name} budgeted staff`;
                         const existingValue = existingBudget(jobTitle.id, province.id);
 
-                        if (existingValue !== null) {
-                            input.value = String(existingValue);
-                        }
+                        input.value = String(existingValue ?? 0);
 
                         input.addEventListener('input', updateMatrixTotals);
                         budgetCell.appendChild(input);
@@ -694,18 +692,6 @@
                         return;
                     }
 
-                    if (rawValue === '' || budgeted === 0) {
-                        if (item.existingRow) {
-                            item.status = 'remove';
-                            item.note = 'Existing line will be removed.';
-                        } else {
-                            item.note = rawValue === '' ? 'Blank budget skipped.' : 'Zero budget skipped.';
-                        }
-
-                        preview.push(item);
-                        return;
-                    }
-
                     if (seen.has(key)) {
                         item.status = 'duplicate';
                         item.note = 'This combination appears more than once in the matrix.';
@@ -754,18 +740,12 @@
                 }
 
                 const actionableRows = matrixRows.filter(function (item) {
-                    return item.status === 'create' || item.status === 'update' || item.status === 'remove';
+                    return item.status === 'create' || item.status === 'update';
                 });
 
                 removeBlankNewRows();
 
                 actionableRows.forEach(function (item) {
-                    if (item.status === 'remove') {
-                        item.existingRows.forEach((row) => row.remove());
-
-                        return;
-                    }
-
                     const row = item.existingRow || createLine();
                     item.existingRows
                         .filter((existingRow) => existingRow !== row)
@@ -785,10 +765,8 @@
                 const updateCount = matrixRows.filter((item) => item.status === 'update').length;
                 const skippedCount = matrixRows.filter((item) => item.status === 'skipped').length;
                 const selectedJobTitleNames = [...new Set(actionableRows
-                    .filter((item) => item.status !== 'remove')
                     .map((item) => item.jobTitleName))].join(', ');
                 const selectedLocationNames = [...new Set(actionableRows
-                    .filter((item) => item.status !== 'remove')
                     .map((item) => item.locationLabel))].join(', ');
 
                 matrixGeneratedFlag.value = actionableRows.length > 0 ? '1' : '0';

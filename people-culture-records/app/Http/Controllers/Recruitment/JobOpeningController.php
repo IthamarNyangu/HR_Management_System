@@ -95,6 +95,26 @@ class JobOpeningController extends Controller
             'show_number_of_positions' => true,
         ]);
 
+        $prefillJobTitleId = $request->integer('job_title_id') ?: null;
+        $prefillProjectId = $request->integer('project_id') ?: null;
+        $prefillProvinceId = $request->integer('province_id') ?: null;
+
+        if ($prefillJobTitleId && JobTitle::whereKey($prefillJobTitleId)->exists()) {
+            $jobOpening->job_title_id = $prefillJobTitleId;
+        }
+
+        if ($prefillProjectId && Project::whereKey($prefillProjectId)->exists()) {
+            $jobOpening->project_id = $prefillProjectId;
+        }
+
+        if (! $request->user()->hasRole('HR Officer') && $prefillProvinceId && Province::whereKey($prefillProvinceId)->exists()) {
+            $jobOpening->province_id = $prefillProvinceId;
+        }
+
+        if ($request->integer('number_of_positions') > 0) {
+            $jobOpening->number_of_positions = $request->integer('number_of_positions');
+        }
+
         return view('recruitment.job-openings.create', $this->formData($request) + compact('jobOpening'));
     }
 

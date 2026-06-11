@@ -25,9 +25,7 @@ class StaffEstablishmentPlanExport implements FromCollection, ShouldAutoSize, Wi
             ->map(fn (array $row) => [
                 $row['job_title'],
                 $row['project'],
-                $row['department'],
                 $row['province'],
-                $row['district'],
                 $row['budgeted'],
                 $row['filled'],
                 $row['vacant'],
@@ -40,9 +38,7 @@ class StaffEstablishmentPlanExport implements FromCollection, ShouldAutoSize, Wi
         return [
             'Job Title',
             'Project',
-            'Department',
             'Province',
-            'District',
             'Budgeted Positions',
             'Filled Positions',
             'Vacancies',

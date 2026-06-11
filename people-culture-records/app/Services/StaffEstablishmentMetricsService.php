@@ -100,6 +100,10 @@ class StaffEstablishmentMetricsService
                 $filled = $this->filledCount($line, $user);
 
                 return [
+                    'line_id' => $line->id,
+                    'job_title_id' => $line->job_title_id,
+                    'project_id' => $line->plan?->project_id,
+                    'province_id' => $line->province_id,
                     'job_title' => $line->jobTitle?->name ?? '-',
                     'project' => $line->plan?->project?->name ?? 'All projects',
                     'department' => $line->department?->name ?? 'All departments',

@@ -66,10 +66,15 @@
         </section>
 
         <section class="bg-white border rounded-2 p-3">
-            <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
+            <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-3">
                 <div>
                     <h2 class="h5 mb-1">Establishment and Vacancies</h2>
-                    <p class="text-muted mb-0">Filled counts are calculated from active employees matching the job title, project, department, province, and district.</p>
+                    <p class="text-muted mb-0">Budgeted zeroes are saved as part of the plan. Filled counts are calculated from active employees matching the job title, project, and province.</p>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="{{ route('staff-establishment.show', ['staff_establishment_plan' => $plan, 'view' => 'all']) }}" class="btn btn-sm {{ $viewMode === 'all' ? 'btn-primary' : 'btn-secondary' }}">All positions</a>
+                    <a href="{{ route('staff-establishment.show', ['staff_establishment_plan' => $plan, 'view' => 'activity']) }}" class="btn btn-sm {{ $viewMode === 'activity' ? 'btn-primary' : 'btn-secondary' }}">With activity</a>
+                    <a href="{{ route('staff-establishment.show', ['staff_establishment_plan' => $plan, 'view' => 'vacancies']) }}" class="btn btn-sm {{ $viewMode === 'vacancies' ? 'btn-primary' : 'btn-secondary' }}">Vacancies only</a>
                 </div>
             </div>
 
@@ -79,9 +84,7 @@
                         <tr>
                             <th>Job Title</th>
                             <th>Project</th>
-                            <th>Department</th>
                             <th>Province</th>
-                            <th>District</th>
                             <th>Budgeted</th>
                             <th>Filled</th>
                             <th>Vacant</th>
@@ -94,16 +97,26 @@
                             <tr @class(['table-warning' => $row['vacant'] > 0, 'table-success' => $row['vacant'] === 0 && $row['overstaffed'] === 0, 'table-danger' => $row['overstaffed'] > 0])>
                                 <td class="fw-semibold">{{ $row['job_title'] }}</td>
                                 <td>{{ $row['project'] }}</td>
-                                <td>{{ $row['department'] }}</td>
                                 <td>{{ $row['province'] }}</td>
-                                <td>{{ $row['district'] }}</td>
                                 <td>{{ $row['budgeted'] }}</td>
                                 <td>{{ $row['filled'] }}</td>
                                 <td><span class="badge text-bg-{{ $row['vacant'] > 0 ? 'warning' : 'success' }}">{{ $row['vacant'] }}</span></td>
                                 <td><span class="badge text-bg-{{ $row['overstaffed'] > 0 ? 'danger' : 'light' }}">{{ $row['overstaffed'] }}</span></td>
                                 <td>
                                     @if ($row['vacant'] > 0)
-                                        <button type="button" class="btn btn-secondary btn-sm" disabled>Create Job Opening from Vacancy</button>
+                                        @can('create', App\Models\JobOpening::class)
+                                            @php
+                                                $jobOpeningQuery = array_filter([
+                                                    'job_title_id' => $row['job_title_id'],
+                                                    'project_id' => $row['project_id'],
+                                                    'province_id' => $row['province_id'],
+                                                    'number_of_positions' => $row['vacant'],
+                                                ], fn ($value) => filled($value));
+                                            @endphp
+                                            <a href="{{ route('recruitment.job-openings.create', $jobOpeningQuery) }}" class="btn btn-sm btn-primary-outline">Create Job Opening</a>
+                                        @else
+                                            <span class="text-muted">Vacancy</span>
+                                        @endcan
                                     @else
                                         <span class="text-muted">-</span>
                                     @endif
@@ -111,7 +124,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="10" class="text-center text-muted py-4">No establishment lines visible to your role.</td>
+                                <td colspan="8" class="text-center text-muted py-4">No establishment lines visible to your role.</td>
                             </tr>
                         @endforelse
                     </tbody>
