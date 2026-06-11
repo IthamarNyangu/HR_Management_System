@@ -32,7 +32,7 @@ class StaffEstablishmentMetricsService
             $query->where('project_id', $line->plan->project_id);
         }
 
-        foreach (['province_id', 'district_id', 'facility_id', 'department_id'] as $field) {
+        foreach (['province_id', 'district_id', 'department_id'] as $field) {
             if ($line->{$field}) {
                 $query->where($field, $line->{$field});
             }
@@ -85,7 +85,7 @@ class StaffEstablishmentMetricsService
     public function visibleLines(StaffEstablishmentPlan $plan, User $user): EloquentCollection
     {
         return $plan->lines()
-            ->with(['jobTitle', 'province', 'district', 'facility', 'department', 'plan.project'])
+            ->with(['jobTitle', 'province', 'district', 'department', 'plan.project'])
             ->visibleTo($user)
             ->get();
     }
@@ -105,12 +105,10 @@ class StaffEstablishmentMetricsService
                     'department' => $line->department?->name ?? 'All departments',
                     'province' => $line->province?->name ?? 'Organisation-wide',
                     'district' => $line->district?->name ?? '-',
-                    'facility' => $line->facility?->name ?? '-',
                     'budgeted' => (int) $line->budgeted_positions,
                     'filled' => $filled,
                     'vacant' => max((int) $line->budgeted_positions - $filled, 0),
                     'overstaffed' => max($filled - (int) $line->budgeted_positions, 0),
-                    'notes' => $line->notes ?? '',
                 ];
             })
             ->all();

@@ -69,7 +69,7 @@
             <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
                 <div>
                     <h2 class="h5 mb-1">Establishment and Vacancies</h2>
-                    <p class="text-muted mb-0">Filled counts are calculated from active employees matching the job title, project, department, and location.</p>
+                    <p class="text-muted mb-0">Filled counts are calculated from active employees matching the job title, project, department, province, and district.</p>
                 </div>
             </div>
 
@@ -82,11 +82,11 @@
                             <th>Department</th>
                             <th>Province</th>
                             <th>District</th>
-                            <th>Facility</th>
                             <th>Budgeted</th>
                             <th>Filled</th>
                             <th>Vacant</th>
                             <th>Overstaffed</th>
+                            <th>Recruitment</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -97,11 +97,17 @@
                                 <td>{{ $row['department'] }}</td>
                                 <td>{{ $row['province'] }}</td>
                                 <td>{{ $row['district'] }}</td>
-                                <td>{{ $row['facility'] }}</td>
                                 <td>{{ $row['budgeted'] }}</td>
                                 <td>{{ $row['filled'] }}</td>
                                 <td><span class="badge text-bg-{{ $row['vacant'] > 0 ? 'warning' : 'success' }}">{{ $row['vacant'] }}</span></td>
                                 <td><span class="badge text-bg-{{ $row['overstaffed'] > 0 ? 'danger' : 'light' }}">{{ $row['overstaffed'] }}</span></td>
+                                <td>
+                                    @if ($row['vacant'] > 0)
+                                        <button type="button" class="btn btn-secondary btn-sm" disabled>Create Job Opening from Vacancy</button>
+                                    @else
+                                        <span class="text-muted">-</span>
+                                    @endif
+                                </td>
                             </tr>
                         @empty
                             <tr>

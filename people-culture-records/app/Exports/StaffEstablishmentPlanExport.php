@@ -28,12 +28,10 @@ class StaffEstablishmentPlanExport implements FromCollection, ShouldAutoSize, Wi
                 $row['department'],
                 $row['province'],
                 $row['district'],
-                $row['facility'],
                 $row['budgeted'],
                 $row['filled'],
                 $row['vacant'],
                 $row['overstaffed'],
-                $row['notes'],
             ]);
     }
 
@@ -45,12 +43,10 @@ class StaffEstablishmentPlanExport implements FromCollection, ShouldAutoSize, Wi
             'Department',
             'Province',
             'District',
-            'Facility',
             'Budgeted Positions',
             'Filled Positions',
             'Vacancies',
             'Overstaffed',
-            'Notes',
         ];
     }
 

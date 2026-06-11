@@ -3,7 +3,6 @@
 namespace App\Http\Requests;
 
 use App\Models\District;
-use App\Models\Facility;
 use App\Models\StaffEstablishmentPlan;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -39,15 +38,19 @@ class StoreStaffEstablishmentPlanRequest extends FormRequest
             'status' => ['required', Rule::in(StaffEstablishmentPlan::STATUSES)],
             'effective_month' => ['required', 'date'],
             'notes' => ['nullable', 'string'],
+            'matrix_generated' => ['nullable', 'boolean'],
+            'matrix_created_count' => ['nullable', 'integer', 'min:0'],
+            'matrix_updated_count' => ['nullable', 'integer', 'min:0'],
+            'matrix_skipped_count' => ['nullable', 'integer', 'min:0'],
+            'matrix_selected_job_titles' => ['nullable', 'string', 'max:2000'],
+            'matrix_selected_locations' => ['nullable', 'string', 'max:2000'],
             'lines' => ['required', 'array', 'min:1'],
             'lines.*.id' => ['nullable', 'integer', 'exists:staff_establishment_lines,id'],
             'lines.*.job_title_id' => ['required', 'exists:job_titles,id'],
             'lines.*.province_id' => ['nullable', 'exists:provinces,id'],
             'lines.*.district_id' => ['nullable', 'exists:districts,id'],
-            'lines.*.facility_id' => ['nullable', 'exists:facilities,id'],
             'lines.*.department_id' => ['nullable', 'exists:departments,id'],
             'lines.*.budgeted_positions' => ['required', 'integer', 'min:0'],
-            'lines.*.notes' => ['nullable', 'string'],
         ];
     }
 
@@ -73,22 +76,13 @@ class StoreStaffEstablishmentPlanRequest extends FormRequest
         foreach ($this->input('lines', []) as $index => $line) {
             $provinceId = $line['province_id'] ?? null;
             $districtId = $line['district_id'] ?? null;
-            $facilityId = $line['facility_id'] ?? null;
 
             if ($districtId && ! $provinceId) {
                 $validator->errors()->add("lines.{$index}.province_id", 'Choose a province before selecting a district.');
             }
 
-            if ($facilityId && ! $districtId) {
-                $validator->errors()->add("lines.{$index}.district_id", 'Choose a district before selecting a facility.');
-            }
-
             if ($provinceId && $districtId && ! District::whereKey($districtId)->where('province_id', $provinceId)->exists()) {
                 $validator->errors()->add("lines.{$index}.district_id", 'The selected district must belong to the selected province.');
-            }
-
-            if ($districtId && $facilityId && ! Facility::whereKey($facilityId)->where('district_id', $districtId)->exists()) {
-                $validator->errors()->add("lines.{$index}.facility_id", 'The selected facility must belong to the selected district.');
             }
         }
     }
@@ -102,7 +96,6 @@ class StoreStaffEstablishmentPlanRequest extends FormRequest
                 $line['job_title_id'] ?? '',
                 $line['province_id'] ?? '',
                 $line['district_id'] ?? '',
-                $line['facility_id'] ?? '',
                 $line['department_id'] ?? '',
             ]);
 

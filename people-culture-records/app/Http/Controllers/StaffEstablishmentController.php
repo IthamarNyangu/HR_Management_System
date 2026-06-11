@@ -7,7 +7,7 @@ use App\Http\Requests\StoreStaffEstablishmentPlanRequest;
 use App\Http\Requests\UpdateStaffEstablishmentPlanRequest;
 use App\Models\Department;
 use App\Models\District;
-use App\Models\Facility;
+use App\Models\Employee;
 use App\Models\JobTitle;
 use App\Models\Project;
 use App\Models\Province;
@@ -96,6 +96,7 @@ class StaffEstablishmentController extends Controller
             user: $request->user(),
             request: $request,
         );
+        $this->logMatrixActivity($request, $plan, $activity);
 
         return redirect()->route('staff-establishment.show', $plan)->with('success', 'Staff establishment plan created successfully.');
     }
@@ -144,6 +145,7 @@ class StaffEstablishmentController extends Controller
             user: $request->user(),
             request: $request,
         );
+        $this->logMatrixActivity($request, $staffEstablishmentPlan, $activity);
 
         return redirect()->route('staff-establishment.show', $staffEstablishmentPlan)->with('success', 'Staff establishment plan updated successfully.');
     }
@@ -246,9 +248,42 @@ class StaffEstablishmentController extends Controller
             'jobTitles' => JobTitle::where('is_active', true)->orderBy('name')->get(),
             'provinces' => Province::where('is_active', true)->orderBy('name')->get(),
             'districts' => District::with('province')->where('is_active', true)->orderBy('name')->get(),
-            'facilities' => Facility::with('district')->where('is_active', true)->orderBy('name')->get(),
             'statuses' => StaffEstablishmentPlan::STATUSES,
+            'matrixCurrentEstablishment' => $this->matrixCurrentEstablishment(),
         ];
+    }
+
+    /**
+     * @return array{all: array<string, int>, projects: array<int|string, array<string, int>>}
+     */
+    private function matrixCurrentEstablishment(): array
+    {
+        $counts = [
+            'all' => [],
+            'projects' => [],
+        ];
+
+        Employee::query()
+            ->selectRaw('job_title_id, province_id, project_id, COUNT(*) as total')
+            ->whereNotNull('job_title_id')
+            ->whereNotNull('province_id')
+            ->whereHas('employmentStatus', function ($query) {
+                $query->where('code', 'ACTIVE')->orWhere('name', 'Active');
+            })
+            ->groupBy('job_title_id', 'province_id', 'project_id')
+            ->get()
+            ->each(function ($row) use (&$counts) {
+                $key = "{$row->job_title_id}|{$row->province_id}";
+                $total = (int) $row->total;
+
+                $counts['all'][$key] = ($counts['all'][$key] ?? 0) + $total;
+
+                if ($row->project_id) {
+                    $counts['projects'][$row->project_id][$key] = ($counts['projects'][$row->project_id][$key] ?? 0) + $total;
+                }
+            });
+
+        return $counts;
     }
 
     /**
@@ -313,7 +348,7 @@ class StaffEstablishmentController extends Controller
      */
     private function lineData(array $line): array
     {
-        foreach (['province_id', 'district_id', 'facility_id', 'department_id', 'notes'] as $field) {
+        foreach (['province_id', 'district_id', 'department_id'] as $field) {
             if (array_key_exists($field, $line) && blank($line[$field])) {
                 $line[$field] = null;
             }
@@ -323,11 +358,12 @@ class StaffEstablishmentController extends Controller
             'job_title_id',
             'province_id',
             'district_id',
-            'facility_id',
             'department_id',
             'budgeted_positions',
-            'notes',
-        ]);
+        ]) + [
+            'facility_id' => null,
+            'notes' => null,
+        ];
     }
 
     /**
@@ -358,6 +394,47 @@ class StaffEstablishmentController extends Controller
             user: $request->user(),
             request: $request,
         );
+    }
+
+    private function logMatrixActivity(Request $request, StaffEstablishmentPlan $plan, ActivityLogger $activity): void
+    {
+        if (! $request->boolean('matrix_generated')) {
+            return;
+        }
+
+        $createdCount = max((int) $request->input('matrix_created_count', 0), 0);
+        $updatedCount = max((int) $request->input('matrix_updated_count', 0), 0);
+        $skippedCount = max((int) $request->input('matrix_skipped_count', 0), 0);
+        $properties = [
+            'plan_id' => $plan->id,
+            'created_count' => $createdCount,
+            'updated_count' => $updatedCount,
+            'skipped_count' => $skippedCount,
+            'selected_job_titles' => $request->input('matrix_selected_job_titles'),
+            'selected_locations' => $request->input('matrix_selected_locations'),
+        ];
+
+        if ($createdCount > 0) {
+            $activity->log(
+                'establishment_lines_matrix_generated',
+                "{$request->user()->name} generated {$createdCount} establishment line".($createdCount === 1 ? '' : 's')." for {$plan->reference_no}.",
+                $plan,
+                $properties,
+                user: $request->user(),
+                request: $request,
+            );
+        }
+
+        if ($updatedCount > 0) {
+            $activity->log(
+                'establishment_lines_bulk_updated',
+                "{$request->user()->name} updated {$updatedCount} establishment line".($updatedCount === 1 ? '' : 's')." for {$plan->reference_no}.",
+                $plan,
+                $properties,
+                user: $request->user(),
+                request: $request,
+            );
+        }
     }
 
     /**

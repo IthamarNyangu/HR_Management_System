@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Exports\StaffEstablishmentPlanExport;
 use App\Models\Department;
 use App\Models\District;
 use App\Models\Employee;
@@ -131,6 +132,157 @@ class StaffEstablishmentModuleTest extends TestCase
         $this->actingAs($viewer)->get(route('staff-establishment.create'))->assertForbidden();
         $this->actingAs($viewer)->get(route('staff-establishment.edit', $plan))->assertForbidden();
         $this->actingAs($viewer)->patch(route('staff-establishment.archive', $plan))->assertForbidden();
+    }
+
+    public function test_create_form_shows_excel_style_establishment_matrix_without_department_facility_or_line_notes(): void
+    {
+        $admin = $this->user($this->adminRole);
+        $plan = $this->plan($admin);
+        $plan->lines()->create([
+            'job_title_id' => $this->jobTitle->id,
+            'province_id' => $this->northern->id,
+            'district_id' => $this->kasama->id,
+            'facility_id' => null,
+            'department_id' => $this->department->id,
+            'budgeted_positions' => 1,
+        ]);
+        $export = new StaffEstablishmentPlanExport($plan, $admin, app(\App\Services\StaffEstablishmentMetricsService::class));
+
+        $this->actingAs($admin)
+            ->get(route('staff-establishment.create'))
+            ->assertOk()
+            ->assertSee('Establishment Matrix')
+            ->assertSee('Preview Generated Lines')
+            ->assertSee('Overall Budgeted Number')
+            ->assertSee('Total Current Establishment')
+            ->assertSee('Budgeted Staff')
+            ->assertSee('Excel Import')
+            ->assertSee('Coming Later')
+            ->assertSee('Current Establishment Lines')
+            ->assertDontSee('Generate Job Title Lines')
+            ->assertDontSee('Build Matrix')
+            ->assertDontSee('Include zero-budget lines')
+            ->assertDontSee('Line Notes')
+            ->assertDontSee('All facilities');
+
+        $this->assertNotContains('Facility', $export->headings());
+        $this->assertNotContains('Notes', $export->headings());
+    }
+
+    public function test_admin_can_save_matrix_generated_lines_across_multiple_provinces(): void
+    {
+        $admin = $this->user($this->adminRole);
+
+        $this->actingAs($admin)
+            ->post(route('staff-establishment.store'), $this->payload([
+                'matrix_generated' => '1',
+                'matrix_created_count' => 2,
+                'matrix_updated_count' => 0,
+                'matrix_skipped_count' => 1,
+                'matrix_selected_job_titles' => 'Lay Counsellor',
+                'matrix_selected_locations' => 'Northern, Luapula',
+                'lines' => [
+                    [
+                        'job_title_id' => $this->jobTitle->id,
+                        'province_id' => $this->northern->id,
+                        'district_id' => null,
+                        'department_id' => null,
+                        'budgeted_positions' => 3,
+                    ],
+                    [
+                        'job_title_id' => $this->jobTitle->id,
+                        'province_id' => $this->luapula->id,
+                        'district_id' => null,
+                        'department_id' => null,
+                        'budgeted_positions' => 2,
+                    ],
+                ],
+            ]))
+            ->assertRedirect();
+
+        $plan = StaffEstablishmentPlan::firstOrFail();
+
+        $this->assertDatabaseCount('staff_establishment_lines', 2);
+        $this->assertDatabaseHas('staff_establishment_lines', [
+            'staff_establishment_plan_id' => $plan->id,
+            'job_title_id' => $this->jobTitle->id,
+            'province_id' => $this->northern->id,
+            'district_id' => null,
+            'department_id' => null,
+            'budgeted_positions' => 3,
+        ]);
+        $this->assertDatabaseHas('staff_establishment_lines', [
+            'staff_establishment_plan_id' => $plan->id,
+            'job_title_id' => $this->jobTitle->id,
+            'province_id' => $this->luapula->id,
+            'district_id' => null,
+            'department_id' => null,
+            'budgeted_positions' => 2,
+        ]);
+        $this->assertDatabaseHas('activity_logs', [
+            'action' => 'establishment_lines_matrix_generated',
+            'user_id' => $admin->id,
+            'subject_type' => StaffEstablishmentPlan::class,
+            'subject_id' => $plan->id,
+        ]);
+    }
+
+    public function test_hr_manager_can_save_matrix_generated_lines(): void
+    {
+        $manager = $this->user($this->managerRole);
+
+        $this->actingAs($manager)
+            ->post(route('staff-establishment.store'), $this->payload([
+                'matrix_generated' => '1',
+                'matrix_created_count' => 1,
+                'matrix_updated_count' => 0,
+                'matrix_skipped_count' => 0,
+                'lines' => [
+                    [
+                        'job_title_id' => $this->jobTitle->id,
+                        'province_id' => $this->northern->id,
+                        'district_id' => $this->kasama->id,
+                        'department_id' => null,
+                        'budgeted_positions' => 1,
+                    ],
+                ],
+            ]))
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('activity_logs', [
+            'action' => 'establishment_lines_matrix_generated',
+            'user_id' => $manager->id,
+        ]);
+    }
+
+    public function test_duplicate_matrix_lines_are_rejected(): void
+    {
+        $admin = $this->user($this->adminRole);
+
+        $this->actingAs($admin)
+            ->from(route('staff-establishment.create'))
+            ->post(route('staff-establishment.store'), $this->payload([
+                'matrix_generated' => '1',
+                'matrix_created_count' => 2,
+                'lines' => [
+                    [
+                        'job_title_id' => $this->jobTitle->id,
+                        'province_id' => $this->northern->id,
+                        'district_id' => $this->kasama->id,
+                        'department_id' => null,
+                        'budgeted_positions' => 3,
+                    ],
+                    [
+                        'job_title_id' => $this->jobTitle->id,
+                        'province_id' => $this->northern->id,
+                        'district_id' => $this->kasama->id,
+                        'department_id' => null,
+                        'budgeted_positions' => 4,
+                    ],
+                ],
+            ]))
+            ->assertRedirect(route('staff-establishment.create'))
+            ->assertSessionHasErrors('lines.1.job_title_id');
     }
 
     public function test_archive_restore_and_exports_work(): void
@@ -307,7 +459,6 @@ class StaffEstablishmentModuleTest extends TestCase
                     'district_id' => $this->kasama->id,
                     'department_id' => $this->department->id,
                     'budgeted_positions' => 3,
-                    'notes' => null,
                 ],
             ],
         ], $overrides);
