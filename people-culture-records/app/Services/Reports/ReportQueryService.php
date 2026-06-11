@@ -51,6 +51,9 @@ class ReportQueryService
                     'facility' => 'Facility',
                     'employment_status' => 'Status',
                     'hire_date' => 'Hire Date',
+                    'termination_date' => 'Termination Date',
+                    'termination_reason' => 'Termination Reason',
+                    'termination_comment' => 'Termination Comment',
                 ],
             ],
             'disciplinary-cases' => [
@@ -236,7 +239,7 @@ class ReportQueryService
     public function employeesQuery(User $user, array $filters): Builder
     {
         return Employee::query()
-            ->with(['project', 'department', 'jobTitle', 'province', 'district', 'facility', 'employmentStatus'])
+            ->with(['project', 'department', 'jobTitle', 'province', 'district', 'facility', 'employmentStatus', 'terminationReason'])
             ->visibleTo($user)
             ->when(filled($filters['search'] ?? null), function ($query) use ($filters) {
                 $search = $filters['search'];
@@ -460,6 +463,9 @@ class ReportQueryService
             'facility' => $employee->facility?->name ?? '-',
             'employment_status' => $employee->employmentStatus?->name ?? '-',
             'hire_date' => $this->formatDate($employee->hire_date),
+            'termination_date' => $this->formatDate($employee->termination_date),
+            'termination_reason' => $employee->terminationReason?->name ?? '-',
+            'termination_comment' => $employee->termination_comment ?: '-',
         ];
     }
 

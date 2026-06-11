@@ -7,6 +7,7 @@ use App\Models\CaseStatus;
 use App\Models\DisciplinaryCase;
 use App\Models\District;
 use App\Models\Employee;
+use App\Models\EmploymentStatus;
 use App\Models\Facility;
 use App\Models\JobTitle;
 use App\Models\OffenceCategory;
@@ -14,6 +15,7 @@ use App\Models\PenaltyType;
 use App\Models\Province;
 use App\Models\Role;
 use App\Models\StaffRelocation;
+use App\Models\TerminationReason;
 use App\Models\User;
 use App\Services\Reports\ReportQueryService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -156,6 +158,36 @@ class ReportsAndExportsTest extends TestCase
 
         $this->assertCount(1, $rows);
         $this->assertSame('NOR-001', $rows->first()[0]);
+    }
+
+    public function test_employee_report_includes_termination_details(): void
+    {
+        $terminatedStatus = EmploymentStatus::firstOrCreate(
+            ['code' => 'TERMINATED'],
+            ['name' => 'Terminated', 'is_active' => true],
+        );
+        $reason = TerminationReason::firstOrCreate(
+            ['code' => 'RESIGNATION'],
+            ['name' => 'Resignation', 'is_active' => true],
+        );
+
+        $this->northernEmployee->update([
+            'employment_status_id' => $terminatedStatus->id,
+            'termination_reason_id' => $reason->id,
+            'termination_date' => '2026-06-06',
+            'termination_comment' => 'Employee resigned after notice period.',
+        ]);
+
+        $reports = app(ReportQueryService::class);
+        $row = $reports->rows('employees', $this->user($this->adminRole), ['search' => 'NOR-001'])->first();
+        $export = new EmployeesReportExport($reports, $this->user($this->adminRole), ['search' => 'NOR-001']);
+
+        $this->assertSame('06 Jun 2026', $row['termination_date']);
+        $this->assertSame('Resignation', $row['termination_reason']);
+        $this->assertSame('Employee resigned after notice period.', $row['termination_comment']);
+        $this->assertContains('Termination Date', $export->headings());
+        $this->assertContains('Termination Reason', $export->headings());
+        $this->assertContains('Termination Comment', $export->headings());
     }
 
     public function test_pdf_export_route_works_and_logs_activity(): void
