@@ -24,7 +24,7 @@ class PublicJobOpeningController extends Controller
     {
         $job = JobOpening::query()
             ->publiclyVisible()
-            ->with(['department', 'project', 'province', 'district', 'facility', 'employmentType'])
+            ->with(['department', 'project', 'province', 'district', 'facility', 'employmentType', 'reportingToJobTitle'])
             ->where('slug', $slug)
             ->firstOrFail();
 
@@ -59,15 +59,25 @@ class PublicJobOpeningController extends Controller
             'employment_type' => $job->employmentType?->name,
             'opening_date' => $job->opening_date?->toDateString(),
             'sections' => [
-                'description' => $job->description,
-                'responsibilities' => $job->responsibilities,
-                'requirements' => $job->requirements,
-                'qualifications' => $job->qualifications,
-                'experience_required' => $job->experience_required,
-                'contract_details' => $job->contract_details,
-                'work_level' => $job->work_level,
-                'location_details' => $job->location_details,
-                'application_instructions' => $job->application_instructions,
+                'about_us' => JobOpening::ABOUT_US_TEXT,
+                'about_the_position' => [
+                    'request_to_hire_no' => $job->reference_no,
+                    'date_advertised' => $job->opening_date?->toDateString(),
+                    'closing_date' => $job->closing_date?->toDateString(),
+                    'position' => $job->title,
+                    'location' => $job->location_label,
+                    'contract_duration' => $job->contract_duration,
+                    'contract_type' => $job->employmentType?->name,
+                    'job_grade' => $job->job_grade,
+                    'reporting_to' => $job->reporting_to_label,
+                    'contact_email' => $job->announcement_contact_email,
+                    'contact_person' => 'People & Culture Department',
+                ],
+                'qualifications_and_experience' => $job->qualifications,
+                'technical_and_behavioural_competencies' => $job->requirements,
+                'key_performance_areas' => $job->responsibilities,
+                'application_procedure' => $job->is_publicly_applyable ? route('careers.apply', $job->slug) : null,
+                'disclaimer' => JobOpening::DISCLAIMER_TEXT,
             ],
         ];
 

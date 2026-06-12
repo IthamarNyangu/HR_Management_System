@@ -43,24 +43,51 @@
         </header>
 
         <article class="job-panel p-4">
-            @foreach ([
-                'description' => 'Description',
-                'responsibilities' => 'Responsibilities',
-                'requirements' => 'Requirements',
-                'qualifications' => 'Qualifications',
-                'experience_required' => 'Experience Required',
-                'contract_details' => 'Contract Details',
-                'work_level' => 'Work Level',
-                'location_details' => 'Location Details',
-                'application_instructions' => 'Application Instructions',
-            ] as $field => $label)
-                @if (filled($jobOpening->{$field}))
-                    <section class="mb-4">
-                        <h2 class="section-title">{{ $label }}</h2>
-                        <div class="text-pre-line">{{ $jobOpening->{$field} }}</div>
-                    </section>
-                @endif
+            <section class="mb-4">
+                <h2 class="section-title">About Us</h2>
+                <div>{{ App\Models\JobOpening::ABOUT_US_TEXT }}</div>
+            </section>
+
+            <section class="mb-4">
+                <h2 class="section-title">About the Position</h2>
+                <div class="row g-3">
+                    <div class="col-md-4"><span class="fw-semibold">Request to Hire No.:</span> {{ $jobOpening->reference_no }}</div>
+                    <div class="col-md-4"><span class="fw-semibold">Date advertised:</span> {{ $jobOpening->opening_date?->format('d M Y') ?? '-' }}</div>
+                    <div class="col-md-4"><span class="fw-semibold">Closing date:</span> {{ $jobOpening->closing_date?->format('d M Y') ?? '-' }}</div>
+                    <div class="col-md-4"><span class="fw-semibold">Position:</span> {{ $jobOpening->title }}</div>
+                    <div class="col-md-4"><span class="fw-semibold">Location:</span> {{ $jobOpening->location_label }}</div>
+                    @if ($jobOpening->show_number_of_positions && $jobOpening->number_of_positions)
+                        <div class="col-md-4"><span class="fw-semibold">No. of Vacancies:</span> {{ $jobOpening->number_of_positions }}</div>
+                    @endif
+                    <div class="col-md-4"><span class="fw-semibold">Contract duration:</span> {{ $jobOpening->contract_duration ?: '-' }}</div>
+                    <div class="col-md-4"><span class="fw-semibold">Contract type:</span> {{ $jobOpening->employmentType?->name ?? '-' }}</div>
+                    <div class="col-md-4"><span class="fw-semibold">Job grade:</span> {{ $jobOpening->job_grade ?: '-' }}</div>
+                    <div class="col-md-4"><span class="fw-semibold">Reporting to:</span> {{ $jobOpening->reporting_to_label }}</div>
+                    <div class="col-md-4"><span class="fw-semibold">Contact email:</span> {{ $jobOpening->announcement_contact_email }}</div>
+                    <div class="col-md-4"><span class="fw-semibold">Contact Person:</span> People & Culture Department</div>
+                </div>
+            </section>
+
+            @foreach (App\Models\JobOpening::ANNOUNCEMENT_SECTIONS as $field => $label)
+                @php($lines = $jobOpening->linesFor($field))
+                <section class="mb-4">
+                    <h2 class="section-title">{{ str($label)->replace('  ', ' ') }}</h2>
+                    @if (count($lines) > 0)
+                        <ul class="mb-0">
+                            @foreach ($lines as $line)
+                                <li>{{ $line }}</li>
+                            @endforeach
+                        </ul>
+                    @else
+                        <div class="text-muted">-</div>
+                    @endif
+                </section>
             @endforeach
+
+            <section class="mb-4">
+                <h2 class="section-title">Application Procedure</h2>
+                <div>Applications must be submitted through the Right to Care Zambia careers portal.</div>
+            </section>
         </article>
     </main>
 </body>

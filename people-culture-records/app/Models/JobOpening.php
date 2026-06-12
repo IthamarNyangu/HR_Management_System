@@ -52,6 +52,10 @@ class JobOpening extends Model
         'status',
         'number_of_positions',
         'show_number_of_positions',
+        'contract_duration',
+        'job_grade',
+        'reporting_to_job_title_id',
+        'reporting_to_tba',
         'summary',
         'description',
         'responsibilities',
@@ -82,10 +86,21 @@ class JobOpening extends Model
         'closing_status_label',
     ];
 
+    public const ABOUT_US_TEXT = 'Right to Care Zambia is a health-focused organisation committed to supporting high-quality, people-centred health services and strengthened health systems in Zambia. We work with government, donors, communities, and partners to deliver sustainable programmes that improve health outcomes.';
+
+    public const DISCLAIMER_TEXT = 'Right to Care Zambia is an equal opportunity employer and reserves the right not to make an appointment. Only shortlisted candidates will be contacted. If you do not hear from us within 4 weeks after the closing date, please consider your application unsuccessful. Right to Care Zambia does not charge any fee at any stage of the recruitment process.';
+
+    public const ANNOUNCEMENT_SECTIONS = [
+        'qualifications' => 'Q U A L I F I C A T I O N S   A N D   E X P E R I E N C E',
+        'requirements' => 'T E C H N I C A L   A N D   B E H A V I O U R A L   C O M P E T E N C I E S',
+        'responsibilities' => 'K E Y   P E R F O R M A N C E   A R E A S',
+    ];
+
     protected function casts(): array
     {
         return [
             'show_number_of_positions' => 'boolean',
+            'reporting_to_tba' => 'boolean',
             'opening_date' => 'date',
             'closing_date' => 'date',
             'published_at' => 'datetime',
@@ -127,6 +142,11 @@ class JobOpening extends Model
     public function employmentType(): BelongsTo
     {
         return $this->belongsTo(EmploymentType::class);
+    }
+
+    public function reportingToJobTitle(): BelongsTo
+    {
+        return $this->belongsTo(JobTitle::class, 'reporting_to_job_title_id');
     }
 
     public function createdBy(): BelongsTo
@@ -214,6 +234,42 @@ class JobOpening extends Model
         return collect([$this->province?->name, $this->district?->name, $this->facility?->name])
             ->filter()
             ->implode(' / ') ?: 'Not specified';
+    }
+
+    public function getVacancyAnnouncementTitleAttribute(): string
+    {
+        return 'RTCZ INTERNAL VACANCY ANNOUNCEMENT - '.str($this->title)->upper();
+    }
+
+    public function getReportingToLabelAttribute(): string
+    {
+        if ($this->reporting_to_tba) {
+            return 'TBA';
+        }
+
+        return $this->reportingToJobTitle?->name ?? 'TBA';
+    }
+
+    public function getAnnouncementContactPersonAttribute(): string
+    {
+        return 'People & Culture';
+    }
+
+    public function getAnnouncementContactEmailAttribute(): string
+    {
+        return config('mail.from.address') ?: 'hrms-noreply@righttocare-zambia.org';
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function linesFor(string $field): array
+    {
+        return collect(preg_split('/\r\n|\r|\n/', (string) $this->{$field}))
+            ->map(fn (string $line): string => trim(preg_replace('/^\s*[-*•]\s*/', '', $line) ?? ''))
+            ->filter()
+            ->values()
+            ->all();
     }
 
     public function scopePublished(Builder $query): Builder

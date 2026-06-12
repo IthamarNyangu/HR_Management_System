@@ -122,6 +122,9 @@
                                 <div class="d-inline-flex gap-2">
                                     @can('view', $job)
                                         <a href="{{ route('recruitment.job-openings.show', $job) }}" class="btn btn-sm btn-secondary">View</a>
+                                        <a href="{{ route('recruitment.job-openings.announcement.pdf', $job) }}" class="btn btn-sm btn-secondary" title="Download vacancy announcement PDF" aria-label="Download vacancy announcement PDF for {{ $job->reference_no }}">
+                                            <i class="bi bi-download" aria-hidden="true"></i>
+                                        </a>
                                     @endcan
                                     @can('update', $job)
                                         <a href="{{ route('recruitment.job-openings.edit', $job) }}" class="btn btn-sm btn-outline-primary">Edit</a>

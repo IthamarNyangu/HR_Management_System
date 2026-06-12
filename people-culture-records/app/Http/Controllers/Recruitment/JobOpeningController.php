@@ -15,6 +15,7 @@ use App\Models\Project;
 use App\Models\Province;
 use App\Services\ActivityLogger;
 use App\Services\ReferenceNumberService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -22,6 +23,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\Response;
 
 class JobOpeningController extends Controller
 {
@@ -125,7 +127,7 @@ class JobOpeningController extends Controller
     ): RedirectResponse {
         $jobOpening = DB::transaction(function () use ($request, $referenceNumbers) {
             $data = $this->jobOpeningData($request->validated());
-            $data['reference_no'] = $referenceNumbers->generate('JOB', 'job_openings');
+            $data['reference_no'] = $referenceNumbers->generateRtczVacancyNumber();
             $data['slug'] = $this->uniqueSlug($data['title'], $data['reference_no']);
             $data['created_by'] = $request->user()->id;
             $data['updated_by'] = $request->user()->id;
@@ -155,6 +157,19 @@ class JobOpeningController extends Controller
         $jobOpening->load($this->relations());
 
         return view('recruitment.job-openings.show', compact('jobOpening'));
+    }
+
+    public function downloadAnnouncementPdf(JobOpening $jobOpening): Response
+    {
+        Gate::authorize('view', $jobOpening);
+
+        $jobOpening->load($this->relations());
+
+        return Pdf::loadView('recruitment.job-openings.pdf', [
+            'jobOpening' => $jobOpening,
+            'generatedAt' => now(),
+        ])->setPaper('a4')
+            ->download(str($jobOpening->vacancy_announcement_title)->slug()->append('-')->append(now()->format('Ymd-His'))->append('.pdf')->toString());
     }
 
     public function edit(Request $request, JobOpening $jobOpening): View
@@ -307,6 +322,7 @@ class JobOpeningController extends Controller
             'district',
             'facility',
             'employmentType',
+            'reportingToJobTitle',
             'createdBy',
             'updatedBy',
             'archivedBy',
@@ -351,6 +367,9 @@ class JobOpeningController extends Controller
             'facility_id',
             'employment_type_id',
             'number_of_positions',
+            'contract_duration',
+            'job_grade',
+            'reporting_to_job_title_id',
             'summary',
             'location_details',
             'internal_notes',
@@ -361,6 +380,7 @@ class JobOpeningController extends Controller
         }
 
         $data['show_number_of_positions'] = (bool) ($data['show_number_of_positions'] ?? false);
+        $data['reporting_to_tba'] = (bool) ($data['reporting_to_tba'] ?? false);
 
         return Arr::only($data, [
             'reference_no',
@@ -377,6 +397,10 @@ class JobOpeningController extends Controller
             'status',
             'number_of_positions',
             'show_number_of_positions',
+            'contract_duration',
+            'job_grade',
+            'reporting_to_job_title_id',
+            'reporting_to_tba',
             'opening_date',
             'closing_date',
             'summary',

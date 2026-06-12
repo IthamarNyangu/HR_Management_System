@@ -21,9 +21,12 @@ class StoreJobOpeningRequest extends FormRequest
         $jobTitleName = $this->filled('job_title_id')
             ? JobTitle::whereKey($this->input('job_title_id'))->value('name')
             : null;
+        $reportingTo = $this->input('reporting_to_job_title_id');
 
         $this->merge([
             'show_number_of_positions' => $this->boolean('show_number_of_positions'),
+            'reporting_to_tba' => $reportingTo === 'tba',
+            'reporting_to_job_title_id' => $reportingTo === 'tba' || blank($reportingTo) ? null : $reportingTo,
             'status' => $this->input('status') ?: JobOpening::STATUS_DRAFT,
             'title' => $jobTitleName ?: $this->input('title'),
         ]);
@@ -62,6 +65,10 @@ class StoreJobOpeningRequest extends FormRequest
             ])],
             'number_of_positions' => ['nullable', 'integer', 'min:1'],
             'show_number_of_positions' => ['boolean'],
+            'contract_duration' => ['nullable', 'string', 'max:255'],
+            'job_grade' => ['nullable', 'string', 'max:255'],
+            'reporting_to_job_title_id' => ['nullable', 'exists:job_titles,id'],
+            'reporting_to_tba' => ['boolean'],
             'description' => ['nullable', 'string'],
             'responsibilities' => ['nullable', 'string'],
             'requirements' => ['nullable', 'string'],
@@ -81,6 +88,7 @@ class StoreJobOpeningRequest extends FormRequest
         $validator->after(function ($validator) {
             $this->validateLocation($validator);
             $this->validateOfficerProvince($validator);
+            $this->validateReportingTo($validator);
         });
     }
 
@@ -117,6 +125,13 @@ class StoreJobOpeningRequest extends FormRequest
 
         if (! $user->province_id || (int) $this->input('province_id') !== (int) $user->province_id) {
             $validator->errors()->add('province_id', 'HR Officers can only create jobs for their assigned province.');
+        }
+    }
+
+    protected function validateReportingTo($validator): void
+    {
+        if (! $this->boolean('reporting_to_tba') && blank($this->input('reporting_to_job_title_id'))) {
+            $validator->errors()->add('reporting_to_job_title_id', 'Select the reporting job title or choose TBA.');
         }
     }
 }

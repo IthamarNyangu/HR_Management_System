@@ -1,5 +1,10 @@
 @php
     $isOfficer = auth()->user()->hasRole('HR Officer');
+    $selectedReportingTo = old(
+        'reporting_to_job_title_id',
+        $jobOpening->reporting_to_tba ? 'tba' : $jobOpening->reporting_to_job_title_id
+    );
+    $contactEmail = config('mail.from.address') ?: 'hrms-noreply@righttocare-zambia.org';
 @endphp
 
 <div class="d-flex flex-column gap-4" data-job-opening-form>
@@ -7,7 +12,7 @@
         <section class="border rounded-2 bg-light p-3">
             <div class="row g-3">
                 <div class="col-md-4">
-                    <label class="form-label">Reference Number</label>
+                    <label class="form-label">Request to Hire No.</label>
                     <input type="text" class="form-control" value="{{ $jobOpening->reference_no }}" disabled>
                 </div>
                 <div class="col-md-8">
@@ -19,10 +24,45 @@
     @endif
 
     <section class="border rounded-2 bg-light p-3">
-        <h2 class="h6 mb-3">Job Summary</h2>
+        <div class="text-center bg-white border rounded-2 py-3 px-2 mb-3">
+            <h2 class="h5 text-danger mb-0">C A R E E R&nbsp;&nbsp; O P P O R T U N I T Y</h2>
+        </div>
+        <div class="small text-muted">
+            This form follows the RTCZ internal vacancy announcement format. Enter one bullet per line in the large content boxes.
+        </div>
+    </section>
+
+    <section class="border rounded-2 bg-light p-3">
+        <div class="text-center bg-white border rounded-2 py-2 px-2 mb-3">
+            <h2 class="h6 text-danger mb-0">A B O U T&nbsp;&nbsp; U S</h2>
+        </div>
+        <p class="mb-0">{{ App\Models\JobOpening::ABOUT_US_TEXT }}</p>
+        <div class="form-text">This section is prefilled for all vacancy announcements.</div>
+    </section>
+
+    <section class="border rounded-2 bg-light p-3">
+        <div class="text-center bg-white border rounded-2 py-2 px-2 mb-3">
+            <h2 class="h6 text-danger mb-0">A B O U T&nbsp;&nbsp; T H E&nbsp;&nbsp; P O S I T I O N</h2>
+        </div>
+
         <div class="row g-3">
-            <div class="col-lg-8">
-                <label for="job_title_id" class="form-label">Job Title <span class="text-danger">*</span></label>
+            <div class="col-md-4">
+                <label class="form-label">Request to Hire No.</label>
+                <input type="text" class="form-control" value="{{ $jobOpening->reference_no ?: 'System generated on save' }}" disabled>
+            </div>
+            <div class="col-md-4">
+                <label for="opening_date" class="form-label">Date Advertised</label>
+                <input id="opening_date" name="opening_date" type="date" class="form-control @error('opening_date') is-invalid @enderror" value="{{ old('opening_date', $jobOpening->opening_date?->format('Y-m-d') ?? now()->toDateString()) }}">
+                @error('opening_date')<div class="invalid-feedback">{{ $message }}</div>@enderror
+            </div>
+            <div class="col-md-4">
+                <label for="closing_date" class="form-label">Closing Date <span class="text-danger">*</span></label>
+                <input id="closing_date" name="closing_date" type="date" class="form-control @error('closing_date') is-invalid @enderror" value="{{ old('closing_date', $jobOpening->closing_date?->format('Y-m-d') ?? now()->addWeeks(2)->toDateString()) }}" required>
+                @error('closing_date')<div class="invalid-feedback">{{ $message }}</div>@enderror
+            </div>
+
+            <div class="col-lg-6">
+                <label for="job_title_id" class="form-label">Position <span class="text-danger">*</span></label>
                 <select id="job_title_id" name="job_title_id" class="form-select @error('job_title_id') is-invalid @enderror" required>
                     <option value="">Select job title</option>
                     @foreach ($jobTitles as $jobTitle)
@@ -31,46 +71,84 @@
                 </select>
                 @error('job_title_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 <div class="form-text d-flex flex-wrap align-items-center gap-2">
-                    <span>Job title must already exist in the Job Titles master table.</span>
+                    <span>Position must already exist in the Job Titles master table.</span>
                     @can('manage-master-data')
                         <a href="{{ route('admin.master-data.records', 'job-titles') }}">Manage job titles</a>
                     @endcan
                 </div>
                 <input type="hidden" name="title" value="{{ old('title', $jobOpening->title) }}">
             </div>
-            <div class="col-md-6 col-lg-4">
-                <label for="employment_type_id" class="form-label">Employment Type</label>
+            <div class="col-lg-6">
+                <label for="location_details" class="form-label">Location</label>
+                <input id="location_details" name="location_details" type="text" class="form-control @error('location_details') is-invalid @enderror" value="{{ old('location_details', $jobOpening->location_details) }}" placeholder="e.g. Lusaka Office">
+                @error('location_details')<div class="invalid-feedback">{{ $message }}</div>@enderror
+            </div>
+
+            <div class="col-md-4">
+                <label for="number_of_positions" class="form-label">No. of Vacancies</label>
+                <input id="number_of_positions" name="number_of_positions" type="number" min="1" class="form-control @error('number_of_positions') is-invalid @enderror" value="{{ old('number_of_positions', $jobOpening->number_of_positions ?? 1) }}">
+                @error('number_of_positions')<div class="invalid-feedback">{{ $message }}</div>@enderror
+            </div>
+            <div class="col-md-4">
+                <label for="contract_duration" class="form-label">Contract Duration</label>
+                <input id="contract_duration" name="contract_duration" type="text" class="form-control @error('contract_duration') is-invalid @enderror" value="{{ old('contract_duration', $jobOpening->contract_duration) }}" placeholder="e.g. 12 months">
+                @error('contract_duration')<div class="invalid-feedback">{{ $message }}</div>@enderror
+            </div>
+            <div class="col-md-4">
+                <label for="employment_type_id" class="form-label">Contract Type</label>
                 <select id="employment_type_id" name="employment_type_id" class="form-select @error('employment_type_id') is-invalid @enderror">
-                    <option value="">Select employment type</option>
+                    <option value="">Select contract type</option>
                     @foreach ($employmentTypes as $employmentType)
                         <option value="{{ $employmentType->id }}" @selected((string) old('employment_type_id', $jobOpening->employment_type_id) === (string) $employmentType->id)>{{ $employmentType->name }}</option>
                     @endforeach
                 </select>
                 @error('employment_type_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
-            <div class="col-md-4">
-                <label for="number_of_positions" class="form-label">Number of Positions</label>
-                <input id="number_of_positions" name="number_of_positions" type="number" min="1" class="form-control @error('number_of_positions') is-invalid @enderror" value="{{ old('number_of_positions', $jobOpening->number_of_positions ?? 1) }}">
-                @error('number_of_positions')<div class="invalid-feedback">{{ $message }}</div>@enderror
-            </div>
-            <div class="col-md-4 d-flex align-items-end">
-                <div class="form-check">
-                    <input type="hidden" name="show_number_of_positions" value="0">
-                    <input id="show_number_of_positions" name="show_number_of_positions" type="checkbox" value="1" class="form-check-input" @checked(old('show_number_of_positions', $jobOpening->show_number_of_positions ?? true))>
-                    <label for="show_number_of_positions" class="form-check-label">Show number publicly</label>
-                </div>
-            </div>
-            <div class="col-12">
-                <label for="summary" class="form-label">Short Summary</label>
-                <textarea id="summary" name="summary" rows="2" class="form-control @error('summary') is-invalid @enderror">{{ old('summary', $jobOpening->summary) }}</textarea>
-                @error('summary')<div class="invalid-feedback">{{ $message }}</div>@enderror
-            </div>
-        </div>
-    </section>
 
-    <section class="border rounded-2 bg-light p-3">
-        <h2 class="h6 mb-3">Organisation & Location</h2>
-        <div class="row g-3">
+            <div class="col-md-4">
+                <label for="job_grade" class="form-label">Job Grade</label>
+                <input id="job_grade" name="job_grade" type="text" class="form-control @error('job_grade') is-invalid @enderror" value="{{ old('job_grade', $jobOpening->job_grade) }}" placeholder="e.g. C2">
+                @error('job_grade')<div class="invalid-feedback">{{ $message }}</div>@enderror
+            </div>
+            <div class="col-md-4">
+                <label for="reporting_to_job_title_id" class="form-label">Reporting To <span class="text-danger">*</span></label>
+                <select id="reporting_to_job_title_id" name="reporting_to_job_title_id" class="form-select @error('reporting_to_job_title_id') is-invalid @enderror" required>
+                    <option value="">Select reporting job title</option>
+                    <option value="tba" @selected((string) $selectedReportingTo === 'tba')>TBA</option>
+                    @foreach ($jobTitles as $jobTitle)
+                        <option value="{{ $jobTitle->id }}" @selected((string) $selectedReportingTo === (string) $jobTitle->id)>{{ $jobTitle->name }}</option>
+                    @endforeach
+                </select>
+                @error('reporting_to_job_title_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Contact Person</label>
+                <input type="text" class="form-control" value="People & Culture Department" disabled>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">Contact Email</label>
+                <input type="text" class="form-control" value="{{ $contactEmail }}" disabled>
+            </div>
+            <div class="col-md-4">
+                <label for="visibility" class="form-label">Visibility <span class="text-danger">*</span></label>
+                <select id="visibility" name="visibility" class="form-select @error('visibility') is-invalid @enderror" required>
+                    @foreach ($visibilities as $visibility)
+                        <option value="{{ $visibility }}" @selected(old('visibility', $jobOpening->visibility) === $visibility)>{{ str($visibility)->headline() }}</option>
+                    @endforeach
+                </select>
+                @error('visibility')<div class="invalid-feedback">{{ $message }}</div>@enderror
+            </div>
+            <div class="col-md-4">
+                <label for="status" class="form-label">Status <span class="text-danger">*</span></label>
+                <select id="status" name="status" class="form-select @error('status') is-invalid @enderror" required>
+                    @foreach ($statuses as $status)
+                        <option value="{{ $status }}" @selected(old('status', $jobOpening->status) === $status)>{{ str($status)->headline() }}</option>
+                    @endforeach
+                </select>
+                @error('status')<div class="invalid-feedback">{{ $message }}</div>@enderror
+            </div>
+
             <div class="col-md-4">
                 <label for="project_id" class="form-label">Project</label>
                 <select id="project_id" name="project_id" class="form-select @error('project_id') is-invalid @enderror">
@@ -79,6 +157,7 @@
                         <option value="{{ $project->id }}" @selected((string) old('project_id', $jobOpening->project_id) === (string) $project->id)>{{ $project->name }}</option>
                     @endforeach
                 </select>
+                <div class="form-text">Internal HRMS classification. Not printed as a vacancy field.</div>
                 @error('project_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
             <div class="col-md-4">
@@ -89,6 +168,7 @@
                         <option value="{{ $department->id }}" @selected((string) old('department_id', $jobOpening->department_id) === (string) $department->id)>{{ $department->name }}</option>
                     @endforeach
                 </select>
+                <div class="form-text">Internal HRMS classification. Not printed as a vacancy field.</div>
                 @error('department_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
             <div class="col-md-4">
@@ -124,74 +204,57 @@
                 </select>
                 @error('facility_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
-            <div class="col-md-4">
-                <label for="location_details" class="form-label">Location Details</label>
-                <input id="location_details" name="location_details" type="text" class="form-control @error('location_details') is-invalid @enderror" value="{{ old('location_details', $jobOpening->location_details) }}" placeholder="e.g. Lusaka or field-based">
-                @error('location_details')<div class="invalid-feedback">{{ $message }}</div>@enderror
-            </div>
-        </div>
-    </section>
-
-    <section class="border rounded-2 bg-light p-3">
-        <h2 class="h6 mb-3">Status & Visibility</h2>
-        <div class="row g-3">
-            <div class="col-md-3">
-                <label for="visibility" class="form-label">Visibility <span class="text-danger">*</span></label>
-                <select id="visibility" name="visibility" class="form-select @error('visibility') is-invalid @enderror" required>
-                    @foreach ($visibilities as $visibility)
-                        <option value="{{ $visibility }}" @selected(old('visibility', $jobOpening->visibility) === $visibility)>{{ str($visibility)->headline() }}</option>
-                    @endforeach
-                </select>
-                @error('visibility')<div class="invalid-feedback">{{ $message }}</div>@enderror
-            </div>
-            <div class="col-md-3">
-                <label for="status" class="form-label">Status <span class="text-danger">*</span></label>
-                <select id="status" name="status" class="form-select @error('status') is-invalid @enderror" required>
-                    @foreach ($statuses as $status)
-                        <option value="{{ $status }}" @selected(old('status', $jobOpening->status) === $status)>{{ str($status)->headline() }}</option>
-                    @endforeach
-                </select>
-                @error('status')<div class="invalid-feedback">{{ $message }}</div>@enderror
-            </div>
-            <div class="col-md-3">
-                <label for="opening_date" class="form-label">Opening Date</label>
-                <input id="opening_date" name="opening_date" type="date" class="form-control @error('opening_date') is-invalid @enderror" value="{{ old('opening_date', $jobOpening->opening_date?->format('Y-m-d') ?? now()->toDateString()) }}">
-                @error('opening_date')<div class="invalid-feedback">{{ $message }}</div>@enderror
-            </div>
-            <div class="col-md-3">
-                <label for="closing_date" class="form-label">Closing Date <span class="text-danger">*</span></label>
-                <input id="closing_date" name="closing_date" type="date" class="form-control @error('closing_date') is-invalid @enderror" value="{{ old('closing_date', $jobOpening->closing_date?->format('Y-m-d') ?? now()->addWeeks(2)->toDateString()) }}" required>
-                @error('closing_date')<div class="invalid-feedback">{{ $message }}</div>@enderror
-            </div>
-        </div>
-    </section>
-
-    <section class="border rounded-2 bg-light p-3">
-        <h2 class="h6 mb-3">Structured Job Content</h2>
-        <div class="row g-3">
-            @foreach ([
-                'description' => 'Description',
-                'responsibilities' => 'Responsibilities',
-                'requirements' => 'Requirements',
-                'qualifications' => 'Qualifications',
-                'experience_required' => 'Experience Required',
-                'contract_details' => 'Contract Details',
-                'work_level' => 'Work Level',
-                'application_instructions' => 'Application Instructions',
-            ] as $field => $label)
-                <div class="col-lg-6">
-                    <label for="{{ $field }}" class="form-label">{{ $label }}{{ in_array($field, ['description', 'application_instructions'], true) ? ' *' : '' }}</label>
-                    <textarea id="{{ $field }}" name="{{ $field }}" rows="5" class="form-control @error($field) is-invalid @enderror" @required(in_array($field, ['description', 'application_instructions'], true))>{{ old($field, $jobOpening->{$field}) }}</textarea>
-                    @error($field)<div class="invalid-feedback">{{ $message }}</div>@enderror
+            <div class="col-md-4 d-flex align-items-end">
+                <div class="form-check">
+                    <input type="hidden" name="show_number_of_positions" value="0">
+                    <input id="show_number_of_positions" name="show_number_of_positions" type="checkbox" value="1" class="form-check-input" @checked(old('show_number_of_positions', $jobOpening->show_number_of_positions ?? true))>
+                    <label for="show_number_of_positions" class="form-check-label">Show number publicly</label>
                 </div>
-            @endforeach
+            </div>
             <div class="col-12">
-                <label for="internal_notes" class="form-label">Internal Notes</label>
-                <textarea id="internal_notes" name="internal_notes" rows="3" class="form-control @error('internal_notes') is-invalid @enderror">{{ old('internal_notes', $jobOpening->internal_notes) }}</textarea>
-                <div class="form-text">Internal notes are never exposed on public careers pages or API.</div>
-                @error('internal_notes')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                <label for="summary" class="form-label">Careers List Summary</label>
+                <textarea id="summary" name="summary" rows="2" class="form-control @error('summary') is-invalid @enderror">{{ old('summary', $jobOpening->summary) }}</textarea>
+                <div class="form-text">Short preview text for recruitment lists and public careers cards. Not printed as a vacancy section.</div>
+                @error('summary')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
         </div>
+    </section>
+
+    @foreach ([
+        'qualifications' => 'Q U A L I F I C A T I O N S&nbsp;&nbsp; A N D&nbsp;&nbsp; E X P E R I E N C E',
+        'requirements' => 'T E C H N I C A L&nbsp;&nbsp; A N D&nbsp;&nbsp; B E H A V I O U R A L&nbsp;&nbsp; C O M P E T E N C I E S',
+        'responsibilities' => 'K E Y&nbsp;&nbsp; P E R F O R M A N C E&nbsp;&nbsp; A R E A S',
+    ] as $field => $label)
+        <section class="border rounded-2 bg-light p-3">
+            <div class="text-center bg-white border rounded-2 py-2 px-2 mb-3">
+                <h2 class="h6 text-danger mb-0">{!! $label !!}</h2>
+            </div>
+            <textarea id="{{ $field }}" name="{{ $field }}" rows="7" class="form-control @error($field) is-invalid @enderror" placeholder="Enter one bullet per line">{{ old($field, $jobOpening->{$field}) }}</textarea>
+            <div class="form-text">Each line will appear as a bullet point in the vacancy announcement PDF.</div>
+            @error($field)<div class="invalid-feedback">{{ $message }}</div>@enderror
+        </section>
+    @endforeach
+
+    <section class="border rounded-2 bg-light p-3">
+        <div class="text-center bg-white border rounded-2 py-2 px-2 mb-3">
+            <h2 class="h6 text-danger mb-0">A P P L I C A T I O N&nbsp;&nbsp; P R O C E D U R E</h2>
+        </div>
+        <p class="mb-0">Applications will be submitted through the HRMS careers portal. The generated PDF will include the application link when the vacancy is published and open.</p>
+    </section>
+
+    <section class="border rounded-2 bg-light p-3">
+        <div class="text-center bg-white border rounded-2 py-2 px-2 mb-3">
+            <h2 class="h6 text-danger mb-0">D I S C L A I M E R</h2>
+        </div>
+        <p class="mb-0">{{ App\Models\JobOpening::DISCLAIMER_TEXT }}</p>
+        <div class="form-text">This section is prefilled for all vacancy announcements.</div>
+    </section>
+
+    <section class="border rounded-2 bg-light p-3">
+        <h2 class="h6 mb-3">Internal Notes</h2>
+        <textarea id="internal_notes" name="internal_notes" rows="3" class="form-control @error('internal_notes') is-invalid @enderror">{{ old('internal_notes', $jobOpening->internal_notes) }}</textarea>
+        <div class="form-text">Internal notes are never exposed on public careers pages, API, or vacancy PDFs.</div>
+        @error('internal_notes')<div class="invalid-feedback">{{ $message }}</div>@enderror
     </section>
 
     <div class="d-flex gap-2 pt-2">

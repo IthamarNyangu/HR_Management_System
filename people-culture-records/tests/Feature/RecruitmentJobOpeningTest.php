@@ -68,15 +68,37 @@ class RecruitmentJobOpeningTest extends TestCase
 
         $job = JobOpening::firstOrFail();
 
-        $this->assertSame('JOB-'.now()->year.'-0001', $job->reference_no);
-        $this->assertSame('data-analyst-job-'.now()->year.'-0001', $job->slug);
+        $this->assertSame('RTCZ'.now()->format('y').'-001', $job->reference_no);
+        $this->assertSame('data-analyst-rtcz'.now()->format('y').'-001', $job->slug);
         $this->assertDatabaseHas('activity_logs', ['action' => 'job_opening_created']);
+        $this->assertSame($this->jobTitle->id, $job->reporting_to_job_title_id);
 
         $this->actingAs($admin)
             ->patch(route('recruitment.job-openings.publish', $job))
             ->assertRedirect();
 
         $this->assertSame(JobOpening::STATUS_PUBLISHED, $job->fresh()->status);
+    }
+
+    public function test_authorized_user_can_download_vacancy_announcement_pdf(): void
+    {
+        $admin = $this->user($this->adminRole);
+        $job = $this->jobOpening([
+            'responsibilities' => "Prepare reports\nSupport data quality",
+            'requirements' => "Strong Excel skills\nGood communication",
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('recruitment.job-openings.index'))
+            ->assertOk()
+            ->assertSee(route('recruitment.job-openings.announcement.pdf', $job), false);
+
+        $response = $this->actingAs($admin)
+            ->get(route('recruitment.job-openings.announcement.pdf', $job));
+
+        $response->assertOk();
+        $this->assertStringContainsString('application/pdf', $response->headers->get('content-type'));
+        $this->assertStringContainsString('attachment;', $response->headers->get('content-disposition'));
     }
 
     public function test_hr_manager_can_manage_job_openings(): void
@@ -233,6 +255,10 @@ class RecruitmentJobOpeningTest extends TestCase
             'status' => JobOpening::STATUS_PUBLISHED,
             'number_of_positions' => 2,
             'show_number_of_positions' => true,
+            'contract_duration' => '12 months',
+            'job_grade' => 'C2',
+            'reporting_to_job_title_id' => $this->jobTitle->id,
+            'reporting_to_tba' => false,
             'opening_date' => now()->toDateString(),
             'closing_date' => now()->addWeeks(2)->toDateString(),
             'summary' => 'A public recruitment opportunity.',
@@ -260,6 +286,9 @@ class RecruitmentJobOpeningTest extends TestCase
             'status' => JobOpening::STATUS_DRAFT,
             'number_of_positions' => 1,
             'show_number_of_positions' => 1,
+            'contract_duration' => '12 months',
+            'job_grade' => 'C2',
+            'reporting_to_job_title_id' => $this->jobTitle->id,
             'opening_date' => now()->toDateString(),
             'closing_date' => now()->addWeeks(2)->toDateString(),
             'summary' => 'Short job summary.',

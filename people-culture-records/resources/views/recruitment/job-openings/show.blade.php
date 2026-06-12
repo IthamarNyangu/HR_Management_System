@@ -12,6 +12,10 @@
 
 @section('page-actions')
     <div class="d-flex flex-wrap gap-2">
+        <a href="{{ route('recruitment.job-openings.announcement.pdf', $jobOpening) }}" class="btn btn-secondary btn-md">
+            <i class="bi bi-download" aria-hidden="true"></i>
+            <span>Announcement PDF</span>
+        </a>
         @can('publish', $jobOpening)
             @if ($jobOpening->status !== App\Models\JobOpening::STATUS_PUBLISHED)
                 <form method="POST" action="{{ route('recruitment.job-openings.publish', $jobOpening) }}" data-confirm="true" data-confirm-title="Publish job opening?" data-confirm-message="Published external or both-visible jobs can appear on public careers pages if the closing date has not passed." data-confirm-button="Publish job">
@@ -68,6 +72,8 @@
                 <dl class="row mb-0">
                     <dt class="col-5">Visibility</dt>
                     <dd class="col-7">{{ str($jobOpening->visibility)->headline() }}</dd>
+                    <dt class="col-5">Request to Hire No.</dt>
+                    <dd class="col-7">{{ $jobOpening->reference_no }}</dd>
                     <dt class="col-5">Department</dt>
                     <dd class="col-7">{{ $jobOpening->department?->name ?? '-' }}</dd>
                     <dt class="col-5">Project</dt>
@@ -78,6 +84,12 @@
                     <dd class="col-7">{{ $jobOpening->employmentType?->name ?? '-' }}</dd>
                     <dt class="col-5">Positions</dt>
                     <dd class="col-7">{{ $jobOpening->show_number_of_positions ? ($jobOpening->number_of_positions ?? '-') : 'Hidden publicly' }}</dd>
+                    <dt class="col-5">Contract Duration</dt>
+                    <dd class="col-7">{{ $jobOpening->contract_duration ?: '-' }}</dd>
+                    <dt class="col-5">Job Grade</dt>
+                    <dd class="col-7">{{ $jobOpening->job_grade ?: '-' }}</dd>
+                    <dt class="col-5">Reporting To</dt>
+                    <dd class="col-7">{{ $jobOpening->reporting_to_label }}</dd>
                     <dt class="col-5">Opening Date</dt>
                     <dd class="col-7">{{ $jobOpening->opening_date?->format('d M Y') ?? '-' }}</dd>
                     <dt class="col-5">Closing Date</dt>
@@ -88,25 +100,43 @@
 
         <div class="col-xl-8">
             <section class="bg-white border rounded-2 p-3">
-                <h2 class="h5 mb-3">Structured Job Content</h2>
-                @foreach ([
-                    'description' => 'Description',
-                    'responsibilities' => 'Responsibilities',
-                    'requirements' => 'Requirements',
-                    'qualifications' => 'Qualifications',
-                    'experience_required' => 'Experience Required',
-                    'contract_details' => 'Contract Details',
-                    'work_level' => 'Work Level',
-                    'location_details' => 'Location Details',
-                    'application_instructions' => 'Application Instructions',
-                ] as $field => $label)
-                    @if (filled($jobOpening->{$field}))
-                        <div class="mb-4">
-                            <h3 class="h6 text-danger">{{ $label }}</h3>
-                            <div class="text-pre-line">{{ $jobOpening->{$field} }}</div>
-                        </div>
-                    @endif
+                <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+                    <div>
+                        <h2 class="h5 mb-1">Vacancy Announcement Preview</h2>
+                        <div class="text-muted small">{{ $jobOpening->vacancy_announcement_title }}</div>
+                    </div>
+                    <a href="{{ route('recruitment.job-openings.announcement.pdf', $jobOpening) }}" class="btn btn-sm btn-secondary" title="Download vacancy announcement PDF" aria-label="Download vacancy announcement PDF">
+                        <i class="bi bi-download" aria-hidden="true"></i>
+                    </a>
+                </div>
+                <div class="mb-4">
+                    <h3 class="h6 text-danger">A B O U T&nbsp;&nbsp; U S</h3>
+                    <div>{{ App\Models\JobOpening::ABOUT_US_TEXT }}</div>
+                </div>
+                @foreach (App\Models\JobOpening::ANNOUNCEMENT_SECTIONS as $field => $label)
+                    @php($lines = $jobOpening->linesFor($field))
+                    <div class="mb-4">
+                        <h3 class="h6 text-danger">{{ $label }}</h3>
+                        @if (count($lines) > 0)
+                            <ul class="mb-0">
+                                @foreach ($lines as $line)
+                                    <li>{{ $line }}</li>
+                                @endforeach
+                            </ul>
+                        @else
+                            <div class="text-muted">-</div>
+                        @endif
+                    </div>
                 @endforeach
+                <div class="border rounded-2 bg-light p-3">
+                    <div class="fw-semibold mb-1">How to Apply</div>
+                    @if ($jobOpening->is_publicly_applyable)
+                        <div>Applicants submit through the HRMS careers portal: <a href="{{ route('careers.apply', $jobOpening->slug) }}">{{ route('careers.apply', $jobOpening->slug) }}</a></div>
+                    @else
+                        <div class="text-muted">The system will show the application link after this vacancy is published, externally visible, and still open.</div>
+                    @endif
+                    <div class="small text-muted mt-2">Contact: {{ $jobOpening->announcement_contact_person }} &lt;{{ $jobOpening->announcement_contact_email }}&gt;</div>
+                </div>
             </section>
 
             @if (filled($jobOpening->internal_notes))

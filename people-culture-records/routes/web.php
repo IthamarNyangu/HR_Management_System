@@ -147,6 +147,7 @@ Route::middleware(['auth', 'active', 'password.changed'])->group(function () use
     Route::patch('/recruitment/job-openings/{job_opening}/close', [JobOpeningController::class, 'close'])->name('recruitment.job-openings.close');
     Route::patch('/recruitment/job-openings/{job_opening}/cancel', [JobOpeningController::class, 'cancel'])->name('recruitment.job-openings.cancel');
     Route::patch('/recruitment/job-openings/{job_opening}/archive', [JobOpeningController::class, 'archive'])->name('recruitment.job-openings.archive');
+    Route::get('/recruitment/job-openings/{job_opening}/announcement/pdf', [JobOpeningController::class, 'downloadAnnouncementPdf'])->name('recruitment.job-openings.announcement.pdf');
     Route::patch('/recruitment/job-openings/{id}/restore', [JobOpeningController::class, 'restore'])->whereNumber('id')->name('recruitment.job-openings.restore');
     Route::resource('recruitment/job-openings', JobOpeningController::class)
         ->parameters(['job-openings' => 'job_opening'])

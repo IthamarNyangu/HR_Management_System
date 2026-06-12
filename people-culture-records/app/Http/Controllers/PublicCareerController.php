@@ -22,7 +22,7 @@ class PublicCareerController extends Controller
     {
         abort_unless(JobOpening::query()->publiclyVisible()->whereKey($jobOpening->getKey())->exists(), 404);
 
-        $jobOpening->load(['department', 'project', 'province', 'district', 'facility', 'employmentType']);
+        $jobOpening->load(['department', 'project', 'province', 'district', 'facility', 'employmentType', 'reportingToJobTitle']);
 
         return view('public.careers.show', compact('jobOpening'));
     }
