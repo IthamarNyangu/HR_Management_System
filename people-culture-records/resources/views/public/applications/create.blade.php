@@ -22,8 +22,8 @@
             cursor: pointer;
             display: flex;
             gap: .75rem;
-            min-height: 96px;
-            padding: 1rem;
+            min-height: 72px;
+            padding: .75rem;
             position: relative;
             transition: border-color .15s ease, background-color .15s ease;
         }
@@ -52,26 +52,60 @@
             justify-content: center;
             width: 42px;
         }
+        .file-upload-list {
+            display: flex;
+            flex-direction: column;
+            gap: .5rem;
+            margin-top: .65rem;
+            max-width: 100%;
+        }
         .attached-file {
             align-items: center;
-            background: #fff;
-            border: 1px solid #e1e7f0;
-            border-radius: .5rem;
+            background: #f8fafc;
+            border: 1px solid #dbe3ec;
+            border-radius: .45rem;
             display: flex;
-            gap: .75rem;
+            gap: .55rem;
             justify-content: space-between;
-            margin-top: .65rem;
-            padding: .75rem;
+            min-width: 0;
+            padding: .45rem .55rem;
+            width: 100%;
         }
-        .attached-badge {
-            background: #15803d;
-            border-radius: 999px;
-            color: #fff;
+        .attached-file > div:first-child {
+            flex: 1 1 auto;
+            min-width: 0;
+        }
+        .attached-file-name {
+            flex: 1 1 auto;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .attached-file-meta {
+            color: #64748b;
+            font-size: .78rem;
+            white-space: nowrap;
+        }
+        .attached-file-remove {
+            align-items: center;
+            background: transparent;
+            border: 0;
+            border-radius: .25rem;
+            color: #334155;
             display: inline-flex;
-            font-size: .72rem;
-            font-weight: 700;
+            flex: 0 0 auto;
+            font-size: 1.2rem;
+            height: 28px;
+            justify-content: center;
             line-height: 1;
-            padding: .28rem .45rem;
+            padding: 0;
+            width: 28px;
+        }
+        .attached-file-remove:hover,
+        .attached-file-remove:focus {
+            background: #fee2e2;
+            color: #b91c1c;
         }
     </style>
 </head>
@@ -221,7 +255,7 @@
                             </div>
                             <div class="file-upload-list" data-file-list></div>
                         </div>
-                        <div class="form-text">PDF, DOC, or DOCX. Maximum allowed file size: 5 MB.</div>
+                        <div class="form-text">Maximum allowed file size: 5 MB.</div>
                         @error('cv') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
                     <div class="col-md-4">
@@ -243,7 +277,7 @@
                             </div>
                             <div class="file-upload-list" data-file-list></div>
                         </div>
-                        <div class="form-text">PDF, DOC, or DOCX. Maximum allowed file size: 5 MB.</div>
+                        <div class="form-text">Maximum allowed file size: 5 MB.</div>
                         @error('cover_letter') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
                     <div class="col-md-4">
@@ -265,7 +299,7 @@
                             </div>
                             <div class="file-upload-list" data-file-list></div>
                         </div>
-                        <div class="form-text">One combined PDF. Maximum 10 MB.</div>
+                        <div class="form-text">Maximum allowed file size: 10 MB.</div>
                         @error('education_certificates') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
                     <div class="col-md-4">
@@ -288,7 +322,7 @@
                             <div class="file-upload-list" data-file-list></div>
                             <div class="small text-danger mt-2 d-none" data-file-warning></div>
                         </div>
-                        <div class="form-text">Optional. Up to 4 files, maximum 10 MB each.</div>
+                        <div class="form-text">Optional. Maximum allowed file size: 10 MB each.</div>
                         @error('supporting_documents') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         @error('supporting_documents.*') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
@@ -402,6 +436,12 @@
                 files.forEach((file) => dataTransfer.items.add(file));
                 input.files = dataTransfer.files;
             };
+            const escapeHtml = (value) => {
+                const node = document.createElement('div');
+                node.textContent = value;
+
+                return node.innerHTML;
+            };
 
             document.querySelectorAll('[data-file-upload]').forEach((wrapper) => {
                 const input = wrapper.querySelector('input[type="file"]');
@@ -426,13 +466,19 @@
                     files.forEach((file, index) => {
                         const item = document.createElement('div');
                         item.className = 'attached-file';
+                        const fileName = escapeHtml(file.name);
                         item.innerHTML = `
-                            <div>
-                                <div class="fw-semibold">${file.name}</div>
-                                <div class="small text-muted">${formatBytes(file.size)} selected and ready to upload.</div>
-                                <span class="attached-badge mt-2">Attached</span>
+                            <div class="d-flex align-items-center gap-2 min-w-0">
+                                <span class="text-primary flex-shrink-0" aria-hidden="true">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                        <path d="M14 2v6h6" fill="#f8fafc"></path>
+                                    </svg>
+                                </span>
+                                <span class="attached-file-name fw-semibold">${fileName}</span>
+                                <span class="attached-file-meta">${formatBytes(file.size)}</span>
                             </div>
-                            <button type="button" class="btn btn-outline-secondary btn-sm" data-remove-file="${index}">Remove</button>
+                            <button type="button" class="attached-file-remove" data-remove-file="${index}" aria-label="Remove ${fileName}">&times;</button>
                         `;
                         list.appendChild(item);
                     });

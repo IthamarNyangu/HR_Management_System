@@ -2,9 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\SharedJobOpeningMail;
 use App\Models\JobOpening;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Symfony\Component\HttpFoundation\Response;
 
 class PublicCareerController extends Controller
@@ -27,6 +32,36 @@ class PublicCareerController extends Controller
         $jobOpening->load(['department', 'project', 'province', 'district', 'facility', 'employmentType', 'reportingToJobTitle']);
 
         return view('public.careers.show', compact('jobOpening'));
+    }
+
+    public function share(Request $request, JobOpening $jobOpening): RedirectResponse
+    {
+        abort_unless(JobOpening::query()->publiclyVisible()->whereKey($jobOpening->getKey())->exists(), 404);
+
+        $validated = $request->validate([
+            'recipient_email' => ['required', 'email', 'max:255'],
+        ], [
+            'recipient_email.required' => 'Enter the email address you want to share this job with.',
+            'recipient_email.email' => 'Enter a valid email address.',
+        ]);
+
+        $jobOpening->load(['department', 'project', 'province', 'district', 'facility', 'employmentType', 'reportingToJobTitle']);
+
+        try {
+            Mail::to($validated['recipient_email'])->send(new SharedJobOpeningMail($jobOpening, $validated['recipient_email']));
+        } catch (\Throwable $exception) {
+            Log::warning('Shared job email failed to send.', [
+                'job_opening_id' => $jobOpening->id,
+                'recipient_email' => $validated['recipient_email'],
+                'error' => $exception->getMessage(),
+            ]);
+
+            return back()
+                ->withInput()
+                ->with('share_error', 'The job could not be shared by email right now. Please try again later or copy the link.');
+        }
+
+        return back()->with('share_success', 'Job shared successfully with '.$validated['recipient_email'].'.');
     }
 
     public function downloadAnnouncementPdf(JobOpening $jobOpening): Response

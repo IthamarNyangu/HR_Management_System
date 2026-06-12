@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Mail\SharedJobOpeningMail;
 use App\Models\Department;
 use App\Models\District;
 use App\Models\EmploymentType;
@@ -13,6 +14,7 @@ use App\Models\Province;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class RecruitmentJobOpeningTest extends TestCase
@@ -175,6 +177,47 @@ class RecruitmentJobOpeningTest extends TestCase
             ->assertDontSee('Closed Job')
             ->assertDontSee('Cancelled Job')
             ->assertDontSee('Expired Job');
+    }
+
+    public function test_public_job_can_be_shared_by_email(): void
+    {
+        Mail::fake();
+
+        $job = $this->jobOpening([
+            'visibility' => JobOpening::VISIBILITY_EXTERNAL,
+            'status' => JobOpening::STATUS_PUBLISHED,
+            'closing_date' => now()->addWeek()->toDateString(),
+        ]);
+
+        $this->get(route('careers.show', $job->slug))
+            ->assertOk()
+            ->assertSee('Share Job');
+
+        $this->post(route('careers.share', $job->slug), [
+            'recipient_email' => 'friend@example.org',
+        ])->assertRedirect();
+
+        Mail::assertSent(SharedJobOpeningMail::class, function (SharedJobOpeningMail $mail): bool {
+            return $mail->hasTo('friend@example.org')
+                && $mail->jobOpening->title === 'Data Analyst';
+        });
+    }
+
+    public function test_hidden_public_jobs_cannot_be_shared_by_email(): void
+    {
+        Mail::fake();
+
+        $job = $this->jobOpening([
+            'visibility' => JobOpening::VISIBILITY_INTERNAL,
+            'status' => JobOpening::STATUS_PUBLISHED,
+            'closing_date' => now()->addWeek()->toDateString(),
+        ]);
+
+        $this->post(route('careers.share', $job->slug), [
+            'recipient_email' => 'friend@example.org',
+        ])->assertNotFound();
+
+        Mail::assertNothingSent();
     }
 
     public function test_public_api_returns_only_public_safe_jobs_and_hides_position_count_when_disabled(): void
