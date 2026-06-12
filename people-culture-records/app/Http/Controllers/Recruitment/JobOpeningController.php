@@ -165,11 +165,19 @@ class JobOpeningController extends Controller
 
         $jobOpening->load($this->relations());
 
-        return Pdf::loadView('recruitment.job-openings.pdf', [
+        $pdf = Pdf::loadView('recruitment.job-openings.pdf', [
             'jobOpening' => $jobOpening,
             'generatedAt' => now(),
-        ])->setPaper('a4')
-            ->download(str($jobOpening->vacancy_announcement_title)->slug()->append('-')->append(now()->format('Ymd-His'))->append('.pdf')->toString());
+        ])->setPaper('a4');
+
+        $pdf->render();
+
+        $dompdf = $pdf->getDomPDF();
+        $font = $dompdf->getFontMetrics()->get_font('Helvetica', 'normal');
+
+        $dompdf->getCanvas()->page_text(38, 804, 'Page {PAGE_NUM} of {PAGE_COUNT}', $font, 9, [0.42, 0.45, 0.50]);
+
+        return $pdf->download(str($jobOpening->vacancy_announcement_title)->slug()->append('-')->append(now()->format('Ymd-His'))->append('.pdf')->toString());
     }
 
     public function edit(Request $request, JobOpening $jobOpening): View

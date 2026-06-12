@@ -123,6 +123,9 @@ class PublicJobApplicationTest extends TestCase
         $application = JobApplication::firstOrFail();
 
         $this->assertSame('applicant@example.org', $application->email);
+        $this->assertSame('Miss', $application->title);
+        $this->assertSame('Female', $application->gender);
+        $this->assertSame('No', $application->disability);
         $this->assertSame('APP-'.now()->year.'-0001', $application->reference_no);
         $this->assertCount(3, $application->documents);
         Storage::disk('local')->assertExists($application->documents()->firstOrFail()->file_path);
@@ -297,13 +300,14 @@ class PublicJobApplicationTest extends TestCase
     private function payload(array $overrides = []): array
     {
         return array_merge([
+            'title' => 'Miss',
             'first_name' => 'Mary',
             'last_name' => 'Banda',
             'email' => 'mary@example.org',
             'phone' => '0977000000',
             'national_id' => '123456/10/1',
-            'province' => 'Northern',
-            'district' => 'Kasama',
+            'gender' => 'Female',
+            'disability' => 'No',
             'highest_qualification' => 'Degree',
             'field_of_study' => 'Public Health',
             'years_of_experience' => 4,
@@ -312,7 +316,8 @@ class PublicJobApplicationTest extends TestCase
             'cv' => UploadedFile::fake()->create('cv.pdf', 20),
             'cover_letter' => UploadedFile::fake()->create('cover-letter.docx', 20),
             'education_certificates' => UploadedFile::fake()->create('certificates.pdf', 20),
-            'consent' => '1',
+            'privacy_consent' => 'yes',
+            'terms_confirmed' => 'yes',
         ], $overrides);
     }
 }

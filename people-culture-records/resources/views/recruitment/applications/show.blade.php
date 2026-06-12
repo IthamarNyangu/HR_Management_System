@@ -21,7 +21,7 @@
                 <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
                     <div>
                         <div class="text-muted small">Applicant</div>
-                        <h2 class="h5 mb-0">{{ $jobApplication->full_name }}</h2>
+                        <h2 class="h5 mb-0">{{ trim(($jobApplication->title ? $jobApplication->title.' ' : '').$jobApplication->full_name) }}</h2>
                     </div>
                     <span class="badge text-bg-{{ $jobApplication->status === 'withdrawn' ? 'warning' : 'success' }}">{{ str($jobApplication->status)->headline() }}</span>
                 </div>
@@ -31,10 +31,12 @@
                     <dd class="col-7">{{ $jobApplication->email }}</dd>
                     <dt class="col-5">Phone</dt>
                     <dd class="col-7">{{ $jobApplication->phone }}</dd>
-                    <dt class="col-5">Province</dt>
-                    <dd class="col-7">{{ $jobApplication->province ?? '-' }}</dd>
-                    <dt class="col-5">District</dt>
-                    <dd class="col-7">{{ $jobApplication->district ?? '-' }}</dd>
+                    <dt class="col-5">ID / Passport / Visa</dt>
+                    <dd class="col-7">{{ $jobApplication->national_id ?? '-' }}</dd>
+                    <dt class="col-5">Gender</dt>
+                    <dd class="col-7">{{ $jobApplication->gender ?? '-' }}</dd>
+                    <dt class="col-5">Disability</dt>
+                    <dd class="col-7">{{ $jobApplication->disability ?? '-' }}</dd>
                     <dt class="col-5">Submitted</dt>
                     <dd class="col-7">{{ $jobApplication->submitted_at?->format('d M Y H:i') }}</dd>
                     <dt class="col-5">Withdrawn</dt>
@@ -67,7 +69,6 @@
                     <dd class="col-md-9">{{ $jobApplication->field_of_study ?? '-' }}</dd>
                     <dt class="col-md-3">Experience</dt>
                     <dd class="col-md-9">{{ $jobApplication->years_of_experience ?? '-' }}</dd>
-                    <dt class="col-md-3">Current Employer</dt>
                     <dd class="col-md-9">{{ $jobApplication->current_employer ?? '-' }}</dd>
                 </dl>
             </section>

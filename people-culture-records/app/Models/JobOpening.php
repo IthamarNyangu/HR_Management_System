@@ -86,14 +86,14 @@ class JobOpening extends Model
         'closing_status_label',
     ];
 
-    public const ABOUT_US_TEXT = 'Right to Care Zambia is a health-focused organisation committed to supporting high-quality, people-centred health services and strengthened health systems in Zambia. We work with government, donors, communities, and partners to deliver sustainable programmes that improve health outcomes.';
+    public const ABOUT_US_TEXT = "Right to Care Zambia (RTCZ) has been at the forefront of public health innovation since our incorporation in 2016, providing high-impact Technical Assistance and Direct Service Delivery in partnership with the Ministry of Health. Headquartered in Lusaka, we currently operate across four provinces i.e., Lusaka, Luapula, Muchinga, and Northern, bringing quality healthcare closer to communities.\n\nGuided by our 2023-2027 strategic plan, we are committed to strengthening health systems and improving lives through comprehensive HIV/AIDS prevention, care, and treatment, maternal and child health, and rapid epidemic response. Our integrated approach also includes malaria and TB control, public health research, Social Behaviour Change, pharmaceutical supply chain management, and addressing non-communicable diseases. As we continue to grow, we remain dedicated to excellence, collaboration, and sustainable impact in every community we serve.";
 
-    public const DISCLAIMER_TEXT = 'Right to Care Zambia is an equal opportunity employer and reserves the right not to make an appointment. Only shortlisted candidates will be contacted. If you do not hear from us within 4 weeks after the closing date, please consider your application unsuccessful. Right to Care Zambia does not charge any fee at any stage of the recruitment process.';
+    public const DISCLAIMER_TEXT = "By applying for the above-mentioned position, you consent to Right to Care to conduct qualification, ID, criminal and reference checks (internal and external) which forms part of the Company's recruitment policy and procedure. Should you not receive a response to your application from Right to Care within one month of this advert being placed, kindly consider your application as being unsuccessful.\n\nOnly applicants meeting the strict criteria outlined above will be contacted as part of the shortlisting process. Right to Care reserves the right to withdraw the vacancy at any time for whatever reason.\n\nRight to Care is an equal opportunity affirmative action employer. The Company's approved Employment Equity Plan and Targets will be considered as part of the recruitment process. As an Equal Opportunities Employer, we actively encourage and welcome people with various disabilities to apply.\n\nRight to Care Zambia is aware of fraudulent activities by certain individuals claiming to be representatives of the organization.\n\nBe advised that Right to Care does not charge any fee at any stage of the recruitment process, and as such Right to Care Zambia assumes no responsibility for any announcements or activities by such individuals or entities.";
 
     public const ANNOUNCEMENT_SECTIONS = [
-        'qualifications' => 'Q U A L I F I C A T I O N S   A N D   E X P E R I E N C E',
-        'requirements' => 'T E C H N I C A L   A N D   B E H A V I O U R A L   C O M P E T E N C I E S',
-        'responsibilities' => 'K E Y   P E R F O R M A N C E   A R E A S',
+        'qualifications' => 'Q U A L I F I C A T I O N S  A N D  E X P E R I E N C E',
+        'requirements' => 'T E C H N I C A L  A N D  B E H A V I O U R A L  C O M P E T E N C I E S',
+        'responsibilities' => 'K E Y  P E R F O R M A N C E  A R E A S',
     ];
 
     protected function casts(): array
@@ -236,9 +236,22 @@ class JobOpening extends Model
             ->implode(' / ') ?: 'Not specified';
     }
 
+    public function getPublicLocationLabelAttribute(): string
+    {
+        return collect([$this->province?->name, $this->district?->name])
+            ->filter()
+            ->implode(' / ') ?: 'Location not specified';
+    }
+
     public function getVacancyAnnouncementTitleAttribute(): string
     {
-        return 'RTCZ INTERNAL VACANCY ANNOUNCEMENT - '.str($this->title)->upper();
+        $audience = match ($this->visibility) {
+            self::VISIBILITY_INTERNAL => 'INTERNAL ',
+            self::VISIBILITY_EXTERNAL => 'EXTERNAL ',
+            default => '',
+        };
+
+        return 'RTCZ '.$audience.'VACANCY ANNOUNCEMENT - '.str($this->title)->upper();
     }
 
     public function getReportingToLabelAttribute(): string
@@ -266,7 +279,7 @@ class JobOpening extends Model
     public function linesFor(string $field): array
     {
         return collect(preg_split('/\r\n|\r|\n/', (string) $this->{$field}))
-            ->map(fn (string $line): string => trim(preg_replace('/^\s*[-*•]\s*/', '', $line) ?? ''))
+            ->map(fn (string $line): string => trim(preg_replace('/^\s*[-*]\s*/', '', $line) ?? ''))
             ->filter()
             ->values()
             ->all();

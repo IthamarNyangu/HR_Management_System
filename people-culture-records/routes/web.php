@@ -42,6 +42,7 @@ Route::redirect('/', '/dashboard');
 Route::get('/careers', [PublicCareerController::class, 'index'])->name('careers.index');
 Route::get('/careers/{jobOpening:slug}/apply', [PublicJobApplicationController::class, 'create'])->name('careers.apply');
 Route::post('/careers/{jobOpening:slug}/apply', [PublicJobApplicationController::class, 'store'])->middleware('throttle:5,1')->name('careers.apply.store');
+Route::get('/careers/{jobOpening:slug}/announcement/pdf', [PublicCareerController::class, 'downloadAnnouncementPdf'])->name('careers.announcement.pdf');
 Route::get('/careers/{jobOpening:slug}', [PublicCareerController::class, 'show'])->name('careers.show');
 Route::get('/applications/withdraw', [PublicJobApplicationController::class, 'withdrawalRequest'])->name('applications.withdraw.request');
 Route::post('/applications/withdraw', [PublicJobApplicationController::class, 'sendWithdrawalLink'])->middleware('throttle:5,1')->name('applications.withdraw.link');

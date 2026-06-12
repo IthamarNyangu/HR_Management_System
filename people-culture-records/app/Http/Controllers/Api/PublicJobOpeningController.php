@@ -42,7 +42,7 @@ class PublicJobOpeningController extends Controller
             'slug' => $job->slug,
             'department' => $job->department?->name,
             'project' => $job->project?->name,
-            'location' => $job->location_label,
+            'location' => $job->public_location_label,
             'closing_date' => $job->closing_date?->toDateString(),
             'summary' => $job->summary,
             'detail_url' => route('careers.show', $job->slug),
