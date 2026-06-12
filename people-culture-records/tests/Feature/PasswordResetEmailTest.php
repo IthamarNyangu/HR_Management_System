@@ -91,7 +91,8 @@ class PasswordResetEmailTest extends TestCase
         $html = (new SystemTestMail())->render();
 
         $this->assertStringContainsString('People &amp; Culture Records Management System', $html);
-        $this->assertStringContainsString('Electronic Communications Policy of Right to Care', $html);
+        $this->assertStringContainsString('Right to Care Zambia. All rights reserved.', $html);
+        $this->assertStringNotContainsString('Electronic Communications Policy of Right to Care', $html);
     }
 
     public function test_mail_test_command_only_sends_to_allowed_recipients(): void

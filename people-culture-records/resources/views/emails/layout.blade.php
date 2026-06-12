@@ -13,7 +13,7 @@
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#eaf0f6; width:100%;">
         <tr>
             <td align="center" style="padding:40px 16px 24px;">
-                <img src="{{ $message->embed(public_path('images/right-to-care-zambia-logo.png')) }}" alt="Right to Care Zambia" width="210" style="display:block; width:210px; max-width:70%; height:auto; border:0;">
+                <img src="{{ $message->embed(public_path('images/right-to-care-zambia-logo-transparent.png')) }}" alt="Right to Care Zambia" width="210" style="display:block; width:210px; max-width:70%; height:auto; border:0;">
             </td>
         </tr>
         <tr>
@@ -35,12 +35,5 @@
         </tr>
     </table>
 
-    <div style="background:#ffffff; color:#374151; font-family:Arial, Helvetica, sans-serif; font-size:12px; line-height:1.45; padding:12px 16px;">
-        This e-mail is sent and received in terms of the Electronic Communications Policy of Right to Care.
-        In line with this policy, this e-mail is private, privileged and confidential.
-        The full text of the Electronic Mail Disclaimer can be seen on the RTC web site at
-        <a href="https://www.righttocare.org/wp-content/uploads/2022/09/1Data-Protection-and-Privacy-Policy.pdf" style="color:#2563eb;">https://www.righttocare.org/wp-content/uploads/2022/09/1Data-Protection-and-Privacy-Policy.pdf</a>,
-        or obtained by phoning (012) 492-7330.
-    </div>
 </body>
 </html>
