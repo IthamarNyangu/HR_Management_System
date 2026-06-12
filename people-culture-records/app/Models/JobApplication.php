@@ -20,6 +20,16 @@ class JobApplication extends Model
     public const DOCUMENT_EDUCATION_CERTIFICATES = 'education_certificates';
     public const DOCUMENT_SUPPORTING = 'supporting_document';
 
+    public const HIGHEST_QUALIFICATIONS = [
+        'Doctorate / PhD',
+        "Master's Degree",
+        'Postgraduate Diploma / Postgraduate Certificate',
+        "Bachelor's Degree",
+        'Diploma',
+        'Secondary School Certificate',
+        'Technical/Vocational Certificate',
+    ];
+
     protected $fillable = [
         'reference_no',
         'job_opening_id',

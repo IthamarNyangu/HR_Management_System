@@ -14,6 +14,65 @@
         .required::after { content: " *"; color: #c01818; }
         .visually-hidden-field { position: absolute; left: -9999px; opacity: 0; }
         .consent-panel { background: #f9fafb; border: 1px solid #e1e7f0; border-radius: .5rem; }
+        .file-upload-drop {
+            align-items: center;
+            background: #f9fafb;
+            border: 1px dashed #b8c7dd;
+            border-radius: .5rem;
+            cursor: pointer;
+            display: flex;
+            gap: .75rem;
+            min-height: 96px;
+            padding: 1rem;
+            position: relative;
+            transition: border-color .15s ease, background-color .15s ease;
+        }
+        .file-upload-drop:hover,
+        .file-upload-drop:focus-within {
+            background: #f3f6fb;
+            border-color: #c01818;
+        }
+        .file-upload-input {
+            cursor: pointer;
+            height: 100%;
+            inset: 0;
+            opacity: 0;
+            position: absolute;
+            width: 100%;
+        }
+        .file-upload-icon {
+            align-items: center;
+            background: #fff;
+            border: 1px solid #e1e7f0;
+            border-radius: .45rem;
+            color: #c01818;
+            display: inline-flex;
+            flex: 0 0 42px;
+            height: 42px;
+            justify-content: center;
+            width: 42px;
+        }
+        .attached-file {
+            align-items: center;
+            background: #fff;
+            border: 1px solid #e1e7f0;
+            border-radius: .5rem;
+            display: flex;
+            gap: .75rem;
+            justify-content: space-between;
+            margin-top: .65rem;
+            padding: .75rem;
+        }
+        .attached-badge {
+            background: #15803d;
+            border-radius: 999px;
+            color: #fff;
+            display: inline-flex;
+            font-size: .72rem;
+            font-weight: 700;
+            line-height: 1;
+            padding: .28rem .45rem;
+        }
     </style>
 </head>
 <body>
@@ -25,7 +84,7 @@
 
         <div class="application-card p-4 mb-4">
             <div class="small text-danger fw-semibold">{{ $jobOpening->reference_no }}</div>
-            <h1 class="h2 mb-3">Apply for {{ $jobOpening->title }}</h1>
+           <h1 class="h2 mb-3" style="text-align: center;">Application for {{ $jobOpening->title }}</h1>
             <div class="d-flex flex-wrap align-items-center gap-2 text-muted">
                 <span>Closing: {{ $jobOpening->closing_date?->format('d M Y') }}</span>
                 <span>&middot;</span>
@@ -111,7 +170,12 @@
                 <div class="row g-3">
                     <div class="col-md-4">
                         <label class="form-label required" for="highest_qualification">Highest Qualification</label>
-                        <input id="highest_qualification" type="text" name="highest_qualification" value="{{ old('highest_qualification') }}" class="form-control @error('highest_qualification') is-invalid @enderror" required>
+                        <select id="highest_qualification" name="highest_qualification" class="form-select @error('highest_qualification') is-invalid @enderror" required>
+                            <option value="">Select highest qualification</option>
+                            @foreach (App\Models\JobApplication::HIGHEST_QUALIFICATIONS as $qualification)
+                                <option value="{{ $qualification }}" @selected(old('highest_qualification') === $qualification)>{{ $qualification }}</option>
+                            @endforeach
+                        </select>
                         @error('highest_qualification') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
                     <div class="col-md-4">
@@ -140,25 +204,90 @@
                 <div class="row g-3">
                     <div class="col-md-4">
                         <label class="form-label required" for="cv">CV</label>
-                        <input id="cv" type="file" name="cv" class="form-control @error('cv') is-invalid @enderror" accept=".pdf,.doc,.docx" required>
+                        <div class="file-upload" data-file-upload="single">
+                            <div class="file-upload-drop">
+                                <input id="cv" type="file" name="cv" class="file-upload-input @error('cv') is-invalid @enderror" accept=".pdf,.doc,.docx" required>
+                                <span class="file-upload-icon" aria-hidden="true">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                        <path d="M17 8l-5-5-5 5"></path>
+                                        <path d="M12 3v12"></path>
+                                    </svg>
+                                </span>
+                                <span>
+                                    <span class="fw-semibold d-block">Choose or drop CV</span>
+                                    <span class="small text-muted">PDF, DOC, or DOCX</span>
+                                </span>
+                            </div>
+                            <div class="file-upload-list" data-file-list></div>
+                        </div>
                         <div class="form-text">PDF, DOC, or DOCX. Maximum allowed file size: 5 MB.</div>
                         @error('cv') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
                     <div class="col-md-4">
                         <label class="form-label required" for="cover_letter">Cover Letter</label>
-                        <input id="cover_letter" type="file" name="cover_letter" class="form-control @error('cover_letter') is-invalid @enderror" accept=".pdf,.doc,.docx" required>
+                        <div class="file-upload" data-file-upload="single">
+                            <div class="file-upload-drop">
+                                <input id="cover_letter" type="file" name="cover_letter" class="file-upload-input @error('cover_letter') is-invalid @enderror" accept=".pdf,.doc,.docx" required>
+                                <span class="file-upload-icon" aria-hidden="true">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                        <path d="M17 8l-5-5-5 5"></path>
+                                        <path d="M12 3v12"></path>
+                                    </svg>
+                                </span>
+                                <span>
+                                    <span class="fw-semibold d-block">Choose or drop cover letter</span>
+                                    <span class="small text-muted">PDF, DOC, or DOCX</span>
+                                </span>
+                            </div>
+                            <div class="file-upload-list" data-file-list></div>
+                        </div>
                         <div class="form-text">PDF, DOC, or DOCX. Maximum allowed file size: 5 MB.</div>
                         @error('cover_letter') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
                     <div class="col-md-4">
                         <label class="form-label required" for="education_certificates">Education Certificates</label>
-                        <input id="education_certificates" type="file" name="education_certificates" class="form-control @error('education_certificates') is-invalid @enderror" accept=".pdf" required>
+                        <div class="file-upload" data-file-upload="single">
+                            <div class="file-upload-drop">
+                                <input id="education_certificates" type="file" name="education_certificates" class="file-upload-input @error('education_certificates') is-invalid @enderror" accept=".pdf" required>
+                                <span class="file-upload-icon" aria-hidden="true">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                        <path d="M17 8l-5-5-5 5"></path>
+                                        <path d="M12 3v12"></path>
+                                    </svg>
+                                </span>
+                                <span>
+                                    <span class="fw-semibold d-block">Choose or drop certificates</span>
+                                    <span class="small text-muted">One combined PDF</span>
+                                </span>
+                            </div>
+                            <div class="file-upload-list" data-file-list></div>
+                        </div>
                         <div class="form-text">One combined PDF. Maximum 10 MB.</div>
                         @error('education_certificates') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
                     <div class="col-md-4">
                         <label class="form-label" for="supporting_documents">Additional Supporting Documents</label>
-                        <input id="supporting_documents" type="file" name="supporting_documents[]" multiple class="form-control @error('supporting_documents') is-invalid @enderror @error('supporting_documents.*') is-invalid @enderror" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
+                        <div class="file-upload" data-file-upload="multiple" data-max-files="4">
+                            <div class="file-upload-drop">
+                                <input id="supporting_documents" type="file" name="supporting_documents[]" multiple class="file-upload-input @error('supporting_documents') is-invalid @enderror @error('supporting_documents.*') is-invalid @enderror" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
+                                <span class="file-upload-icon" aria-hidden="true">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                        <path d="M17 8l-5-5-5 5"></path>
+                                        <path d="M12 3v12"></path>
+                                    </svg>
+                                </span>
+                                <span>
+                                    <span class="fw-semibold d-block">Add supporting files</span>
+                                    <span class="small text-muted">Attach up to 4 files, one by one</span>
+                                </span>
+                            </div>
+                            <div class="file-upload-list" data-file-list></div>
+                            <div class="small text-danger mt-2 d-none" data-file-warning></div>
+                        </div>
                         <div class="form-text">Optional. Up to 4 files, maximum 10 MB each.</div>
                         @error('supporting_documents') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         @error('supporting_documents.*') <div class="invalid-feedback">{{ $message }}</div> @enderror
@@ -256,6 +385,96 @@
             const privacy = document.getElementById('privacy_consent');
             const terms = document.getElementById('terms_confirmed');
             const submit = document.getElementById('submitApplicationButton');
+            const formatBytes = (bytes) => {
+                if (!bytes) {
+                    return '0 KB';
+                }
+
+                const units = ['bytes', 'KB', 'MB', 'GB'];
+                const index = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+                const value = bytes / Math.pow(1024, index);
+
+                return `${value.toFixed(index === 0 ? 0 : 1)} ${units[index]}`;
+            };
+
+            const syncInputFiles = (input, files) => {
+                const dataTransfer = new DataTransfer();
+                files.forEach((file) => dataTransfer.items.add(file));
+                input.files = dataTransfer.files;
+            };
+
+            document.querySelectorAll('[data-file-upload]').forEach((wrapper) => {
+                const input = wrapper.querySelector('input[type="file"]');
+                const list = wrapper.querySelector('[data-file-list]');
+                const warning = wrapper.querySelector('[data-file-warning]');
+                const isMultiple = wrapper.dataset.fileUpload === 'multiple';
+                const maxFiles = Number(wrapper.dataset.maxFiles || 1);
+                let files = [];
+
+                const showWarning = (message) => {
+                    if (!warning) {
+                        return;
+                    }
+
+                    warning.textContent = message;
+                    warning.classList.toggle('d-none', !message);
+                };
+
+                const renderFiles = () => {
+                    list.innerHTML = '';
+
+                    files.forEach((file, index) => {
+                        const item = document.createElement('div');
+                        item.className = 'attached-file';
+                        item.innerHTML = `
+                            <div>
+                                <div class="fw-semibold">${file.name}</div>
+                                <div class="small text-muted">${formatBytes(file.size)} selected and ready to upload.</div>
+                                <span class="attached-badge mt-2">Attached</span>
+                            </div>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" data-remove-file="${index}">Remove</button>
+                        `;
+                        list.appendChild(item);
+                    });
+
+                    wrapper.querySelectorAll('[data-remove-file]').forEach((button) => {
+                        button.addEventListener('click', () => {
+                            files.splice(Number(button.dataset.removeFile), 1);
+                            syncInputFiles(input, files);
+                            showWarning('');
+                            renderFiles();
+                        });
+                    });
+                };
+
+                input.addEventListener('change', () => {
+                    showWarning('');
+                    const selected = Array.from(input.files || []);
+
+                    if (isMultiple) {
+                        const combined = [...files];
+
+                        selected.forEach((file) => {
+                            const exists = combined.some((current) => current.name === file.name && current.size === file.size);
+
+                            if (!exists && combined.length < maxFiles) {
+                                combined.push(file);
+                            }
+                        });
+
+                        if (selected.length + files.length > maxFiles) {
+                            showWarning(`You can attach up to ${maxFiles} supporting documents.`);
+                        }
+
+                        files = combined.slice(0, maxFiles);
+                    } else {
+                        files = selected.slice(0, 1);
+                    }
+
+                    syncInputFiles(input, files);
+                    renderFiles();
+                });
+            });
 
             const updateSubmitState = () => {
                 submit.disabled = !(privacy.value === 'yes' && terms.value === 'yes');

@@ -46,7 +46,7 @@ class StorePublicJobApplicationRequest extends FormRequest
             'national_id' => ['nullable', 'string', 'max:100'],
             'gender' => ['required', 'string', Rule::in(['Male', 'Female', 'Other'])],
             'disability' => ['required', 'string', Rule::in(['Yes', 'No'])],
-            'highest_qualification' => ['required', 'string', 'max:255'],
+            'highest_qualification' => ['required', 'string', Rule::in(JobApplication::HIGHEST_QUALIFICATIONS)],
             'field_of_study' => ['nullable', 'string', 'max:255'],
             'years_of_experience' => ['nullable', 'numeric', 'min:0', 'max:80'],
             'current_employer' => ['nullable', 'string', 'max:255'],
