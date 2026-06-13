@@ -235,7 +235,11 @@
             <section class="mb-4">
                 <h2 class="section-title">Motivation</h2>
                 <label class="form-label required" for="motivation">Why are you interested in this role?</label>
-                <textarea id="motivation" name="motivation" rows="5" class="form-control @error('motivation') is-invalid @enderror" required>{{ old('motivation') }}</textarea>
+                <textarea id="motivation" name="motivation" rows="5" maxlength="2000" class="form-control @error('motivation') is-invalid @enderror" required>{{ old('motivation') }}</textarea>
+                <div class="form-text d-flex justify-content-between gap-3">
+                    <span>Maximum 2000 characters including spaces.</span>
+                    <span id="motivationCounter">0 / 2000</span>
+                </div>
                 @error('motivation') <div class="invalid-feedback">{{ $message }}</div> @enderror
             </section>
 
@@ -425,6 +429,8 @@
             const privacy = document.getElementById('privacy_consent');
             const terms = document.getElementById('terms_confirmed');
             const submit = document.getElementById('submitApplicationButton');
+            const motivation = document.getElementById('motivation');
+            const motivationCounter = document.getElementById('motivationCounter');
             const formatBytes = (bytes) => {
                 if (!bytes) {
                     return '0 KB';
@@ -535,6 +541,17 @@
             privacy.addEventListener('change', updateSubmitState);
             terms.addEventListener('change', updateSubmitState);
             updateSubmitState();
+
+            const updateMotivationCounter = () => {
+                if (!motivation || !motivationCounter) {
+                    return;
+                }
+
+                motivationCounter.textContent = `${motivation.value.length} / 2000`;
+            };
+
+            motivation?.addEventListener('input', updateMotivationCounter);
+            updateMotivationCounter();
         });
     </script>
 </body>

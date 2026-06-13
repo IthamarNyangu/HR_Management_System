@@ -3,7 +3,7 @@
 namespace Tests\Feature;
 
 use App\Mail\JobApplicationReceivedMail;
-use App\Mail\JobApplicationOutcomeMail;
+use App\Mail\JobApplicationRejectedMail;
 use App\Mail\JobApplicationWithdrawnMail;
 use App\Mail\JobApplicationWithdrawalLinkMail;
 use App\Models\Department;
@@ -108,6 +108,16 @@ class PublicJobApplicationTest extends TestCase
 
         $this->post(route('careers.apply.store', $job->slug), $payload)
             ->assertSessionHasErrors(['supporting_documents']);
+    }
+
+    public function test_motivation_must_not_exceed_two_thousand_characters(): void
+    {
+        $job = $this->jobOpening();
+
+        $this->post(route('careers.apply.store', $job->slug), $this->payload([
+            'motivation' => str_repeat('A', 2001),
+        ]))
+            ->assertSessionHasErrors(['motivation']);
     }
 
     public function test_application_submission_saves_records_documents_and_sends_confirmation_email(): void
@@ -248,24 +258,35 @@ class PublicJobApplicationTest extends TestCase
         $this->get(route('recruitment.applications.index'))->assertRedirect('/login');
     }
 
-    public function test_admin_can_send_not_progressed_outcome_email(): void
+    public function test_admin_can_reject_application_and_send_rejection_email(): void
     {
         Mail::fake();
         $application = $this->application();
         $admin = $this->user($this->adminRole);
 
         $this->actingAs($admin)
-            ->patch(route('recruitment.applications.outcome', $application))
+            ->patch(route('recruitment.applications.reject', $application), [
+                'rejection_reason' => 'Does not meet the minimum requirements.',
+                'send_email' => '1',
+            ])
             ->assertRedirect()
             ->assertSessionHas('success');
 
         $application->refresh();
 
-        $this->assertSame(JobApplication::STATUS_NOT_PROGRESSED, $application->status);
+        $this->assertSame(JobApplication::STATUS_REJECTED, $application->status);
+        $this->assertNotNull($application->rejected_at);
+        $this->assertSame('Does not meet the minimum requirements.', $application->rejection_reason);
         $this->assertNotNull($application->outcome_sent_at);
         $this->assertSame($admin->id, $application->outcome_sent_by);
-        Mail::assertSent(JobApplicationOutcomeMail::class);
-        $this->assertDatabaseHas('activity_logs', ['action' => 'job_application_outcome_sent']);
+        Mail::assertSent(JobApplicationRejectedMail::class);
+        $this->assertDatabaseHas('activity_logs', ['action' => 'job_application_rejection_email_sent']);
+        $this->assertDatabaseHas('job_application_status_histories', [
+            'job_application_id' => $application->id,
+            'from_status' => JobApplication::STATUS_SUBMITTED,
+            'to_status' => JobApplication::STATUS_REJECTED,
+            'email_sent' => true,
+        ]);
     }
 
     private function user(Role $role, ?Province $province = null): User

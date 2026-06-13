@@ -12,7 +12,7 @@
 @section('content')
     <div class="bg-white border rounded-2 p-3 mb-4">
         <form method="GET" class="row g-2 align-items-end">
-            <div class="col-lg-4">
+            <div class="col-lg-3">
                 <input type="search" name="search" value="{{ request('search') }}" class="form-control" placeholder="Search reference, applicant, email, or job">
             </div>
             <div class="col-lg-3">
@@ -28,16 +28,99 @@
             <div class="col-lg-2">
                 <select name="status" class="form-select">
                     <option value="">All statuses</option>
-                    <option value="submitted" @selected(request('status') === 'submitted')>Submitted</option>
-                    <option value="withdrawn" @selected(request('status') === 'withdrawn')>Withdrawn</option>
-                    <option value="not_progressed" @selected(request('status') === 'not_progressed')>Not Progressed</option>
+                    @foreach (App\Models\JobApplication::statusLabels() as $value => $label)
+                        <option value="{{ $value }}" @selected(request('status') === $value)>{{ $label }}</option>
+                    @endforeach
                 </select>
+            </div>
+            <div class="col-lg-2">
+                <select name="visibility" class="form-select">
+                    <option value="">All visibility</option>
+                    @foreach (App\Models\JobOpening::VISIBILITIES as $visibility)
+                        <option value="{{ $visibility }}" @selected(request('visibility') === $visibility)>{{ str($visibility)->headline() }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-lg-2">
+                <select name="province_id" class="form-select">
+                    <option value="">All provinces</option>
+                    @foreach ($provinces as $province)
+                        <option value="{{ $province->id }}" @selected(request('province_id') == $province->id)>{{ $province->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-lg-2">
+                <select name="district_id" class="form-select">
+                    <option value="">All districts</option>
+                    @foreach ($districts as $district)
+                        <option value="{{ $district->id }}" @selected(request('district_id') == $district->id)>{{ $district->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-lg-2">
+                <select name="facility_id" class="form-select">
+                    <option value="">All facilities</option>
+                    @foreach ($facilities as $facility)
+                        <option value="{{ $facility->id }}" @selected(request('facility_id') == $facility->id)>{{ $facility->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-lg-3">
+                <select name="highest_qualification" class="form-select">
+                    <option value="">All qualifications</option>
+                    @foreach (App\Models\JobApplication::HIGHEST_QUALIFICATIONS as $qualification)
+                        <option value="{{ $qualification }}" @selected(request('highest_qualification') === $qualification)>{{ $qualification }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-lg-2">
+                <input type="number" step="1" min="0" name="experience_min" value="{{ request('experience_min') }}" class="form-control" placeholder="Min experience">
+            </div>
+            <div class="col-lg-2">
+                <input type="number" step="1" min="0" name="experience_max" value="{{ request('experience_max') }}" class="form-control" placeholder="Max experience">
+            </div>
+            <div class="col-lg-2">
+                <input type="date" name="submitted_from" value="{{ request('submitted_from') }}" class="form-control" title="Submitted from">
+            </div>
+            <div class="col-lg-2">
+                <input type="date" name="submitted_to" value="{{ request('submitted_to') }}" class="form-control" title="Submitted to">
+            </div>
+            <div class="col-lg-2">
+                <input type="number" step="1" min="0" max="100" name="score_min" value="{{ request('score_min') }}" class="form-control" placeholder="Min score">
+            </div>
+            <div class="col-lg-2">
+                <input type="number" step="1" min="0" max="100" name="score_max" value="{{ request('score_max') }}" class="form-control" placeholder="Max score">
+            </div>
+            <div class="col-lg-3">
+                <select name="sort" class="form-select">
+                    <option value="">Submitted newest</option>
+                    <option value="submitted_oldest" @selected(request('sort') === 'submitted_oldest')>Submitted oldest</option>
+                    <option value="score_desc" @selected(request('sort') === 'score_desc')>Overall score highest</option>
+                    <option value="status" @selected(request('sort') === 'status')>Status</option>
+                    <option value="job_title" @selected(request('sort') === 'job_title')>Job title</option>
+                </select>
+            </div>
+            <div class="col-lg-4 d-flex flex-wrap align-items-center gap-3">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="has_cv" value="1" id="has_cv" @checked(request()->boolean('has_cv'))>
+                    <label class="form-check-label" for="has_cv">Has CV</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="has_education_certificate" value="1" id="has_education_certificate" @checked(request()->boolean('has_education_certificate'))>
+                    <label class="form-check-label" for="has_education_certificate">Has certificates</label>
+                </div>
             </div>
             <div class="col-lg-3 d-flex gap-2">
                 <button type="submit" class="btn btn-primary-outline btn-md">Filter</button>
                 <a href="{{ route('recruitment.applications.index') }}" class="btn btn-secondary btn-md">Reset</a>
             </div>
         </form>
+
+        <div class="d-flex flex-wrap gap-2 mt-3">
+            <a href="{{ route('recruitment.applications.index', array_merge(request()->except('quick', 'status', 'page'), ['quick' => App\Models\JobApplication::STATUS_SHORTLISTED])) }}" class="btn btn-sm {{ request('quick') === App\Models\JobApplication::STATUS_SHORTLISTED ? 'btn-primary' : 'btn-secondary' }}">Shortlisted only</a>
+            <a href="{{ route('recruitment.applications.index', array_merge(request()->except('quick', 'status', 'page'), ['quick' => App\Models\JobApplication::STATUS_REJECTED])) }}" class="btn btn-sm {{ request('quick') === App\Models\JobApplication::STATUS_REJECTED ? 'btn-primary' : 'btn-secondary' }}">Rejected only</a>
+            <a href="{{ route('recruitment.applications.index', array_merge(request()->except('quick', 'status', 'page'), ['quick' => App\Models\JobApplication::STATUS_WITHDRAWN])) }}" class="btn btn-sm {{ request('quick') === App\Models\JobApplication::STATUS_WITHDRAWN ? 'btn-primary' : 'btn-secondary' }}">Withdrawn only</a>
+        </div>
     </div>
 
     <section class="bg-white border rounded-2 p-3">
@@ -58,6 +141,7 @@
                         <th>Job</th>
                         <th>Location</th>
                         <th>Status</th>
+                        <th>Score</th>
                         <th>Submitted</th>
                         <th>Actions</th>
                     </tr>
@@ -74,14 +158,11 @@
                             </td>
                             <td>{{ $application->jobOpening?->location_label }}</td>
                             <td>
-                                <span class="badge text-bg-{{ match ($application->status) {
-                                    'withdrawn' => 'warning',
-                                    'not_progressed' => 'secondary',
-                                    default => 'success',
-                                } }}">
-                                    {{ str($application->status)->headline() }}
+                                <span class="badge text-bg-{{ $application->status_badge_class }}">
+                                    {{ $application->status_label }}
                                 </span>
                             </td>
+                            <td>{{ $application->overall_score ?? '-' }}</td>
                             <td>{{ $application->submitted_at?->format('d M Y H:i') }}</td>
                             <td>
                                 <a href="{{ route('recruitment.applications.show', $application) }}" class="btn btn-sm btn-secondary">View</a>
@@ -89,7 +170,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="text-center text-muted py-4">No applications found.</td>
+                            <td colspan="9" class="text-center text-muted py-4">No applications found.</td>
                         </tr>
                     @endforelse
                 </tbody>

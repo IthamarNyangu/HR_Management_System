@@ -13,13 +13,19 @@ class JobApplication extends Model
     public const SOURCE_EXTERNAL = 'external';
 
     public const STATUS_SUBMITTED = 'submitted';
+    public const STATUS_UNDER_REVIEW = 'under_review';
+    public const STATUS_LONGLISTED = 'longlisted';
+    public const STATUS_SHORTLISTED = 'shortlisted';
+    public const STATUS_REJECTED = 'rejected';
     public const STATUS_WITHDRAWN = 'withdrawn';
-    public const STATUS_NOT_PROGRESSED = 'not_progressed';
 
     public const STATUSES = [
         self::STATUS_SUBMITTED,
+        self::STATUS_UNDER_REVIEW,
+        self::STATUS_LONGLISTED,
+        self::STATUS_SHORTLISTED,
+        self::STATUS_REJECTED,
         self::STATUS_WITHDRAWN,
-        self::STATUS_NOT_PROGRESSED,
     ];
 
     public const DOCUMENT_CV = 'cv';
@@ -65,11 +71,25 @@ class JobApplication extends Model
         'last_confirmation_sent_at',
         'outcome_sent_at',
         'outcome_sent_by',
+        'qualification_score',
+        'experience_score',
+        'screening_score',
+        'overall_score',
+        'review_notes',
+        'reviewed_by',
+        'reviewed_at',
+        'shortlisted_at',
+        'rejected_at',
+        'rejection_reason',
+        'last_status_changed_by',
+        'last_status_changed_at',
     ];
 
     protected $appends = [
         'full_name',
         'display_name',
+        'status_label',
+        'status_badge_class',
     ];
 
     protected function casts(): array
@@ -81,6 +101,14 @@ class JobApplication extends Model
             'withdrawn_at' => 'datetime',
             'last_confirmation_sent_at' => 'datetime',
             'outcome_sent_at' => 'datetime',
+            'qualification_score' => 'decimal:2',
+            'experience_score' => 'decimal:2',
+            'screening_score' => 'decimal:2',
+            'overall_score' => 'decimal:2',
+            'reviewed_at' => 'datetime',
+            'shortlisted_at' => 'datetime',
+            'rejected_at' => 'datetime',
+            'last_status_changed_at' => 'datetime',
         ];
     }
 
@@ -99,9 +127,29 @@ class JobApplication extends Model
         return $this->hasMany(JobApplicationDocument::class);
     }
 
+    public function statusHistories(): HasMany
+    {
+        return $this->hasMany(JobApplicationStatusHistory::class)->latest();
+    }
+
+    public function notes(): HasMany
+    {
+        return $this->hasMany(JobApplicationNote::class)->latest();
+    }
+
     public function outcomeSentBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'outcome_sent_by');
+    }
+
+    public function reviewedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'reviewed_by');
+    }
+
+    public function lastStatusChangedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'last_status_changed_by');
     }
 
     public function cvDocument(): HasOne
@@ -129,6 +177,38 @@ class JobApplication extends Model
         return trim($this->reference_no.' - '.$this->full_name);
     }
 
+    public function getStatusLabelAttribute(): string
+    {
+        return self::statusLabels()[$this->status] ?? str($this->status)->headline()->toString();
+    }
+
+    public function getStatusBadgeClassAttribute(): string
+    {
+        return match ($this->status) {
+            self::STATUS_WITHDRAWN => 'warning',
+            self::STATUS_REJECTED => 'danger',
+            self::STATUS_SHORTLISTED => 'success',
+            self::STATUS_LONGLISTED => 'info',
+            self::STATUS_UNDER_REVIEW => 'primary',
+            default => 'secondary',
+        };
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function statusLabels(): array
+    {
+        return [
+            self::STATUS_SUBMITTED => 'Submitted',
+            self::STATUS_UNDER_REVIEW => 'Under Review',
+            self::STATUS_LONGLISTED => 'Longlisted',
+            self::STATUS_SHORTLISTED => 'Shortlisted',
+            self::STATUS_REJECTED => 'Rejected',
+            self::STATUS_WITHDRAWN => 'Withdrawn',
+        ];
+    }
+
     public function scopeVisibleTo(Builder $query, User $user): Builder
     {
         if ($user->isAdmin() || $user->isHrManager()) {
@@ -150,5 +230,10 @@ class JobApplication extends Model
     public function isSubmitted(): bool
     {
         return $this->status === self::STATUS_SUBMITTED;
+    }
+
+    public function canMoveThroughReview(): bool
+    {
+        return ! $this->isWithdrawn();
     }
 }

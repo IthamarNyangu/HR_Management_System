@@ -7,6 +7,7 @@ use App\Models\CaseStatus;
 use App\Models\DisciplinaryCase;
 use App\Models\Employee;
 use App\Models\EmploymentStatus;
+use App\Models\JobApplication;
 use App\Models\JobOpening;
 use App\Models\StaffEstablishmentPlan;
 use App\Models\StaffPromotion;
@@ -28,6 +29,7 @@ class DashboardController extends Controller
         $relocationQuery = StaffRelocation::query()->visibleTo($user);
         $appointmentQuery = TemporaryAppointment::query()->visibleTo($user);
         $jobOpeningQuery = JobOpening::query()->visibleTo($user);
+        $jobApplicationQuery = JobApplication::query()->visibleTo($user);
 
         $activeEmploymentStatus = EmploymentStatus::where('code', 'ACTIVE')->orWhere('name', 'Active')->first();
         $submittedStatus = $this->caseStatus('SUBMITTED');
@@ -153,6 +155,10 @@ class DashboardController extends Controller
             ['label' => 'Internal Jobs', 'value' => (clone $jobOpeningQuery)->whereIn('visibility', [JobOpening::VISIBILITY_INTERNAL, JobOpening::VISIBILITY_BOTH])->count()],
             ['label' => 'Jobs Closing Soon', 'value' => (clone $jobOpeningQuery)->where('status', JobOpening::STATUS_PUBLISHED)->whereBetween('closing_date', [today(), today()->addDays(14)])->count()],
             ['label' => 'Closed Jobs This Month', 'value' => (clone $jobOpeningQuery)->where('status', JobOpening::STATUS_CLOSED)->whereYear('closed_at', now()->year)->whereMonth('closed_at', now()->month)->count()],
+            ['label' => 'Awaiting Review', 'value' => (clone $jobApplicationQuery)->where('status', JobApplication::STATUS_SUBMITTED)->count()],
+            ['label' => 'Shortlisted Applications', 'value' => (clone $jobApplicationQuery)->where('status', JobApplication::STATUS_SHORTLISTED)->count()],
+            ['label' => 'Rejected This Month', 'value' => (clone $jobApplicationQuery)->where('status', JobApplication::STATUS_REJECTED)->whereYear('rejected_at', now()->year)->whereMonth('rejected_at', now()->month)->count()],
+            ['label' => 'Received This Week', 'value' => (clone $jobApplicationQuery)->where('submitted_at', '>=', now()->startOfWeek())->count()],
         ];
 
         $latestEstablishmentPlan = $establishmentMetrics->latestVisiblePlan($user);

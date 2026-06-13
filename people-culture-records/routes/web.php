@@ -142,7 +142,12 @@ Route::middleware(['auth', 'active', 'password.changed'])->group(function () use
 
     Route::get('/recruitment', [JobOpeningController::class, 'dashboard'])->name('recruitment.index');
     Route::get('/recruitment/applications', [JobApplicationController::class, 'index'])->name('recruitment.applications.index');
-    Route::patch('/recruitment/applications/{jobApplication}/outcome', [JobApplicationController::class, 'sendOutcome'])->name('recruitment.applications.outcome');
+    Route::patch('/recruitment/applications/{jobApplication}/review', [JobApplicationController::class, 'updateReview'])->name('recruitment.applications.update-review');
+    Route::patch('/recruitment/applications/{jobApplication}/status', [JobApplicationController::class, 'updateStatus'])->name('recruitment.applications.update-status');
+    Route::post('/recruitment/applications/{jobApplication}/notes', [JobApplicationController::class, 'addNote'])->name('recruitment.applications.add-note');
+    Route::patch('/recruitment/applications/{jobApplication}/shortlist', [JobApplicationController::class, 'shortlist'])->name('recruitment.applications.shortlist');
+    Route::patch('/recruitment/applications/{jobApplication}/reject', [JobApplicationController::class, 'reject'])->name('recruitment.applications.reject');
+    Route::post('/recruitment/applications/{jobApplication}/email', [JobApplicationController::class, 'sendEmail'])->name('recruitment.applications.send-email');
     Route::get('/recruitment/applications/{jobApplication}', [JobApplicationController::class, 'show'])->name('recruitment.applications.show');
     Route::get('/recruitment/applications/{jobApplication}/documents/{document}/download', [JobApplicationDocumentController::class, 'download'])->name('recruitment.applications.documents.download');
     Route::get('/recruitment/job-openings/archived', [JobOpeningController::class, 'archived'])->name('recruitment.job-openings.archived');
