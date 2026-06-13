@@ -130,7 +130,13 @@
 
         @if ($errors->any())
             <div class="alert alert-danger">
-                <div class="fw-semibold">Please correct the highlighted fields before submitting.</div>
+                <div class="fw-semibold mb-2">Your application was not submitted. Please correct the following:</div>
+                <ul class="mb-2 ps-3">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+                <div class="small">For security reasons, uploaded files must be selected again after validation errors.</div>
             </div>
         @endif
 
@@ -219,7 +225,7 @@
                     </div>
                     <div class="col-md-2">
                         <label class="form-label" for="years_of_experience">Years of Experience</label>
-                        <input id="years_of_experience" type="number" step="0.1" min="0" name="years_of_experience" value="{{ old('years_of_experience') }}" class="form-control @error('years_of_experience') is-invalid @enderror">
+                        <input id="years_of_experience" type="number" step="1" min="0" name="years_of_experience" value="{{ old('years_of_experience') }}" class="form-control @error('years_of_experience') is-invalid @enderror">
                         @error('years_of_experience') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
                 

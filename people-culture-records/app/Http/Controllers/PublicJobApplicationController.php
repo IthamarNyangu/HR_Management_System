@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\SendWithdrawalLinkRequest;
 use App\Http\Requests\StorePublicJobApplicationRequest;
 use App\Mail\JobApplicationReceivedMail;
+use App\Mail\JobApplicationWithdrawnMail;
 use App\Mail\JobApplicationWithdrawalLinkMail;
 use App\Models\JobApplication;
 use App\Models\JobApplicationDocument;
@@ -151,6 +152,9 @@ class PublicJobApplicationController extends Controller
                 $jobApplication,
                 request: $request,
             );
+
+            $jobApplication->loadMissing('jobOpening');
+            $this->sendWithdrawnMail($jobApplication);
         }
 
         return view('public.applications.withdraw-success', compact('jobApplication'));
@@ -211,6 +215,18 @@ class PublicJobApplicationController extends Controller
             Mail::to($application->email)->send(new JobApplicationWithdrawalLinkMail($application, $withdrawalUrl));
         } catch (\Throwable $exception) {
             Log::warning('Job application withdrawal email failed.', [
+                'application_id' => $application->id,
+                'error' => $exception->getMessage(),
+            ]);
+        }
+    }
+
+    private function sendWithdrawnMail(JobApplication $application): void
+    {
+        try {
+            Mail::to($application->email)->send(new JobApplicationWithdrawnMail($application));
+        } catch (\Throwable $exception) {
+            Log::warning('Job application withdrawn confirmation email failed.', [
                 'application_id' => $application->id,
                 'error' => $exception->getMessage(),
             ]);

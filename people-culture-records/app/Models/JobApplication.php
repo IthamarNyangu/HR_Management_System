@@ -14,6 +14,13 @@ class JobApplication extends Model
 
     public const STATUS_SUBMITTED = 'submitted';
     public const STATUS_WITHDRAWN = 'withdrawn';
+    public const STATUS_NOT_PROGRESSED = 'not_progressed';
+
+    public const STATUSES = [
+        self::STATUS_SUBMITTED,
+        self::STATUS_WITHDRAWN,
+        self::STATUS_NOT_PROGRESSED,
+    ];
 
     public const DOCUMENT_CV = 'cv';
     public const DOCUMENT_COVER_LETTER = 'cover_letter';
@@ -56,6 +63,8 @@ class JobApplication extends Model
         'withdrawn_at',
         'withdrawal_token_hash',
         'last_confirmation_sent_at',
+        'outcome_sent_at',
+        'outcome_sent_by',
     ];
 
     protected $appends = [
@@ -71,6 +80,7 @@ class JobApplication extends Model
             'submitted_at' => 'datetime',
             'withdrawn_at' => 'datetime',
             'last_confirmation_sent_at' => 'datetime',
+            'outcome_sent_at' => 'datetime',
         ];
     }
 
@@ -87,6 +97,11 @@ class JobApplication extends Model
     public function documents(): HasMany
     {
         return $this->hasMany(JobApplicationDocument::class);
+    }
+
+    public function outcomeSentBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'outcome_sent_by');
     }
 
     public function cvDocument(): HasOne
@@ -130,5 +145,10 @@ class JobApplication extends Model
     public function isWithdrawn(): bool
     {
         return $this->status === self::STATUS_WITHDRAWN;
+    }
+
+    public function isSubmitted(): bool
+    {
+        return $this->status === self::STATUS_SUBMITTED;
     }
 }

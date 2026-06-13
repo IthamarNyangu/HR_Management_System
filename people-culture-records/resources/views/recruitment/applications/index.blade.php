@@ -30,6 +30,7 @@
                     <option value="">All statuses</option>
                     <option value="submitted" @selected(request('status') === 'submitted')>Submitted</option>
                     <option value="withdrawn" @selected(request('status') === 'withdrawn')>Withdrawn</option>
+                    <option value="not_progressed" @selected(request('status') === 'not_progressed')>Not Progressed</option>
                 </select>
             </div>
             <div class="col-lg-3 d-flex gap-2">
@@ -73,7 +74,11 @@
                             </td>
                             <td>{{ $application->jobOpening?->location_label }}</td>
                             <td>
-                                <span class="badge text-bg-{{ $application->status === 'withdrawn' ? 'warning' : 'success' }}">
+                                <span class="badge text-bg-{{ match ($application->status) {
+                                    'withdrawn' => 'warning',
+                                    'not_progressed' => 'secondary',
+                                    default => 'success',
+                                } }}">
                                     {{ str($application->status)->headline() }}
                                 </span>
                             </td>

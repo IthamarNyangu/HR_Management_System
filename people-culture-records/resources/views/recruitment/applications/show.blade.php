@@ -11,6 +11,15 @@
 @endsection
 
 @section('page-actions')
+    @can('sendOutcome', $jobApplication)
+        @if ($jobApplication->isSubmitted())
+            <form method="POST" action="{{ route('recruitment.applications.outcome', $jobApplication) }}" class="d-inline" data-confirm="Send a not progressed outcome email to {{ $jobApplication->email }} and update this application status?">
+                @csrf
+                @method('PATCH')
+                <button type="submit" class="btn btn-primary-outline btn-md">Send Outcome</button>
+            </form>
+        @endif
+    @endcan
     <a href="{{ route('recruitment.applications.index') }}" class="btn btn-secondary btn-md">Back</a>
 @endsection
 
@@ -23,7 +32,11 @@
                         <div class="text-muted small">Applicant</div>
                         <h2 class="h5 mb-0">{{ trim(($jobApplication->title ? $jobApplication->title.' ' : '').$jobApplication->full_name) }}</h2>
                     </div>
-                    <span class="badge text-bg-{{ $jobApplication->status === 'withdrawn' ? 'warning' : 'success' }}">{{ str($jobApplication->status)->headline() }}</span>
+                    <span class="badge text-bg-{{ match ($jobApplication->status) {
+                        'withdrawn' => 'warning',
+                        'not_progressed' => 'secondary',
+                        default => 'success',
+                    } }}">{{ str($jobApplication->status)->headline() }}</span>
                 </div>
 
                 <dl class="row mb-0">
@@ -41,6 +54,8 @@
                     <dd class="col-7">{{ $jobApplication->submitted_at?->format('d M Y H:i') }}</dd>
                     <dt class="col-5">Withdrawn</dt>
                     <dd class="col-7">{{ $jobApplication->withdrawn_at?->format('d M Y H:i') ?? '-' }}</dd>
+                    <dt class="col-5">Outcome Sent</dt>
+                    <dd class="col-7">{{ $jobApplication->outcome_sent_at?->format('d M Y H:i') ?? '-' }}</dd>
                 </dl>
             </section>
         </div>

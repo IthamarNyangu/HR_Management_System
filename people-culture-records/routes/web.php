@@ -142,6 +142,7 @@ Route::middleware(['auth', 'active', 'password.changed'])->group(function () use
 
     Route::get('/recruitment', [JobOpeningController::class, 'dashboard'])->name('recruitment.index');
     Route::get('/recruitment/applications', [JobApplicationController::class, 'index'])->name('recruitment.applications.index');
+    Route::patch('/recruitment/applications/{jobApplication}/outcome', [JobApplicationController::class, 'sendOutcome'])->name('recruitment.applications.outcome');
     Route::get('/recruitment/applications/{jobApplication}', [JobApplicationController::class, 'show'])->name('recruitment.applications.show');
     Route::get('/recruitment/applications/{jobApplication}/documents/{document}/download', [JobApplicationDocumentController::class, 'download'])->name('recruitment.applications.documents.download');
     Route::get('/recruitment/job-openings/archived', [JobOpeningController::class, 'archived'])->name('recruitment.job-openings.archived');

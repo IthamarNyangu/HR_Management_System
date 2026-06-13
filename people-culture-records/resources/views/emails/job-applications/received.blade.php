@@ -7,7 +7,7 @@
     <p style="margin:0 0 18px;"><strong>Dear {{ $application->full_name }},</strong></p>
 
     <p style="margin:0 0 18px;">
-        Thank you for applying for <strong>{{ $application->jobOpening?->title }}</strong>.
+        Thank you for applying for the <strong>{{ $application->jobOpening?->title }}</strong> position.
     </p>
 
     <p style="margin:0 0 18px;">

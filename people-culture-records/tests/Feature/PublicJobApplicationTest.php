@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Mail\JobApplicationReceivedMail;
+use App\Mail\JobApplicationOutcomeMail;
+use App\Mail\JobApplicationWithdrawnMail;
 use App\Mail\JobApplicationWithdrawalLinkMail;
 use App\Models\Department;
 use App\Models\District;
@@ -146,10 +148,22 @@ class PublicJobApplicationTest extends TestCase
         $this->post(route('careers.apply.store', $otherJob->slug), $this->payload(['email' => 'same@example.org']))->assertOk();
 
         $this->assertSame(2, JobApplication::count());
+
+        JobApplication::where('job_opening_id', $job->id)
+            ->where('email', 'same@example.org')
+            ->firstOrFail()
+            ->update([
+                'status' => JobApplication::STATUS_WITHDRAWN,
+                'withdrawn_at' => now(),
+            ]);
+
+        $this->post(route('careers.apply.store', $job->slug), $this->payload(['email' => 'same@example.org']))->assertOk();
+        $this->assertSame(3, JobApplication::count());
     }
 
     public function test_signed_withdrawal_link_withdraws_application(): void
     {
+        Mail::fake();
         $application = $this->application();
         $token = 'withdraw-token';
         $application->update(['withdrawal_token_hash' => hash('sha256', $token)]);
@@ -164,6 +178,7 @@ class PublicJobApplicationTest extends TestCase
 
         $this->assertSame(JobApplication::STATUS_WITHDRAWN, $application->fresh()->status);
         $this->assertNotNull($application->fresh()->withdrawn_at);
+        Mail::assertSent(JobApplicationWithdrawnMail::class);
     }
 
     public function test_fallback_withdrawal_request_returns_generic_response_and_sends_when_matched(): void
@@ -231,6 +246,26 @@ class PublicJobApplicationTest extends TestCase
     public function test_unauthenticated_users_cannot_access_internal_applications(): void
     {
         $this->get(route('recruitment.applications.index'))->assertRedirect('/login');
+    }
+
+    public function test_admin_can_send_not_progressed_outcome_email(): void
+    {
+        Mail::fake();
+        $application = $this->application();
+        $admin = $this->user($this->adminRole);
+
+        $this->actingAs($admin)
+            ->patch(route('recruitment.applications.outcome', $application))
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $application->refresh();
+
+        $this->assertSame(JobApplication::STATUS_NOT_PROGRESSED, $application->status);
+        $this->assertNotNull($application->outcome_sent_at);
+        $this->assertSame($admin->id, $application->outcome_sent_by);
+        Mail::assertSent(JobApplicationOutcomeMail::class);
+        $this->assertDatabaseHas('activity_logs', ['action' => 'job_application_outcome_sent']);
     }
 
     private function user(Role $role, ?Province $province = null): User

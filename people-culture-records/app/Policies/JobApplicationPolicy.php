@@ -33,4 +33,10 @@ class JobApplicationPolicy
         return (int) $document->job_application_id === (int) $jobApplication->id
             && $this->view($user, $jobApplication);
     }
+
+    public function sendOutcome(User $user, JobApplication $jobApplication): bool
+    {
+        return ($user->isAdmin() || $user->isHrManager())
+            && $this->view($user, $jobApplication);
+    }
 }

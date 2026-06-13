@@ -40,7 +40,9 @@ class StorePublicJobApplicationRequest extends FormRequest
                 'email',
                 'max:255',
                 Rule::unique('job_applications', 'email')
-                    ->where(fn ($query) => $query->where('job_opening_id', $jobOpening->id)),
+                    ->where(fn ($query) => $query
+                        ->where('job_opening_id', $jobOpening->id)
+                        ->where('status', '!=', JobApplication::STATUS_WITHDRAWN)),
             ],
             'phone' => ['required', 'string', 'max:50', 'regex:/^[0-9]+$/'],
             'national_id' => ['nullable', 'string', 'max:100'],
@@ -68,7 +70,7 @@ class StorePublicJobApplicationRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'email.unique' => 'An application with this email address has already been submitted for this job.',
+            'email.unique' => 'An active application with this email address already exists for this job. You can apply again only after withdrawing the earlier application.',
             'phone.regex' => 'Phone must contain numbers only.',
             'education_certificates.mimes' => 'Education certificates must be uploaded as one combined PDF file.',
             'cv.max' => 'CV must not be larger than 5 MB.',
