@@ -53,7 +53,7 @@
                     <dt class="col-5">Reference</dt>
                     <dd class="col-7">{{ $jobApplication->reference_no }}</dd>
                     <dt class="col-5">Email</dt>
-                    <dd class="col-7">{{ $jobApplication->email }}</dd>
+                    <dd class="col-7 text-break">{{ $jobApplication->email }}</dd>
                     <dt class="col-5">Phone</dt>
                     <dd class="col-7">{{ $jobApplication->phone }}</dd>
                     <dt class="col-5">ID / Passport / Visa</dt>
@@ -130,7 +130,14 @@
                                     <td>{{ number_format($document->file_size / 1024, 1) }} KB</td>
                                     <td>{{ $document->uploaded_at?->format('d M Y H:i') }}</td>
                                     <td>
-                                        <a href="{{ route('recruitment.applications.documents.download', [$jobApplication, $document]) }}" class="btn btn-sm btn-primary-outline">Download</a>
+                                        <div class="d-flex gap-2">
+                                            <a href="{{ route('recruitment.applications.documents.view', [$jobApplication, $document]) }}" target="_blank" class="btn btn-sm btn-secondary" title="View document" aria-label="View {{ $document->original_filename }}">
+                                                <i class="bi bi-eye" aria-hidden="true"></i>
+                                            </a>
+                                            <a href="{{ route('recruitment.applications.documents.download', [$jobApplication, $document]) }}" class="btn btn-sm btn-primary-outline" title="Download document" aria-label="Download {{ $document->original_filename }}">
+                                                <i class="bi bi-download" aria-hidden="true"></i>
+                                            </a>
+                                        </div>
                                     </td>
                                 </tr>
                             @empty
@@ -160,21 +167,21 @@
                             <div class="row g-3">
                                 <div class="col-md-4">
                                     <label for="qualification_score" class="form-label">Qualification Score</label>
-                                    <input type="number" min="0" max="100" step="0.01" name="qualification_score" id="qualification_score" value="{{ old('qualification_score', $jobApplication->qualification_score) }}" class="form-control @error('qualification_score') is-invalid @enderror">
+                                    <input type="number" min="0" max="100" step="0.1" name="qualification_score" id="qualification_score" value="{{ old('qualification_score', $jobApplication->qualification_score) }}" class="form-control @error('qualification_score') is-invalid @enderror">
                                     @error('qualification_score')<div class="invalid-feedback">{{ $message }}</div>@enderror
                                 </div>
                                 <div class="col-md-4">
                                     <label for="experience_score" class="form-label">Experience Score</label>
-                                    <input type="number" min="0" max="100" step="0.01" name="experience_score" id="experience_score" value="{{ old('experience_score', $jobApplication->experience_score) }}" class="form-control @error('experience_score') is-invalid @enderror">
+                                    <input type="number" min="0" max="100" step="0.1" name="experience_score" id="experience_score" value="{{ old('experience_score', $jobApplication->experience_score) }}" class="form-control @error('experience_score') is-invalid @enderror">
                                     @error('experience_score')<div class="invalid-feedback">{{ $message }}</div>@enderror
                                 </div>
                                 <div class="col-md-4">
                                     <label for="screening_score" class="form-label">Screening Score</label>
-                                    <input type="number" min="0" max="100" step="0.01" name="screening_score" id="screening_score" value="{{ old('screening_score', $jobApplication->screening_score) }}" class="form-control @error('screening_score') is-invalid @enderror">
+                                    <input type="number" min="0" max="100" step="0.1" name="screening_score" id="screening_score" value="{{ old('screening_score', $jobApplication->screening_score) }}" class="form-control @error('screening_score') is-invalid @enderror">
                                     @error('screening_score')<div class="invalid-feedback">{{ $message }}</div>@enderror
                                 </div>
                                 <div class="col-12">
-                                    <label for="review_notes" class="form-label">Review Notes</label>
+                                    <label for="review_notes" class="form-label">Internal Notes</label>
                                     <textarea name="review_notes" id="review_notes" rows="4" class="form-control @error('review_notes') is-invalid @enderror">{{ old('review_notes', $jobApplication->review_notes) }}</textarea>
                                     @error('review_notes')<div class="invalid-feedback">{{ $message }}</div>@enderror
                                 </div>
@@ -194,7 +201,7 @@
                         <dd class="col-md-8">{{ $jobApplication->experience_score ?? '-' }}</dd>
                         <dt class="col-md-4">Screening Score</dt>
                         <dd class="col-md-8">{{ $jobApplication->screening_score ?? '-' }}</dd>
-                        <dt class="col-md-4">Review Notes</dt>
+                        <dt class="col-md-4">Internal Notes</dt>
                         <dd class="col-md-8">{{ $jobApplication->review_notes ?? '-' }}</dd>
                     </dl>
                 @endcan
@@ -224,11 +231,6 @@
                                         </select>
                                         @error('status')<div class="invalid-feedback">{{ $message }}</div>@enderror
                                     </div>
-                                    <div class="mb-3">
-                                        <label for="comment" class="form-label">Comment</label>
-                                        <textarea name="comment" id="comment" rows="3" class="form-control @error('comment') is-invalid @enderror">{{ old('comment') }}</textarea>
-                                        @error('comment')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                                    </div>
                                     <button type="submit" class="btn btn-primary-outline btn-md">Update Status</button>
                                 </form>
                             </div>
@@ -240,10 +242,6 @@
                                     @csrf
                                     @method('PATCH')
                                     <h3 class="h6">Shortlist Candidate</h3>
-                                    <div class="mb-3">
-                                        <label for="shortlist_comment" class="form-label">Comment</label>
-                                        <textarea name="comment" id="shortlist_comment" rows="3" class="form-control">{{ old('comment') }}</textarea>
-                                    </div>
                                     <div class="form-check mb-3">
                                         <input class="form-check-input" type="checkbox" name="send_email" value="1" id="shortlist_send_email">
                                         <label class="form-check-label" for="shortlist_send_email">Send shortlist email to applicant</label>
@@ -260,15 +258,13 @@
                                     @method('PATCH')
                                     <h3 class="h6">Reject Candidate</h3>
                                     <div class="row g-3">
-                                        <div class="col-lg-6">
+                                        <div class="col-lg-8">
                                             <label for="rejection_reason" class="form-label">Rejection Reason <span class="text-danger">*</span></label>
                                             <textarea name="rejection_reason" id="rejection_reason" rows="4" class="form-control @error('rejection_reason') is-invalid @enderror">{{ old('rejection_reason', $jobApplication->rejection_reason) }}</textarea>
                                             @error('rejection_reason')<div class="invalid-feedback">{{ $message }}</div>@enderror
                                         </div>
-                                        <div class="col-lg-6">
-                                            <label for="reject_comment" class="form-label">Status History Comment</label>
-                                            <textarea name="comment" id="reject_comment" rows="4" class="form-control">{{ old('comment') }}</textarea>
-                                            <div class="form-check mt-3">
+                                        <div class="col-lg-4">
+                                            <div class="form-check mt-lg-4">
                                                 <input class="form-check-input" type="checkbox" name="send_email" value="1" id="reject_send_email">
                                                 <label class="form-check-label" for="reject_send_email">Send rejection email to applicant</label>
                                             </div>
@@ -305,33 +301,6 @@
                 <div class="text-pre-line">{{ $jobApplication->motivation }}</div>
             </section>
 
-            <section class="bg-white border rounded-2 p-3 mb-4">
-                <h2 class="h5 mb-3">Internal Notes</h2>
-                @can('addNote', $jobApplication)
-                    <form method="POST" action="{{ route('recruitment.applications.add-note', $jobApplication) }}" class="mb-4">
-                        @csrf
-                        <label for="note" class="form-label">Add Note <span class="text-danger">*</span></label>
-                        <textarea name="note" id="note" rows="3" class="form-control @error('note') is-invalid @enderror">{{ old('note') }}</textarea>
-                        @error('note')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                        <button type="submit" class="btn btn-primary btn-md mt-3">Add Note</button>
-                    </form>
-                @endcan
-
-                <div class="vstack gap-3">
-                    @forelse ($jobApplication->notes as $note)
-                        <div class="border rounded-2 p-3">
-                            <div class="d-flex justify-content-between gap-3">
-                                <strong>{{ $note->user?->name ?? 'System' }}</strong>
-                                <span class="text-muted small">{{ $note->created_at?->format('d M Y H:i') }}</span>
-                            </div>
-                            <div class="mt-2 text-pre-line">{{ $note->note }}</div>
-                        </div>
-                    @empty
-                        <div class="text-muted">No internal notes yet.</div>
-                    @endforelse
-                </div>
-            </section>
-
             <section class="bg-white border rounded-2 p-3">
                 <h2 class="h5 mb-3">Status History</h2>
                 <div class="table-responsive data-table-wrap">
@@ -341,7 +310,6 @@
                                 <th>From</th>
                                 <th>To</th>
                                 <th>Changed By</th>
-                                <th>Comment</th>
                                 <th>Email</th>
                                 <th>Date</th>
                             </tr>
@@ -352,13 +320,12 @@
                                     <td>{{ $history->from_status ? str($history->from_status)->headline() : '-' }}</td>
                                     <td>{{ str($history->to_status)->headline() }}</td>
                                     <td>{{ $history->changedBy?->name ?? 'System' }}</td>
-                                    <td>{{ $history->comment ?? '-' }}</td>
                                     <td>{{ $history->email_sent ? 'Sent' : '-' }}</td>
                                     <td>{{ $history->created_at?->format('d M Y H:i') }}</td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" class="text-center text-muted py-4">No status changes recorded yet.</td>
+                                    <td colspan="5" class="text-center text-muted py-4">No status changes recorded yet.</td>
                                 </tr>
                             @endforelse
                         </tbody>

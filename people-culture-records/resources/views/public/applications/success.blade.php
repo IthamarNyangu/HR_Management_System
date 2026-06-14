@@ -16,18 +16,6 @@
         }
         .panel { background: rgba(255,255,255,.96); border: 1px solid #e1e7f0; border-radius: .75rem; box-shadow: 0 18px 50px rgba(15,23,42,.10); }
         .career-logo { width: 58px; height: 58px; object-fit: contain; }
-        .success-mark {
-            width: 52px;
-            height: 52px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 999px;
-            background: #dcfce7;
-            color: #15803d;
-            font-weight: 700;
-            font-size: 28px;
-        }
     </style>
 </head>
 <body>
@@ -40,7 +28,6 @@
                     <div class="small text-muted">Careers</div>
                 </div>
             </div>
-            <div class="success-mark mb-3">&check;</div>
             <h1 class="h3">Application submitted</h1>
             <p class="mb-2">Thank you, {{ $application->full_name }}. Your application reference is <strong>{{ $application->reference_no }}</strong>.</p>
             <p class="text-muted">A confirmation email {{ $mailSent ? 'has been sent' : 'could not be sent locally, but your application was saved successfully' }}.</p>

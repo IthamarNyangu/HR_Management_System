@@ -62,7 +62,6 @@ class JobApplicationController extends Controller
             ->when($request->filled('submitted_to'), fn ($query) => $query->whereDate('submitted_at', '<=', $request->date('submitted_to')))
             ->when($request->filled('score_min'), fn ($query) => $query->where('overall_score', '>=', $request->float('score_min')))
             ->when($request->filled('score_max'), fn ($query) => $query->where('overall_score', '<=', $request->float('score_max')))
-            ->when($request->boolean('has_cv'), fn ($query) => $query->whereHas('documents', fn (Builder $query) => $query->where('document_type', JobApplication::DOCUMENT_CV)))
             ->when($request->boolean('has_education_certificate'), fn ($query) => $query->whereHas('documents', fn (Builder $query) => $query->where('document_type', JobApplication::DOCUMENT_EDUCATION_CERTIFICATES)))
             ->when(in_array($request->query('quick'), [JobApplication::STATUS_SHORTLISTED, JobApplication::STATUS_REJECTED, JobApplication::STATUS_WITHDRAWN], true), fn ($query) => $query->where('status', $request->query('quick')))
             ->when($request->query('sort') === 'score_desc', fn ($query) => $query->orderByDesc('overall_score')->orderByDesc('submitted_at'))

@@ -334,6 +334,10 @@ class RecruitmentApplicationReviewTest extends TestCase
         Storage::disk('local')->put($document->file_path, 'document');
 
         $this->actingAs($this->user($this->officerRole, $this->northern))
+            ->get(route('recruitment.applications.documents.view', [$application, $document]))
+            ->assertOk();
+
+        $this->actingAs($this->user($this->officerRole, $this->northern))
             ->get(route('recruitment.applications.documents.download', [$application, $document]))
             ->assertOk();
 

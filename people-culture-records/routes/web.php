@@ -149,6 +149,7 @@ Route::middleware(['auth', 'active', 'password.changed'])->group(function () use
     Route::patch('/recruitment/applications/{jobApplication}/reject', [JobApplicationController::class, 'reject'])->name('recruitment.applications.reject');
     Route::post('/recruitment/applications/{jobApplication}/email', [JobApplicationController::class, 'sendEmail'])->name('recruitment.applications.send-email');
     Route::get('/recruitment/applications/{jobApplication}', [JobApplicationController::class, 'show'])->name('recruitment.applications.show');
+    Route::get('/recruitment/applications/{jobApplication}/documents/{document}/view', [JobApplicationDocumentController::class, 'view'])->name('recruitment.applications.documents.view');
     Route::get('/recruitment/applications/{jobApplication}/documents/{document}/download', [JobApplicationDocumentController::class, 'download'])->name('recruitment.applications.documents.download');
     Route::get('/recruitment/job-openings/archived', [JobOpeningController::class, 'archived'])->name('recruitment.job-openings.archived');
     Route::patch('/recruitment/job-openings/{job_opening}/publish', [JobOpeningController::class, 'publish'])->name('recruitment.job-openings.publish');

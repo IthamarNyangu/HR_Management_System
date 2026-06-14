@@ -102,10 +102,6 @@
             </div>
             <div class="col-lg-4 d-flex flex-wrap align-items-center gap-3">
                 <div class="form-check">
-                    <input class="form-check-input" type="checkbox" name="has_cv" value="1" id="has_cv" @checked(request()->boolean('has_cv'))>
-                    <label class="form-check-label" for="has_cv">Has CV</label>
-                </div>
-                <div class="form-check">
                     <input class="form-check-input" type="checkbox" name="has_education_certificate" value="1" id="has_education_certificate" @checked(request()->boolean('has_education_certificate'))>
                     <label class="form-check-label" for="has_education_certificate">Has certificates</label>
                 </div>
