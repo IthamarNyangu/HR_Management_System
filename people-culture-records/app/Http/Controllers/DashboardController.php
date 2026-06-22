@@ -156,7 +156,7 @@ class DashboardController extends Controller
             ['label' => 'Jobs Closing Soon', 'value' => (clone $jobOpeningQuery)->where('status', JobOpening::STATUS_PUBLISHED)->whereBetween('closing_date', [today(), today()->addDays(14)])->count()],
             ['label' => 'Closed Jobs This Month', 'value' => (clone $jobOpeningQuery)->where('status', JobOpening::STATUS_CLOSED)->whereYear('closed_at', now()->year)->whereMonth('closed_at', now()->month)->count()],
             ['label' => 'Awaiting Review', 'value' => (clone $jobApplicationQuery)->where('status', JobApplication::STATUS_SUBMITTED)->count()],
-            ['label' => 'Shortlisted Applications', 'value' => (clone $jobApplicationQuery)->where('status', JobApplication::STATUS_SHORTLISTED)->count()],
+            ['label' => 'Applications Under Review', 'value' => (clone $jobApplicationQuery)->where('status', JobApplication::STATUS_UNDER_REVIEW)->count()],
             ['label' => 'Rejected This Month', 'value' => (clone $jobApplicationQuery)->where('status', JobApplication::STATUS_REJECTED)->whereYear('rejected_at', now()->year)->whereMonth('rejected_at', now()->month)->count()],
             ['label' => 'Received This Week', 'value' => (clone $jobApplicationQuery)->where('submitted_at', '>=', now()->startOfWeek())->count()],
         ];

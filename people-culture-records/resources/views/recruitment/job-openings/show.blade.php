@@ -17,11 +17,20 @@
             <span>Announcement PDF</span>
         </a>
         @can('publish', $jobOpening)
-            @if ($jobOpening->status !== App\Models\JobOpening::STATUS_PUBLISHED)
+            @if (in_array($jobOpening->status, [App\Models\JobOpening::STATUS_DRAFT, App\Models\JobOpening::STATUS_CLOSED], true))
                 <form method="POST" action="{{ route('recruitment.job-openings.publish', $jobOpening) }}" data-confirm="true" data-confirm-title="Publish job opening?" data-confirm-message="Published external or both-visible jobs can appear on public careers pages if the closing date has not passed." data-confirm-button="Publish job">
                     @csrf
                     @method('PATCH')
                     <button type="submit" class="btn btn-primary btn-md">Publish</button>
+                </form>
+            @endif
+        @endcan
+        @can('update', $jobOpening)
+            @if ($jobOpening->status === App\Models\JobOpening::STATUS_CANCELLED)
+                <form method="POST" action="{{ route('recruitment.job-openings.prepare-readvertising', $jobOpening) }}" data-confirm="true" data-confirm-title="Prepare for re-advertising?" data-confirm-message="This keeps the vacancy and its application history, then returns the recruitment to Draft so you can update its dates and details before publishing again." data-confirm-button="Prepare to Re-advertise">
+                    @csrf
+                    @method('PATCH')
+                    <button type="submit" class="btn btn-primary btn-md">Re-advertise</button>
                 </form>
             @endif
         @endcan
@@ -36,10 +45,10 @@
         @endcan
         @can('cancel', $jobOpening)
             @if ($jobOpening->status !== App\Models\JobOpening::STATUS_CANCELLED)
-                <form method="POST" action="{{ route('recruitment.job-openings.cancel', $jobOpening) }}" data-confirm="true" data-confirm-title="Cancel job opening?" data-confirm-message="Cancelled jobs are hidden from public careers pages and API." data-confirm-button="Cancel job" data-confirm-variant="btn-warning">
+                <form method="POST" action="{{ route('recruitment.job-openings.cancel', $jobOpening) }}" data-confirm="true" data-confirm-title="Cancel recruitment?" data-confirm-message="This recruitment process will be withdrawn from the careers page. The vacancy and submitted applications will be kept so People & Culture can review or re-advertise it later." data-confirm-button="Cancel Recruitment" data-confirm-variant="btn-warning">
                     @csrf
                     @method('PATCH')
-                    <button type="submit" class="btn btn-outline-warning btn-md">Cancel</button>
+                    <button type="submit" class="btn btn-outline-warning btn-md">Cancel Recruitment</button>
                 </form>
             @endif
         @endcan

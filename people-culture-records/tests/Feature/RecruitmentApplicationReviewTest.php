@@ -3,7 +3,7 @@
 namespace Tests\Feature;
 
 use App\Mail\JobApplicationRejectedMail;
-use App\Mail\JobApplicationShortlistedMail;
+use App\Mail\JobApplicationVacancyWithdrawnMail;
 use App\Models\Department;
 use App\Models\District;
 use App\Models\Facility;
@@ -167,7 +167,7 @@ class RecruitmentApplicationReviewTest extends TestCase
             ->assertForbidden();
 
         $this->actingAs($viewer)
-            ->post(route('recruitment.applications.send-email', $application), ['email_type' => 'shortlisted'])
+            ->post(route('recruitment.applications.send-email', $application), ['email_type' => 'vacancy_withdrawn'])
             ->assertForbidden();
     }
 
@@ -205,30 +205,29 @@ class RecruitmentApplicationReviewTest extends TestCase
         ]);
     }
 
-    public function test_shortlist_updates_status_and_sends_email_only_when_requested(): void
+    public function test_cancelled_vacancy_notice_only_sends_after_the_job_is_cancelled(): void
     {
         Mail::fake();
         $application = $this->application();
         $admin = $this->user($this->adminRole);
 
         $this->actingAs($admin)
-            ->patch(route('recruitment.applications.shortlist', $application))
+            ->post(route('recruitment.applications.send-email', $application), ['email_type' => 'vacancy_withdrawn'])
             ->assertRedirect()
-            ->assertSessionHas('success');
+            ->assertSessionHas('error');
 
-        $application->refresh();
-
-        $this->assertSame(JobApplication::STATUS_SHORTLISTED, $application->status);
-        $this->assertNotNull($application->shortlisted_at);
         Mail::assertNothingSent();
 
+        $application->jobOpening->update(['status' => JobOpening::STATUS_CANCELLED]);
+
         $this->actingAs($admin)
-            ->post(route('recruitment.applications.send-email', $application), ['email_type' => 'shortlisted'])
+            ->post(route('recruitment.applications.send-email', $application), ['email_type' => 'vacancy_withdrawn'])
             ->assertRedirect()
             ->assertSessionHas('success');
 
-        Mail::assertSent(JobApplicationShortlistedMail::class);
-        $this->assertDatabaseHas('activity_logs', ['action' => 'job_application_shortlist_email_sent']);
+        $this->assertSame(JobApplication::STATUS_SUBMITTED, $application->fresh()->status);
+        Mail::assertSent(JobApplicationVacancyWithdrawnMail::class);
+        $this->assertDatabaseHas('activity_logs', ['action' => 'job_application_vacancy_withdrawn_email_sent']);
     }
 
     public function test_reject_requires_reason_and_sends_email_only_when_requested_without_exposing_scores_or_notes(): void
@@ -268,7 +267,7 @@ class RecruitmentApplicationReviewTest extends TestCase
         $this->assertDatabaseHas('activity_logs', ['action' => 'job_application_rejection_email_sent']);
     }
 
-    public function test_withdrawn_application_cannot_be_shortlisted_or_rejected(): void
+    public function test_withdrawn_application_cannot_be_rejected_or_sent_a_vacancy_withdrawal_notice(): void
     {
         $application = $this->application([
             'status' => JobApplication::STATUS_WITHDRAWN,
@@ -277,15 +276,17 @@ class RecruitmentApplicationReviewTest extends TestCase
         $admin = $this->user($this->adminRole);
 
         $this->actingAs($admin)
-            ->patch(route('recruitment.applications.shortlist', $application))
-            ->assertRedirect()
-            ->assertSessionHas('error');
-
-        $this->actingAs($admin)
             ->patch(route('recruitment.applications.reject', $application), [
                 'rejection_reason' => 'Not proceeding.',
             ])
             ->assertSessionHasErrors();
+
+        $application->jobOpening->update(['status' => JobOpening::STATUS_CANCELLED]);
+
+        $this->actingAs($admin)
+            ->post(route('recruitment.applications.send-email', $application), ['email_type' => 'vacancy_withdrawn'])
+            ->assertRedirect()
+            ->assertSessionHas('error');
 
         $this->assertSame(JobApplication::STATUS_WITHDRAWN, $application->fresh()->status);
     }
@@ -297,7 +298,7 @@ class RecruitmentApplicationReviewTest extends TestCase
             'job_opening_id' => $job->id,
             'reference_no' => 'APP-2026-0400',
             'first_name' => 'Alice',
-            'status' => JobApplication::STATUS_SHORTLISTED,
+            'status' => JobApplication::STATUS_UNDER_REVIEW,
             'overall_score' => 85,
         ]);
         $this->application([
@@ -309,7 +310,7 @@ class RecruitmentApplicationReviewTest extends TestCase
 
         $this->actingAs($this->user($this->adminRole))
             ->get(route('recruitment.applications.index', [
-                'status' => JobApplication::STATUS_SHORTLISTED,
+                'status' => JobApplication::STATUS_UNDER_REVIEW,
                 'job_opening_id' => $job->id,
                 'score_min' => 80,
             ]))

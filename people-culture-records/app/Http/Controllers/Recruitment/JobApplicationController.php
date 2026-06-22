@@ -9,7 +9,7 @@ use App\Http\Requests\Recruitment\SendJobApplicationEmailRequest;
 use App\Http\Requests\Recruitment\UpdateJobApplicationReviewRequest;
 use App\Http\Requests\Recruitment\UpdateJobApplicationStatusRequest;
 use App\Mail\JobApplicationRejectedMail;
-use App\Mail\JobApplicationShortlistedMail;
+use App\Mail\JobApplicationVacancyWithdrawnMail;
 use App\Models\District;
 use App\Models\Facility;
 use App\Models\JobApplication;
@@ -63,7 +63,7 @@ class JobApplicationController extends Controller
             ->when($request->filled('score_min'), fn ($query) => $query->where('overall_score', '>=', $request->float('score_min')))
             ->when($request->filled('score_max'), fn ($query) => $query->where('overall_score', '<=', $request->float('score_max')))
             ->when($request->boolean('has_education_certificate'), fn ($query) => $query->whereHas('documents', fn (Builder $query) => $query->where('document_type', JobApplication::DOCUMENT_EDUCATION_CERTIFICATES)))
-            ->when(in_array($request->query('quick'), [JobApplication::STATUS_SHORTLISTED, JobApplication::STATUS_REJECTED, JobApplication::STATUS_WITHDRAWN], true), fn ($query) => $query->where('status', $request->query('quick')))
+            ->when(in_array($request->query('quick'), [JobApplication::STATUS_REJECTED, JobApplication::STATUS_WITHDRAWN], true), fn ($query) => $query->where('status', $request->query('quick')))
             ->when($request->query('sort') === 'score_desc', fn ($query) => $query->orderByDesc('overall_score')->orderByDesc('submitted_at'))
             ->when($request->query('sort') === 'status', fn ($query) => $query->orderBy('status')->orderByDesc('submitted_at'))
             ->when($request->query('sort') === 'job_title', fn ($query) => $query->join('job_openings as sort_jobs', 'job_applications.job_opening_id', '=', 'sort_jobs.id')->orderBy('sort_jobs.title')->select('job_applications.*'))
@@ -170,47 +170,6 @@ class JobApplicationController extends Controller
         return back()->with('success', 'Internal note added.');
     }
 
-    public function shortlist(JobApplication $jobApplication, Request $request, ActivityLogger $activity): RedirectResponse
-    {
-        Gate::authorize('shortlist', $jobApplication);
-        $validated = $request->validate([
-            'comment' => ['nullable', 'string', 'max:2000'],
-            'send_email' => ['nullable', 'boolean'],
-        ]);
-
-        if ($jobApplication->isWithdrawn()) {
-            return back()->with('error', 'Withdrawn applications cannot be shortlisted.');
-        }
-
-        $history = $this->changeStatus(
-            $jobApplication,
-            JobApplication::STATUS_SHORTLISTED,
-            $request,
-            $activity,
-            $validated['comment'] ?? null,
-            false,
-            ['shortlisted_at' => now(), 'rejected_at' => null, 'rejection_reason' => null],
-        );
-
-        $activity->log(
-            'job_application_shortlisted',
-            "{$request->user()->name} shortlisted application {$jobApplication->reference_no}.",
-            $jobApplication,
-            request: $request,
-        );
-
-        $emailMessage = $this->maybeSendApplicationEmail(
-            $jobApplication->fresh(['jobOpening']),
-            'shortlisted',
-            $request,
-            $activity,
-            $history,
-            $request->boolean('send_email'),
-        );
-
-        return back()->with('success', 'Application shortlisted.'.$emailMessage);
-    }
-
     public function reject(RejectJobApplicationRequest $request, JobApplication $jobApplication, ActivityLogger $activity): RedirectResponse
     {
         $history = $this->changeStatus(
@@ -251,12 +210,12 @@ class JobApplicationController extends Controller
 
         $emailType = $request->string('email_type')->toString();
 
-        if ($emailType === 'shortlisted' && $jobApplication->status !== JobApplication::STATUS_SHORTLISTED) {
-            return back()->with('error', 'Shortlist emails can only be sent after an application is shortlisted.');
-        }
-
         if ($emailType === 'rejected' && $jobApplication->status !== JobApplication::STATUS_REJECTED) {
             return back()->with('error', 'Rejection emails can only be sent after an application is rejected.');
+        }
+
+        if ($emailType === 'vacancy_withdrawn' && $jobApplication->jobOpening?->status !== JobOpening::STATUS_CANCELLED) {
+            return back()->with('error', 'A vacancy withdrawal notice can only be sent after the job opening is cancelled.');
         }
 
         $message = $this->maybeSendApplicationEmail(
@@ -348,9 +307,10 @@ class JobApplicationController extends Controller
         }
 
         try {
-            $mailable = $emailType === 'shortlisted'
-                ? new JobApplicationShortlistedMail($jobApplication)
-                : new JobApplicationRejectedMail($jobApplication);
+            $mailable = match ($emailType) {
+                'vacancy_withdrawn' => new JobApplicationVacancyWithdrawnMail($jobApplication),
+                default => new JobApplicationRejectedMail($jobApplication),
+            };
 
             Mail::to($jobApplication->email)->send($mailable);
 
@@ -360,8 +320,8 @@ class JobApplicationController extends Controller
                 'outcome_sent_by' => $request->user()->id,
             ]);
 
-            $action = $emailType === 'shortlisted'
-                ? 'job_application_shortlist_email_sent'
+            $action = $emailType === 'vacancy_withdrawn'
+                ? 'job_application_vacancy_withdrawn_email_sent'
                 : 'job_application_rejection_email_sent';
 
             $activity->log(

@@ -19,7 +19,6 @@
         $canReview = auth()->user()->can('review', $jobApplication);
         $canUpdateStatus = auth()->user()->can('updateStatus', $jobApplication);
         $canAddNote = auth()->user()->can('addNote', $jobApplication);
-        $canShortlist = auth()->user()->can('shortlist', $jobApplication);
         $canReject = auth()->user()->can('reject', $jobApplication);
         $canSendEmail = auth()->user()->can('sendEmail', $jobApplication);
         $isWithdrawn = $jobApplication->isWithdrawn();
@@ -56,7 +55,7 @@
                     <dd class="col-7 text-break">{{ $jobApplication->email }}</dd>
                     <dt class="col-5">Phone</dt>
                     <dd class="col-7">{{ $jobApplication->phone }}</dd>
-                    <dt class="col-5">ID / Passport / Visa</dt>
+                    <dt class="col-5">ID / Passport</dt>
                     <dd class="col-7">{{ $jobApplication->national_id ?? '-' }}</dd>
                     <dt class="col-5">Gender</dt>
                     <dd class="col-7">{{ $jobApplication->gender ?? '-' }}</dd>
@@ -210,7 +209,7 @@
             <section class="bg-white border rounded-2 p-3 mb-4">
                 <h2 class="h5 mb-3">Status Actions</h2>
 
-                @if (! $canUpdateStatus && ! $canShortlist && ! $canReject)
+                @if (! $canUpdateStatus && ! $canReject)
                     <div class="text-muted">You can view this application, but cannot update its review status.</div>
                 @elseif ($isWithdrawn)
                     <div class="text-muted">This application was withdrawn and cannot be moved through review.</div>
@@ -232,21 +231,6 @@
                                         @error('status')<div class="invalid-feedback">{{ $message }}</div>@enderror
                                     </div>
                                     <button type="submit" class="btn btn-primary-outline btn-md">Update Status</button>
-                                </form>
-                            </div>
-                        @endcan
-
-                        @can('shortlist', $jobApplication)
-                            <div class="col-lg-6">
-                                <form method="POST" action="{{ route('recruitment.applications.shortlist', $jobApplication) }}" class="border rounded-2 p-3 h-100" data-confirm="Shortlist this application?">
-                                    @csrf
-                                    @method('PATCH')
-                                    <h3 class="h6">Shortlist Candidate</h3>
-                                    <div class="form-check mb-3">
-                                        <input class="form-check-input" type="checkbox" name="send_email" value="1" id="shortlist_send_email">
-                                        <label class="form-check-label" for="shortlist_send_email">Send shortlist email to applicant</label>
-                                    </div>
-                                    <button type="submit" class="btn btn-primary btn-md">Shortlist</button>
                                 </form>
                             </div>
                         @endcan
@@ -279,16 +263,26 @@
                     </div>
 
                     @can('sendEmail', $jobApplication)
-                        @if (in_array($jobApplication->status, [App\Models\JobApplication::STATUS_SHORTLISTED, App\Models\JobApplication::STATUS_REJECTED], true))
+                        @if ($jobApplication->status === App\Models\JobApplication::STATUS_REJECTED)
                             <div class="border rounded-2 p-3 mt-3">
                                 <h3 class="h6">Manual Email</h3>
                                 <form method="POST" action="{{ route('recruitment.applications.send-email', $jobApplication) }}" class="d-flex flex-wrap gap-2 align-items-center" data-confirm="Send this email to {{ $jobApplication->email }}?">
                                     @csrf
-                                    <input type="hidden" name="email_type" value="{{ $jobApplication->status === App\Models\JobApplication::STATUS_SHORTLISTED ? 'shortlisted' : 'rejected' }}">
-                                    <button type="submit" class="btn btn-primary-outline btn-md">
-                                        Send {{ $jobApplication->status === App\Models\JobApplication::STATUS_SHORTLISTED ? 'Shortlist' : 'Rejection' }} Email
-                                    </button>
+                                    <input type="hidden" name="email_type" value="rejected">
+                                    <button type="submit" class="btn btn-primary-outline btn-md">Send Rejection Email</button>
                                     <span class="text-muted small">Email is only sent when you click this button.</span>
+                                </form>
+                            </div>
+                        @endif
+
+                        @if ($jobApplication->jobOpening?->status === App\Models\JobOpening::STATUS_CANCELLED)
+                            <div class="border border-warning rounded-2 p-3 mt-3">
+                                <h3 class="h6 mb-1">Vacancy Withdrawn</h3>
+                                <p class="text-muted small mb-3">This job opening has been cancelled. Send the applicant a manual withdrawal notice without changing their application status.</p>
+                                <form method="POST" action="{{ route('recruitment.applications.send-email', $jobApplication) }}" class="d-flex flex-wrap gap-2 align-items-center" data-confirm="Send a vacancy withdrawal notice to {{ $jobApplication->email }}?">
+                                    @csrf
+                                    <input type="hidden" name="email_type" value="vacancy_withdrawn">
+                                    <button type="submit" class="btn btn-outline-warning btn-md">Send Vacancy Withdrawal Notice</button>
                                 </form>
                             </div>
                         @endif

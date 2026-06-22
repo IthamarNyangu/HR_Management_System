@@ -18,7 +18,7 @@ class SendJobApplicationEmailRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email_type' => ['required', Rule::in(['shortlisted', 'rejected'])],
+            'email_type' => ['required', Rule::in(['rejected', 'vacancy_withdrawn'])],
         ];
     }
 }

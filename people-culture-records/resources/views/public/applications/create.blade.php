@@ -178,7 +178,7 @@
                         @error('phone') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label" for="national_id">ID / Passport / Visa Number</label>
+                        <label class="form-label" for="national_id">ID / Passport No.</label>
                         <input id="national_id" type="text" name="national_id" value="{{ old('national_id') }}" class="form-control @error('national_id') is-invalid @enderror">
                         @error('national_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>

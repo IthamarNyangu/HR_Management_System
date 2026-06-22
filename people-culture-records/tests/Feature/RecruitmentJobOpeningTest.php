@@ -82,6 +82,55 @@ class RecruitmentJobOpeningTest extends TestCase
         $this->assertSame(JobOpening::STATUS_PUBLISHED, $job->fresh()->status);
     }
 
+    public function test_cancelled_recruitment_is_preserved_and_can_be_prepared_for_readvertising(): void
+    {
+        $admin = $this->user($this->adminRole);
+        $job = $this->jobOpening([
+            'visibility' => JobOpening::VISIBILITY_EXTERNAL,
+            'status' => JobOpening::STATUS_PUBLISHED,
+        ]);
+
+        $this->actingAs($admin)
+            ->patch(route('recruitment.job-openings.cancel', $job))
+            ->assertRedirect();
+
+        $this->assertSame(JobOpening::STATUS_CANCELLED, $job->fresh()->status);
+        $this->assertDatabaseHas('job_openings', ['id' => $job->id, 'reference_no' => $job->reference_no]);
+        $this->assertDatabaseHas('activity_logs', ['action' => 'job_opening_cancelled']);
+
+        $this->actingAs($admin)
+            ->patch(route('recruitment.job-openings.prepare-readvertising', $job))
+            ->assertRedirect(route('recruitment.job-openings.edit', $job));
+
+        $this->assertSame(JobOpening::STATUS_DRAFT, $job->fresh()->status);
+        $this->assertNull($job->fresh()->published_at);
+        $this->assertDatabaseHas('activity_logs', ['action' => 'job_opening_prepared_for_readvertising']);
+
+        $this->actingAs($admin)
+            ->get(route('recruitment.job-openings.show', $job->fresh()))
+            ->assertOk()
+            ->assertSee('Cancel Recruitment')
+            ->assertDontSee('Re-advertise');
+    }
+
+    public function test_cancelled_recruitment_shows_re_advertise_action_and_cannot_publish_directly(): void
+    {
+        $admin = $this->user($this->adminRole);
+        $job = $this->jobOpening(['status' => JobOpening::STATUS_CANCELLED]);
+
+        $this->actingAs($admin)
+            ->get(route('recruitment.job-openings.show', $job))
+            ->assertOk()
+            ->assertSee('Re-advertise')
+            ->assertDontSee('>Publish<', false);
+
+        $this->actingAs($admin)
+            ->patch(route('recruitment.job-openings.publish', $job))
+            ->assertRedirect();
+
+        $this->assertSame(JobOpening::STATUS_CANCELLED, $job->fresh()->status);
+    }
+
     public function test_authorized_user_can_download_vacancy_announcement_pdf(): void
     {
         $admin = $this->user($this->adminRole);

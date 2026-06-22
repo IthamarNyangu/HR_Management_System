@@ -9,26 +9,30 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class JobApplicationShortlistedMail extends Mailable
+class JobApplicationVacancyWithdrawnMail extends Mailable
 {
     use Queueable, SerializesModels;
 
     public function __construct(public JobApplication $application)
     {
-        $this->application->loadMissing('jobOpening');
+        $this->application->loadMissing([
+            'jobOpening.province',
+            'jobOpening.district',
+            'jobOpening.facility',
+        ]);
     }
 
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Application update: '.$this->application->jobOpening?->title,
+            subject: 'Vacancy withdrawn: '.$this->application->jobOpening?->title,
         );
     }
 
     public function content(): Content
     {
         return new Content(
-            view: 'emails.job-applications.shortlisted',
+            view: 'emails.job-applications.vacancy-withdrawn',
         );
     }
 }

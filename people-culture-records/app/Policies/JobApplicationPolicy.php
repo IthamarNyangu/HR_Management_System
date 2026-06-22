@@ -49,11 +49,6 @@ class JobApplicationPolicy
         return $this->canReview($user, $jobApplication);
     }
 
-    public function shortlist(User $user, JobApplication $jobApplication): bool
-    {
-        return $this->canReview($user, $jobApplication);
-    }
-
     public function reject(User $user, JobApplication $jobApplication): bool
     {
         return $this->canReview($user, $jobApplication);

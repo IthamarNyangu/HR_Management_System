@@ -213,6 +213,14 @@ class JobOpeningController extends Controller
     {
         Gate::authorize('publish', $jobOpening);
 
+        if ($jobOpening->status === JobOpening::STATUS_CANCELLED) {
+            return back()->with('error', 'Prepare this cancelled recruitment for re-advertising, update its dates, then publish it.');
+        }
+
+        if ($jobOpening->closing_date?->isBefore(today())) {
+            return back()->with('error', 'Update the closing date to today or a future date before publishing this recruitment.');
+        }
+
         $jobOpening->update([
             'status' => JobOpening::STATUS_PUBLISHED,
             'published_at' => now(),
@@ -251,7 +259,35 @@ class JobOpeningController extends Controller
 
         $activity->log('job_opening_cancelled', "{$request->user()->name} cancelled job opening {$jobOpening->reference_no}.", $jobOpening, user: $request->user(), request: $request);
 
-        return back()->with('success', 'Job opening cancelled successfully.');
+        return back()->with('success', 'Recruitment cancelled. The vacancy and its applications remain available for review or re-advertising.');
+    }
+
+    public function prepareForReadvertising(Request $request, JobOpening $jobOpening, ActivityLogger $activity): RedirectResponse
+    {
+        Gate::authorize('update', $jobOpening);
+
+        if ($jobOpening->status !== JobOpening::STATUS_CANCELLED) {
+            return back()->with('error', 'Only cancelled recruitment can be prepared for re-advertising.');
+        }
+
+        $jobOpening->update([
+            'status' => JobOpening::STATUS_DRAFT,
+            'published_at' => null,
+            'closed_at' => null,
+            'updated_by' => $request->user()->id,
+        ]);
+
+        $activity->log(
+            'job_opening_prepared_for_readvertising',
+            "{$request->user()->name} prepared job opening {$jobOpening->reference_no} for re-advertising.",
+            $jobOpening,
+            user: $request->user(),
+            request: $request,
+        );
+
+        return redirect()
+            ->route('recruitment.job-openings.edit', $jobOpening)
+            ->with('success', 'Recruitment is now a draft. Update the dates and any vacancy details, then publish it when ready.');
     }
 
     public function archive(Request $request, JobOpening $jobOpening, ActivityLogger $activity): RedirectResponse

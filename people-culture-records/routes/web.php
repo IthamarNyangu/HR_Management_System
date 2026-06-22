@@ -145,7 +145,6 @@ Route::middleware(['auth', 'active', 'password.changed'])->group(function () use
     Route::patch('/recruitment/applications/{jobApplication}/review', [JobApplicationController::class, 'updateReview'])->name('recruitment.applications.update-review');
     Route::patch('/recruitment/applications/{jobApplication}/status', [JobApplicationController::class, 'updateStatus'])->name('recruitment.applications.update-status');
     Route::post('/recruitment/applications/{jobApplication}/notes', [JobApplicationController::class, 'addNote'])->name('recruitment.applications.add-note');
-    Route::patch('/recruitment/applications/{jobApplication}/shortlist', [JobApplicationController::class, 'shortlist'])->name('recruitment.applications.shortlist');
     Route::patch('/recruitment/applications/{jobApplication}/reject', [JobApplicationController::class, 'reject'])->name('recruitment.applications.reject');
     Route::post('/recruitment/applications/{jobApplication}/email', [JobApplicationController::class, 'sendEmail'])->name('recruitment.applications.send-email');
     Route::get('/recruitment/applications/{jobApplication}', [JobApplicationController::class, 'show'])->name('recruitment.applications.show');
@@ -155,6 +154,7 @@ Route::middleware(['auth', 'active', 'password.changed'])->group(function () use
     Route::patch('/recruitment/job-openings/{job_opening}/publish', [JobOpeningController::class, 'publish'])->name('recruitment.job-openings.publish');
     Route::patch('/recruitment/job-openings/{job_opening}/close', [JobOpeningController::class, 'close'])->name('recruitment.job-openings.close');
     Route::patch('/recruitment/job-openings/{job_opening}/cancel', [JobOpeningController::class, 'cancel'])->name('recruitment.job-openings.cancel');
+    Route::patch('/recruitment/job-openings/{job_opening}/prepare-readvertising', [JobOpeningController::class, 'prepareForReadvertising'])->name('recruitment.job-openings.prepare-readvertising');
     Route::patch('/recruitment/job-openings/{job_opening}/archive', [JobOpeningController::class, 'archive'])->name('recruitment.job-openings.archive');
     Route::get('/recruitment/job-openings/{job_opening}/announcement/pdf', [JobOpeningController::class, 'downloadAnnouncementPdf'])->name('recruitment.job-openings.announcement.pdf');
     Route::patch('/recruitment/job-openings/{id}/restore', [JobOpeningController::class, 'restore'])->whereNumber('id')->name('recruitment.job-openings.restore');

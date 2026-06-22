@@ -113,7 +113,6 @@
         </form>
 
         <div class="d-flex flex-wrap gap-2 mt-3">
-            <a href="{{ route('recruitment.applications.index', array_merge(request()->except('quick', 'status', 'page'), ['quick' => App\Models\JobApplication::STATUS_SHORTLISTED])) }}" class="btn btn-sm {{ request('quick') === App\Models\JobApplication::STATUS_SHORTLISTED ? 'btn-primary' : 'btn-secondary' }}">Shortlisted only</a>
             <a href="{{ route('recruitment.applications.index', array_merge(request()->except('quick', 'status', 'page'), ['quick' => App\Models\JobApplication::STATUS_REJECTED])) }}" class="btn btn-sm {{ request('quick') === App\Models\JobApplication::STATUS_REJECTED ? 'btn-primary' : 'btn-secondary' }}">Rejected only</a>
             <a href="{{ route('recruitment.applications.index', array_merge(request()->except('quick', 'status', 'page'), ['quick' => App\Models\JobApplication::STATUS_WITHDRAWN])) }}" class="btn btn-sm {{ request('quick') === App\Models\JobApplication::STATUS_WITHDRAWN ? 'btn-primary' : 'btn-secondary' }}">Withdrawn only</a>
         </div>
