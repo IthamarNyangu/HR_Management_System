@@ -34,6 +34,14 @@
                 </form>
             @endif
         @endcan
+        @can('update', $jobOpening)
+            @if ($jobOpening->status === App\Models\JobOpening::STATUS_PUBLISHED && $jobOpening->advertisement_round > 1 && $previousApplicantNoticeCount > 0)
+                <form method="POST" action="{{ route('recruitment.job-openings.notify-previous-applicants', $jobOpening) }}" data-confirm="true" data-confirm-title="Notify previous applicants?" data-confirm-message="This will send a re-advertisement notice to {{ $previousApplicantNoticeCount }} previous applicant(s) who did not withdraw. Each email address is notified only once for this advertising round." data-confirm-button="Send Notices">
+                    @csrf
+                    <button type="submit" class="btn btn-primary-outline btn-md">Notify Previous Applicants ({{ $previousApplicantNoticeCount }})</button>
+                </form>
+            @endif
+        @endcan
         @can('close', $jobOpening)
             @if ($jobOpening->status !== App\Models\JobOpening::STATUS_CLOSED)
                 <form method="POST" action="{{ route('recruitment.job-openings.close', $jobOpening) }}" data-confirm="true" data-confirm-title="Close job opening?" data-confirm-message="Closed jobs are hidden from public careers pages and API." data-confirm-button="Close job">
@@ -83,6 +91,8 @@
                     <dd class="col-7">{{ str($jobOpening->visibility)->headline() }}</dd>
                     <dt class="col-5">Request to Hire No.</dt>
                     <dd class="col-7">{{ $jobOpening->reference_no }}</dd>
+                    <dt class="col-5">Advertising Round</dt>
+                    <dd class="col-7">{{ $jobOpening->advertisement_round }}</dd>
                     <dt class="col-5">Department</dt>
                     <dd class="col-7">{{ $jobOpening->department?->name ?? '-' }}</dd>
                     <dt class="col-5">Project</dt>
@@ -124,8 +134,9 @@
                 </div>
                 @foreach (App\Models\JobOpening::ANNOUNCEMENT_SECTIONS as $field => $label)
                     @php($lines = $jobOpening->linesFor($field))
+                    @php($sectionTitle = str_replace('  ', '&nbsp;&nbsp;', e($label)))
                     <div class="mb-4">
-                        <h3 class="h6 text-danger">{{ $label }}</h3>
+                        <h3 class="h6 text-danger">{!! $sectionTitle !!}</h3>
                         @if (count($lines) > 0)
                             <ul class="mb-0">
                                 @foreach ($lines as $line)

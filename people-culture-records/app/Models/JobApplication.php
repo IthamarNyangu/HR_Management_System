@@ -46,6 +46,7 @@ class JobApplication extends Model
     protected $fillable = [
         'reference_no',
         'job_opening_id',
+        'advertisement_round',
         'employee_id',
         'source',
         'status',
@@ -95,6 +96,7 @@ class JobApplication extends Model
     protected function casts(): array
     {
         return [
+            'advertisement_round' => 'integer',
             'years_of_experience' => 'decimal:1',
             'consent_given_at' => 'datetime',
             'submitted_at' => 'datetime',

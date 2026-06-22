@@ -169,6 +169,12 @@ class PublicJobApplicationTest extends TestCase
 
         $this->post(route('careers.apply.store', $job->slug), $this->payload(['email' => 'same@example.org']))->assertOk();
         $this->assertSame(3, JobApplication::count());
+
+        $job->update(['advertisement_round' => 2]);
+
+        $this->post(route('careers.apply.store', $job->slug), $this->payload(['email' => 'same@example.org']))->assertOk();
+        $this->assertSame(4, JobApplication::count());
+        $this->assertSame(2, JobApplication::latest('id')->firstOrFail()->advertisement_round);
     }
 
     public function test_signed_withdrawal_link_withdraws_application(): void

@@ -46,6 +46,7 @@ class PublicJobApplicationController extends Controller
             $application = JobApplication::create([
                 'reference_no' => $referenceNumbers->generate('APP', 'job_applications'),
                 'job_opening_id' => $jobOpening->id,
+                'advertisement_round' => $jobOpening->advertisement_round,
                 'source' => JobApplication::SOURCE_EXTERNAL,
                 'status' => JobApplication::STATUS_SUBMITTED,
                 'title' => $request->input('title'),

@@ -39,6 +39,7 @@ class JobOpening extends Model
      */
     protected $fillable = [
         'reference_no',
+        'advertisement_round',
         'job_title_id',
         'title',
         'slug',
@@ -100,6 +101,7 @@ class JobOpening extends Model
     {
         return [
             'show_number_of_positions' => 'boolean',
+            'advertisement_round' => 'integer',
             'reporting_to_tba' => 'boolean',
             'opening_date' => 'date',
             'closing_date' => 'date',
@@ -167,6 +169,24 @@ class JobOpening extends Model
     public function jobApplications(): HasMany
     {
         return $this->hasMany(JobApplication::class);
+    }
+
+    public function readvertisementNotifications(): HasMany
+    {
+        return $this->hasMany(JobOpeningReadvertisementNotification::class);
+    }
+
+    public function previousApplicantsForCurrentRound(): HasMany
+    {
+        $notifiedApplicationIds = JobOpeningReadvertisementNotification::query()
+            ->where('job_opening_id', $this->id)
+            ->where('advertisement_round', $this->advertisement_round)
+            ->select('job_application_id');
+
+        return $this->jobApplications()
+            ->where('advertisement_round', '<', $this->advertisement_round)
+            ->where('status', '!=', JobApplication::STATUS_WITHDRAWN)
+            ->whereNotIn('id', $notifiedApplicationIds);
     }
 
     public function getDisplayNameAttribute(): string

@@ -3,11 +3,13 @@
 namespace Tests\Feature;
 
 use App\Mail\SharedJobOpeningMail;
+use App\Mail\JobOpeningReadvertisedMail;
 use App\Models\Department;
 use App\Models\District;
 use App\Models\EmploymentType;
 use App\Models\Facility;
 use App\Models\JobOpening;
+use App\Models\JobApplication;
 use App\Models\JobTitle;
 use App\Models\Project;
 use App\Models\Province;
@@ -103,6 +105,7 @@ class RecruitmentJobOpeningTest extends TestCase
             ->assertRedirect(route('recruitment.job-openings.edit', $job));
 
         $this->assertSame(JobOpening::STATUS_DRAFT, $job->fresh()->status);
+        $this->assertTrue($job->fresh()->opening_date->isSameDay(today()));
         $this->assertNull($job->fresh()->published_at);
         $this->assertDatabaseHas('activity_logs', ['action' => 'job_opening_prepared_for_readvertising']);
 
@@ -129,6 +132,60 @@ class RecruitmentJobOpeningTest extends TestCase
             ->assertRedirect();
 
         $this->assertSame(JobOpening::STATUS_CANCELLED, $job->fresh()->status);
+    }
+
+    public function test_published_readvertisement_can_notify_previous_non_withdrawn_applicants_once(): void
+    {
+        Mail::fake();
+
+        $admin = $this->user($this->adminRole);
+        $job = $this->jobOpening([
+            'status' => JobOpening::STATUS_PUBLISHED,
+            'advertisement_round' => 2,
+        ]);
+        $eligible = $this->applicationFor($job, [
+            'reference_no' => 'APP-2026-2001',
+            'email' => 'previous@example.org',
+        ]);
+        $withdrawn = $this->applicationFor($job, [
+            'reference_no' => 'APP-2026-2002',
+            'email' => 'withdrawn@example.org',
+            'status' => JobApplication::STATUS_WITHDRAWN,
+            'withdrawn_at' => now(),
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('recruitment.job-openings.show', $job))
+            ->assertOk()
+            ->assertSee('Notify Previous Applicants (1)');
+
+        $this->actingAs($admin)
+            ->post(route('recruitment.job-openings.notify-previous-applicants', $job))
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        Mail::assertSent(JobOpeningReadvertisedMail::class, function (JobOpeningReadvertisedMail $mail): bool {
+            return $mail->hasTo('previous@example.org');
+        });
+        Mail::assertNotSent(JobOpeningReadvertisedMail::class, function (JobOpeningReadvertisedMail $mail): bool {
+            return $mail->hasTo('withdrawn@example.org');
+        });
+        $this->assertDatabaseHas('job_opening_readvertisement_notifications', [
+            'job_opening_id' => $job->id,
+            'job_application_id' => $eligible->id,
+            'advertisement_round' => 2,
+        ]);
+        $this->assertDatabaseMissing('job_opening_readvertisement_notifications', [
+            'job_application_id' => $withdrawn->id,
+        ]);
+        $this->assertDatabaseHas('activity_logs', ['action' => 'job_opening_readvertisement_notices_sent']);
+
+        $this->actingAs($admin)
+            ->post(route('recruitment.job-openings.notify-previous-applicants', $job))
+            ->assertRedirect()
+            ->assertSessionHas('info');
+
+        Mail::assertSent(JobOpeningReadvertisedMail::class, 1);
     }
 
     public function test_authorized_user_can_download_vacancy_announcement_pdf(): void
@@ -356,6 +413,26 @@ class RecruitmentJobOpeningTest extends TestCase
             'summary' => 'A public recruitment opportunity.',
             'description' => 'This role supports programme reporting.',
             'application_instructions' => 'Apply through the careers portal.',
+        ], $attributes));
+    }
+
+    /**
+     * @param array<string, mixed> $attributes
+     */
+    private function applicationFor(JobOpening $jobOpening, array $attributes = []): JobApplication
+    {
+        return JobApplication::create(array_merge([
+            'reference_no' => fake()->unique()->bothify('APP-2026-####'),
+            'job_opening_id' => $jobOpening->id,
+            'advertisement_round' => 1,
+            'source' => JobApplication::SOURCE_EXTERNAL,
+            'status' => JobApplication::STATUS_SUBMITTED,
+            'first_name' => 'Previous',
+            'last_name' => 'Applicant',
+            'email' => fake()->unique()->safeEmail(),
+            'phone' => '0977000000',
+            'highest_qualification' => "Bachelor's Degree",
+            'submitted_at' => now()->subMonth(),
         ], $attributes));
     }
 

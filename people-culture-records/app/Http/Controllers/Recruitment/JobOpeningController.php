@@ -5,11 +5,13 @@ namespace App\Http\Controllers\Recruitment;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreJobOpeningRequest;
 use App\Http\Requests\UpdateJobOpeningRequest;
+use App\Mail\JobOpeningReadvertisedMail;
 use App\Models\Department;
 use App\Models\District;
 use App\Models\EmploymentType;
 use App\Models\Facility;
 use App\Models\JobOpening;
+use App\Models\JobOpeningReadvertisementNotification;
 use App\Models\JobTitle;
 use App\Models\Project;
 use App\Models\Province;
@@ -22,6 +24,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -156,7 +160,12 @@ class JobOpeningController extends Controller
 
         $jobOpening->load($this->relations());
 
-        return view('recruitment.job-openings.show', compact('jobOpening'));
+        $previousApplicantNoticeCount = $jobOpening->status === JobOpening::STATUS_PUBLISHED
+            && $jobOpening->advertisement_round > 1
+            ? $jobOpening->previousApplicantsForCurrentRound()->distinct()->count('email')
+            : 0;
+
+        return view('recruitment.job-openings.show', compact('jobOpening', 'previousApplicantNoticeCount'));
     }
 
     public function downloadAnnouncementPdf(JobOpening $jobOpening): Response
@@ -272,6 +281,8 @@ class JobOpeningController extends Controller
 
         $jobOpening->update([
             'status' => JobOpening::STATUS_DRAFT,
+            'advertisement_round' => $jobOpening->advertisement_round + 1,
+            'opening_date' => today(),
             'published_at' => null,
             'closed_at' => null,
             'updated_by' => $request->user()->id,
@@ -281,6 +292,9 @@ class JobOpeningController extends Controller
             'job_opening_prepared_for_readvertising',
             "{$request->user()->name} prepared job opening {$jobOpening->reference_no} for re-advertising.",
             $jobOpening,
+            [
+                'advertisement_round' => $jobOpening->advertisement_round,
+            ],
             user: $request->user(),
             request: $request,
         );
@@ -288,6 +302,82 @@ class JobOpeningController extends Controller
         return redirect()
             ->route('recruitment.job-openings.edit', $jobOpening)
             ->with('success', 'Recruitment is now a draft. Update the dates and any vacancy details, then publish it when ready.');
+    }
+
+    public function notifyPreviousApplicants(Request $request, JobOpening $jobOpening, ActivityLogger $activity): RedirectResponse
+    {
+        Gate::authorize('update', $jobOpening);
+
+        if ($jobOpening->status !== JobOpening::STATUS_PUBLISHED || $jobOpening->advertisement_round < 2) {
+            return back()->with('error', 'Previous-applicant notices are available only after a re-advertised recruitment is published.');
+        }
+
+        $recipientGroups = $jobOpening->previousApplicantsForCurrentRound()
+            ->latest('submitted_at')
+            ->get()
+            ->groupBy(fn ($application) => strtolower($application->email));
+
+        if ($recipientGroups->isEmpty()) {
+            return back()->with('info', 'There are no previous applicants waiting for a re-advertisement notice.');
+        }
+
+        $sent = 0;
+        $failed = 0;
+
+        foreach ($recipientGroups as $applications) {
+            $application = $applications->first();
+
+            try {
+                Mail::to($application->email)->send(new JobOpeningReadvertisedMail($application, $jobOpening));
+
+                foreach ($applications as $previousApplication) {
+                    JobOpeningReadvertisementNotification::create([
+                        'job_opening_id' => $jobOpening->id,
+                        'job_application_id' => $previousApplication->id,
+                        'advertisement_round' => $jobOpening->advertisement_round,
+                        'recipient_email' => $application->email,
+                        'sent_by' => $request->user()->id,
+                        'sent_at' => now(),
+                    ]);
+                }
+
+                $sent++;
+            } catch (\Throwable $exception) {
+                $failed++;
+
+                Log::warning('Job re-advertisement notice email failed.', [
+                    'job_opening_id' => $jobOpening->id,
+                    'advertisement_round' => $jobOpening->advertisement_round,
+                    'recipient_email' => $application->email,
+                    'error' => $exception->getMessage(),
+                ]);
+            }
+        }
+
+        if ($sent > 0) {
+            $activity->log(
+                'job_opening_readvertisement_notices_sent',
+                "{$request->user()->name} sent {$sent} re-advertisement notice(s) for {$jobOpening->reference_no}.",
+                $jobOpening,
+                [
+                    'advertisement_round' => $jobOpening->advertisement_round,
+                    'recipient_count' => $sent,
+                    'failed_count' => $failed,
+                ],
+                user: $request->user(),
+                request: $request,
+            );
+        }
+
+        $message = $sent > 0
+            ? "Re-advertisement notice sent to {$sent} previous applicant(s)."
+            : 'No re-advertisement notices could be sent. Please check the mail configuration and try again.';
+
+        if ($failed > 0 && $sent > 0) {
+            $message .= " {$failed} email(s) could not be sent.";
+        }
+
+        return back()->with($sent > 0 ? 'success' : 'error', $message);
     }
 
     public function archive(Request $request, JobOpening $jobOpening, ActivityLogger $activity): RedirectResponse
