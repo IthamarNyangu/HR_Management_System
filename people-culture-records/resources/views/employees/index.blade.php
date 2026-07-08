@@ -84,7 +84,7 @@
             </div>
             <div class="col-md-6 col-xl-2">
                 <select name="facility_id" class="form-select">
-                    <option value="">All facilities</option>
+                    <option value="">Facilities</option>
                     @foreach ($facilities as $facility)
                         <option value="{{ $facility->id }}" @selected((string) request('facility_id') === (string) $facility->id)>{{ $facility->name }}</option>
                     @endforeach

@@ -59,7 +59,7 @@
             </div>
             <div class="col-lg-2">
                 <select name="facility_id" class="form-select">
-                    <option value="">All facilities</option>
+                    <option value="">Facilities</option>
                     @foreach ($facilities as $facility)
                         <option value="{{ $facility->id }}" @selected(request('facility_id') == $facility->id)>{{ $facility->name }}</option>
                     @endforeach

@@ -71,7 +71,7 @@
                 <div class="col-md-6 col-xl-2">
                     <label class="visually-hidden" for="facility_id">Facility</label>
                     <select id="facility_id" name="facility_id" class="form-select">
-                        <option value="">All facilities</option>
+                        <option value="">Facilities</option>
                         @foreach ($options['facilities'] as $facility)
                             <option value="{{ $facility->id }}" @selected((string) request('facility_id') === (string) $facility->id)>{{ $facility->name }}</option>
                         @endforeach

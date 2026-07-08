@@ -30,7 +30,7 @@
             </div>
             <div class="col-md-6 col-xl-2">
                 <select name="from_province_id" class="form-select">
-                    <option value="">All from provinces</option>
+                    <option value="">From province</option>
                     @foreach ($provinces as $province)
                         <option value="{{ $province->id }}" @selected((string) request('from_province_id') === (string) $province->id)>{{ $province->name }}</option>
                     @endforeach
@@ -38,7 +38,7 @@
             </div>
             <div class="col-md-6 col-xl-2">
                 <select name="from_district_id" class="form-select">
-                    <option value="">All from districts</option>
+                    <option value="">From district</option>
                     @foreach ($districts as $district)
                         <option value="{{ $district->id }}" @selected((string) request('from_district_id') === (string) $district->id)>{{ $district->name }}</option>
                     @endforeach
@@ -46,7 +46,7 @@
             </div>
             <div class="col-md-6 col-xl-2">
                 <select name="from_facility_id" class="form-select">
-                    <option value="">All from facilities</option>
+                    <option value="">From facility</option>
                     @foreach ($facilities as $facility)
                         <option value="{{ $facility->id }}" @selected((string) request('from_facility_id') === (string) $facility->id)>{{ $facility->name }}</option>
                     @endforeach
@@ -54,7 +54,7 @@
             </div>
             <div class="col-md-6 col-xl-3">
                 <select name="to_province_id" class="form-select">
-                    <option value="">All to provinces</option>
+                    <option value="">To province</option>
                     @foreach ($provinces as $province)
                         <option value="{{ $province->id }}" @selected((string) request('to_province_id') === (string) $province->id)>{{ $province->name }}</option>
                     @endforeach
@@ -62,7 +62,7 @@
             </div>
             <div class="col-md-6 col-xl-3">
                 <select name="to_district_id" class="form-select">
-                    <option value="">All to districts</option>
+                    <option value="">To district</option>
                     @foreach ($districts as $district)
                         <option value="{{ $district->id }}" @selected((string) request('to_district_id') === (string) $district->id)>{{ $district->name }}</option>
                     @endforeach
@@ -70,7 +70,7 @@
             </div>
             <div class="col-md-6 col-xl-3">
                 <select name="to_facility_id" class="form-select">
-                    <option value="">All to facilities</option>
+                    <option value="">To facility</option>
                     @foreach ($facilities as $facility)
                         <option value="{{ $facility->id }}" @selected((string) request('to_facility_id') === (string) $facility->id)>{{ $facility->name }}</option>
                     @endforeach
