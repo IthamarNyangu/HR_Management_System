@@ -276,7 +276,7 @@
                 });
 
                 if (select.selectedOptions[0]?.disabled) {
-                    select.value = '';
+                    window.setSearchableFacilityValue?.(select, '');
                 }
             }
 
@@ -322,7 +322,7 @@
 
                 fromProvince.value = option.dataset.provinceId || '';
                 fromDistrict.value = option.dataset.districtId || '';
-                fromFacility.value = option.dataset.facilityId || '';
+                window.setSearchableFacilityValue?.(fromFacility, option.dataset.facilityId || '');
                 project.value = option.dataset.projectId || '';
                 department.value = option.dataset.departmentId || '';
                 jobTitle.value = option.dataset.jobTitleId || '';

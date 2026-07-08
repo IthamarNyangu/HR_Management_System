@@ -580,6 +580,9 @@
                     list.appendChild(row);
                     initializeEmployeePickers(row);
                     initializeNodeCollapseButtons(row);
+                    row.querySelectorAll('select[name$="[facility_id]"]').forEach(function (select) {
+                        window.enhanceFacilitySelect?.(select);
+                    });
                     nextIndex++;
                 });
 

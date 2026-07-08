@@ -309,7 +309,7 @@
             });
 
             if (facility.selectedOptions[0]?.disabled) {
-                facility.value = '';
+                window.setSearchableFacilityValue?.(facility, '');
             }
         }
 

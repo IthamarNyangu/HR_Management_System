@@ -384,7 +384,7 @@
                     option.hidden = !visible;
                     option.disabled = !visible;
                 });
-                if (facility.selectedOptions[0]?.disabled) facility.value = '';
+                if (facility.selectedOptions[0]?.disabled) window.setSearchableFacilityValue?.(facility, '');
             }
 
             function applyEmployeeDefaults(employee) {
@@ -392,7 +392,7 @@
 
                 if (!province.disabled) province.value = employee.province_id || '';
                 district.value = employee.district_id || '';
-                facility.value = employee.facility_id || '';
+                window.setSearchableFacilityValue?.(facility, employee.facility_id || '');
                 project.value = employee.project_id || '';
                 department.value = employee.department_id || '';
                 currentJobTitle.value = employee.job_title_id || '';

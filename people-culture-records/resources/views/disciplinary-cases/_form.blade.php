@@ -313,7 +313,7 @@
             });
 
             if (facility.selectedOptions[0]?.disabled) {
-                facility.value = '';
+                window.setSearchableFacilityValue?.(facility, '');
             }
         }
 
@@ -329,7 +329,7 @@
             }
 
             district.value = option.dataset.districtId || '';
-            facility.value = option.dataset.facilityId || '';
+            window.setSearchableFacilityValue?.(facility, option.dataset.facilityId || '');
 
             if (project && option.dataset.projectId) {
                 project.value = option.dataset.projectId;

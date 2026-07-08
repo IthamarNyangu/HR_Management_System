@@ -113,6 +113,19 @@
         .btn-danger:hover, .btn-danger:focus { background: #b91c1c !important; border-color: #b91c1c !important; color: #fff !important; }
         .btn-success { background: #15803d !important; border-color: #15803d !important; color: #fff !important; }
         .btn-success:hover, .btn-success:focus { background: #166534 !important; border-color: #166534 !important; color: #fff !important; }
+        .searchable-select { position: relative; }
+        .searchable-select-control { min-height: 40px; width: 100%; border: 1px solid #d1d5db; border-radius: .375rem; background: #fff; color: #111827; padding: .375rem 4.25rem .375rem .75rem; line-height: 1.5; text-overflow: ellipsis; }
+        .searchable-select-control:focus { border-color: #86b7fe; outline: 0; box-shadow: 0 0 0 .25rem rgba(13, 110, 253, .25); }
+        .searchable-select-toggle, .searchable-select-clear { position: absolute; top: 50%; transform: translateY(-50%); border: 0; background: transparent; color: #64748b; line-height: 1; padding: .15rem; }
+        .searchable-select-toggle { right: .65rem; pointer-events: none; }
+        .searchable-select-clear { right: 2.3rem; width: 1.5rem; height: 1.5rem; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; font-size: 1.15rem; background: #fff; }
+        .searchable-select-clear:hover, .searchable-select-clear:focus { color: #111827; background: #eef2f7; outline: 0; }
+        .searchable-select-menu { position: absolute; z-index: 1060; top: calc(100% + .25rem); left: 0; right: 0; max-height: 17rem; overflow-y: auto; border: 1px solid #d1d5db; border-radius: .375rem; background: #fff; box-shadow: 0 .75rem 1.75rem rgba(15, 23, 42, .15); padding: .25rem; display: none; }
+        .searchable-select.open .searchable-select-menu { display: block; }
+        .searchable-select-option { width: 100%; border: 0; background: transparent; color: #111827; text-align: left; padding: .45rem .55rem; border-radius: .3rem; display: block; }
+        .searchable-select-option:hover, .searchable-select-option:focus, .searchable-select-option.active { background: #eff6ff; color: #1d4ed8; outline: 0; }
+        .searchable-select-empty { color: #64748b; padding: .45rem .55rem; }
+        select.facility-search-source { position: absolute !important; width: 1px !important; height: 1px !important; opacity: 0 !important; pointer-events: none !important; }
         @media (max-width: 991.98px) {
             .sidebar { width: 100%; min-width: 100%; flex-basis: auto; }
             .sidebar .nav-link { white-space: normal; }
@@ -270,6 +283,177 @@
                     setSidebarState(nextState);
                 });
             }
+
+            const facilitySelectSelector = [
+                'select.form-select[name="facility_id"]',
+                'select.form-select[name="from_facility_id"]',
+                'select.form-select[name="to_facility_id"]',
+                'select.form-select[name$="[facility_id]"]',
+                'select[data-facility-select]',
+                'select[data-from-facility-select]',
+                'select[data-to-facility-select]'
+            ].join(',');
+
+            const enhanceFacilitySelect = function (select) {
+                if (!select || select.dataset.searchableFacilityEnhanced === 'true') {
+                    return;
+                }
+
+                select.dataset.searchableFacilityEnhanced = 'true';
+                select.classList.add('facility-search-source');
+
+                const wrapper = document.createElement('div');
+                wrapper.className = 'searchable-select';
+
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.className = 'searchable-select-control';
+                input.autocomplete = 'off';
+                input.placeholder = select.options[0]?.textContent?.trim() || 'Search facilities';
+                input.setAttribute('aria-label', 'Search facilities');
+
+                const clearButton = document.createElement('button');
+                clearButton.type = 'button';
+                clearButton.className = 'searchable-select-clear';
+                clearButton.innerHTML = '&times;';
+                clearButton.setAttribute('aria-label', 'Clear selected facility');
+
+                const toggle = document.createElement('span');
+                toggle.className = 'searchable-select-toggle';
+                toggle.innerHTML = '<i class="bi bi-chevron-down" aria-hidden="true"></i>';
+
+                const menu = document.createElement('div');
+                menu.className = 'searchable-select-menu';
+                menu.setAttribute('role', 'listbox');
+
+                select.parentNode.insertBefore(wrapper, select.nextSibling);
+                wrapper.append(input, clearButton, toggle, menu);
+
+                const visibleOptions = function () {
+                    return Array.from(select.options).filter(function (option) {
+                        return !option.disabled && !option.hidden;
+                    });
+                };
+
+                const currentOption = function () {
+                    return Array.from(select.options).find(function (option) {
+                        return option.value === select.value;
+                    });
+                };
+
+                const syncInputFromSelect = function () {
+                    const option = currentOption();
+                    input.value = option && option.value !== '' ? option.textContent.trim() : '';
+                    clearButton.hidden = !select.value;
+                };
+
+                const setValue = function (value) {
+                    select.value = value;
+                    select.dispatchEvent(new Event('change', { bubbles: true }));
+                    syncInputFromSelect();
+                    wrapper.classList.remove('open');
+                };
+
+                const renderOptions = function (searchTerm) {
+                    const term = searchTerm.trim().toLowerCase();
+                    const matches = visibleOptions().filter(function (option) {
+                        if (option.value === '') {
+                            return term === '';
+                        }
+
+                        return option.textContent.toLowerCase().includes(term);
+                    }).slice(0, 80);
+
+                    menu.innerHTML = '';
+
+                    if (matches.length === 0) {
+                        const empty = document.createElement('div');
+                        empty.className = 'searchable-select-empty';
+                        empty.textContent = 'No matching facilities found.';
+                        menu.appendChild(empty);
+                        return;
+                    }
+
+                    matches.forEach(function (option) {
+                        const button = document.createElement('button');
+                        button.type = 'button';
+                        button.className = 'searchable-select-option';
+                        button.textContent = option.textContent.trim();
+
+                        if (option.value === select.value) {
+                            button.classList.add('active');
+                        }
+
+                        button.addEventListener('mousedown', function (event) {
+                            event.preventDefault();
+                            setValue(option.value);
+                        });
+
+                        menu.appendChild(button);
+                    });
+                };
+
+                input.addEventListener('focus', function () {
+                    wrapper.classList.add('open');
+                    renderOptions(input.value);
+                });
+
+                input.addEventListener('input', function () {
+                    wrapper.classList.add('open');
+                    renderOptions(input.value);
+                });
+
+                input.addEventListener('keydown', function (event) {
+                    if (event.key === 'Escape') {
+                        wrapper.classList.remove('open');
+                        syncInputFromSelect();
+                    }
+                });
+
+                clearButton.addEventListener('click', function () {
+                    setValue('');
+                    input.focus();
+                    renderOptions('');
+                    wrapper.classList.add('open');
+                });
+
+                select.addEventListener('change', syncInputFromSelect);
+
+                new MutationObserver(function () {
+                    syncInputFromSelect();
+
+                    if (wrapper.classList.contains('open')) {
+                        renderOptions(input.value);
+                    }
+                }).observe(select, {
+                    childList: true,
+                    subtree: true,
+                    attributes: true,
+                    attributeFilter: ['disabled', 'hidden', 'selected']
+                });
+
+                document.addEventListener('click', function (event) {
+                    if (!wrapper.contains(event.target)) {
+                        wrapper.classList.remove('open');
+                        syncInputFromSelect();
+                    }
+                });
+
+                syncInputFromSelect();
+            };
+
+            window.enhanceFacilitySelect = enhanceFacilitySelect;
+
+            document.querySelectorAll(facilitySelectSelector).forEach(enhanceFacilitySelect);
+
+            window.setSearchableFacilityValue = function (select, value) {
+                if (!select) {
+                    return;
+                }
+
+                select.value = value || '';
+                select.dispatchEvent(new Event('change', { bubbles: true }));
+            };
         });
     </script>
     @stack('scripts')
