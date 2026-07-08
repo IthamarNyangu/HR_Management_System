@@ -24,6 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'active' => \App\Http\Middleware\EnsureUserIsActive::class,
+            'guest' => \App\Http\Middleware\RedirectIfAuthenticated::class,
             'password.changed' => \App\Http\Middleware\EnsurePasswordHasBeenChanged::class,
         ]);
     })

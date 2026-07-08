@@ -37,7 +37,8 @@ class FortifyServiceProvider extends ServiceProvider
             ], false));
             $expiresInMinutes = (int) config('auth.passwords.'.config('auth.defaults.passwords').'.expire', 60);
 
-            return new PasswordResetMail($notifiable, $resetUrl, $expiresInMinutes);
+            return (new PasswordResetMail($notifiable, $resetUrl, $expiresInMinutes))
+                ->to($notifiable->getEmailForPasswordReset(), $notifiable->name);
         });
 
         Fortify::loginView(fn () => view('auth.login'));

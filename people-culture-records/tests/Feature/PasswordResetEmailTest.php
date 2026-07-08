@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Mail\SystemTestMail;
+use App\Mail\PasswordResetMail;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Auth\Notifications\ResetPassword;
@@ -47,11 +48,35 @@ class PasswordResetEmailTest extends TestCase
         ]);
 
         $this->post(route('password.email'), [
-            'email' => $user->email,
+            'email' => 'Ithamar.Nyangu@righttocare-zambia.org',
         ])->assertSessionHasNoErrors();
 
         Notification::assertSentTo($user, ResetPassword::class);
         Notification::assertCount(1);
+    }
+
+    public function test_forgot_password_sends_branded_reset_mail_to_user(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->create([
+            'role_id' => $this->adminRole->id,
+            'name' => 'Ithamar Nyangu',
+            'email' => 'ithamar.nyangu@righttocare-zambia.org',
+            'is_active' => true,
+        ]);
+
+        $this->post(route('password.email'), [
+            'email' => $user->email,
+        ])->assertSessionHasNoErrors();
+
+        /** @var ResetPassword $notification */
+        $notification = Notification::sent($user, ResetPassword::class)->first();
+        $mail = $notification->toMail($user);
+
+        $this->assertInstanceOf(PasswordResetMail::class, $mail);
+        $this->assertTrue($mail->hasTo($user->email));
+        $this->assertStringContainsString('Reset Password', $mail->render());
     }
 
     public function test_user_can_reset_password_from_email_token(): void
@@ -84,6 +109,35 @@ class PasswordResetEmailTest extends TestCase
 
         $this->assertTrue(Hash::check('NewPassword@2026', $user->password));
         $this->assertFalse($user->must_change_password);
+    }
+
+    public function test_reset_password_link_shows_form_even_if_user_is_already_signed_in(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->create([
+            'role_id' => $this->adminRole->id,
+            'email' => 'ithamar.nyangu@righttocare-zambia.org',
+            'password' => Hash::make('OldPassword@2026'),
+            'is_active' => true,
+        ]);
+
+        $this->post(route('password.email'), [
+            'email' => $user->email,
+        ]);
+
+        /** @var ResetPassword $notification */
+        $notification = Notification::sent($user, ResetPassword::class)->first();
+
+        $this->actingAs($user)
+            ->get(route('password.reset', [
+                'token' => $notification->token,
+                'email' => $user->email,
+            ]))
+            ->assertOk()
+            ->assertSee('Set New Password');
+
+        $this->assertGuest();
     }
 
     public function test_branded_test_email_can_render(): void
