@@ -13,6 +13,7 @@
     $employeeUrl = $node->employee ? route('employees.show', $node->employee) : '';
     $editUrl = route('organisation-chart.edit', $organisationChart).'#node-'.$node->id;
     $duplicateUrl = route('organisation-chart.nodes.duplicate', [$organisationChart, $node]);
+    $deleteUrl = route('organisation-chart.nodes.destroy', [$organisationChart, $node]);
     $canUpdateChart = auth()->user()?->can('update', $organisationChart) ?? false;
     $nodeClasses = [
         'central_head_office' => 'org-node-central',
@@ -39,6 +40,7 @@
             data-filter-url="{{ $filterUrl }}"
             data-edit-url="{{ $editUrl }}"
             data-duplicate-url="{{ $duplicateUrl }}"
+            data-delete-url="{{ $deleteUrl }}"
             data-can-update="{{ $canUpdateChart ? '1' : '0' }}"
         >
             <div class="formal-org-label">{{ $node->label }}</div>

@@ -264,6 +264,14 @@
                                     Duplicate Box
                                 </button>
                             </form>
+                            <form method="POST" action="#" data-org-node-delete-form data-confirm="true" data-confirm-title="Delete chart box?" data-confirm-message="This chart box will be removed. Any boxes below it will be moved to the top level so the chart is not broken. Do you want to continue?" data-confirm-button="Delete box" data-confirm-variant="btn-danger">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-outline-danger btn-md justify-content-start w-100">
+                                    <i class="bi bi-trash" aria-hidden="true"></i>
+                                    Delete Box
+                                </button>
+                            </form>
                         @endcan
                     </div>
                 </div>
@@ -414,6 +422,7 @@
             const filterLink = modalElement.querySelector('[data-org-node-filter-link]');
             const editLink = modalElement.querySelector('[data-org-node-edit-link]');
             const duplicateForm = modalElement.querySelector('[data-org-node-duplicate-form]');
+            const deleteForm = modalElement.querySelector('[data-org-node-delete-form]');
 
             function toggleLink(link, url) {
                 if (!link) {
@@ -445,11 +454,19 @@
                         duplicateForm.action = button.dataset.duplicateUrl || '#';
                     }
 
+                    if (deleteForm) {
+                        deleteForm.action = button.dataset.deleteUrl || '#';
+                    }
+
                     modal.show();
                 });
             });
 
             duplicateForm?.addEventListener('submit', function () {
+                modal.hide();
+            });
+
+            deleteForm?.addEventListener('submit', function () {
                 modal.hide();
             });
         });

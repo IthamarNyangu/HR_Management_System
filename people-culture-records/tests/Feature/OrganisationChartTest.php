@@ -204,7 +204,8 @@ class OrganisationChartTest extends TestCase
                 ->assertDontSee('Open Designer')
                 ->assertDontSee('Edit Chart')
                 ->assertDontSee('Edit Box')
-                ->assertDontSee('Duplicate Box');
+                ->assertDontSee('Duplicate Box')
+                ->assertDontSee('Delete Box');
 
             $this->actingAs($user)
                 ->get(route('organisation-chart.create'))
@@ -236,6 +237,10 @@ class OrganisationChartTest extends TestCase
 
             $this->actingAs($user)
                 ->post(route('organisation-chart.nodes.duplicate', [$chart, $node]))
+                ->assertForbidden();
+
+            $this->actingAs($user)
+                ->delete(route('organisation-chart.nodes.destroy', [$chart, $node]))
                 ->assertForbidden();
 
             $this->actingAs($user)
@@ -380,8 +385,10 @@ class OrganisationChartTest extends TestCase
             ->assertSee('View Employee Profile')
             ->assertSee('Edit Box')
             ->assertSee('Duplicate Box')
+            ->assertSee('Delete Box')
             ->assertSee(route('employees.show', $employee), false)
-            ->assertSee(route('organisation-chart.nodes.duplicate', [$chart, $node]), false);
+            ->assertSee(route('organisation-chart.nodes.duplicate', [$chart, $node]), false)
+            ->assertSee(route('organisation-chart.nodes.destroy', [$chart, $node]), false);
     }
 
     public function test_admin_can_duplicate_chart_box_without_copying_linked_employee(): void
@@ -477,6 +484,7 @@ class OrganisationChartTest extends TestCase
             ->assertSee('Edit Box Details')
             ->assertSee('data-designer-card', false)
             ->assertSee('data-designer-duplicate', false)
+            ->assertSee(route('organisation-chart.nodes.destroy', [$chart, $chief]), false)
             ->assertSee('Duplicate')
             ->assertSee('Drop under')
             ->assertSee('Drop beside')
@@ -526,6 +534,44 @@ class OrganisationChartTest extends TestCase
 
         $this->assertNull($copy->employee_id);
         $this->assertSame($node->parent_id, $copy->parent_id);
+    }
+
+    public function test_admin_can_delete_chart_box_and_keep_child_boxes(): void
+    {
+        $admin = $this->user($this->adminRole);
+        $chart = OrganisationChart::create([
+            'title' => 'USAID Action HIV Project Management Overview',
+            'status' => OrganisationChart::STATUS_DRAFT,
+            'created_by' => $admin->id,
+            'updated_by' => $admin->id,
+        ]);
+        $parent = $chart->nodes()->create([
+            'label' => 'Chief of Party',
+            'node_type' => OrganisationChartNode::TYPE_KEY_POSITION,
+            'sort_order' => 1,
+        ]);
+        $child = $chart->nodes()->create([
+            'label' => 'Technical Director',
+            'parent_id' => $parent->id,
+            'node_type' => OrganisationChartNode::TYPE_KEY_POSITION,
+            'sort_order' => 1,
+        ]);
+
+        $this->actingAs($admin)
+            ->delete(route('organisation-chart.nodes.destroy', [$chart, $parent]))
+            ->assertRedirect(route('organisation-chart.show', $chart));
+
+        $this->assertDatabaseMissing('organisation_chart_nodes', [
+            'id' => $parent->id,
+        ]);
+        $this->assertDatabaseHas('organisation_chart_nodes', [
+            'id' => $child->id,
+            'parent_id' => null,
+        ]);
+        $this->assertDatabaseHas('activity_logs', [
+            'action' => 'organisation_chart_box_deleted',
+            'user_id' => $admin->id,
+        ]);
     }
 
     public function test_admin_can_view_reporting_structure(): void

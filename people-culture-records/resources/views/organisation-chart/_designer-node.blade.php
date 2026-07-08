@@ -31,6 +31,14 @@
         <div class="designer-card-actions">
             <a href="{{ route('organisation-chart.edit', $organisationChart).'#node-'.$node->id }}" class="btn btn-sm btn-outline-primary">Edit</a>
             <button type="button" class="btn btn-sm btn-secondary" data-designer-duplicate data-duplicate-url="{{ route('organisation-chart.nodes.duplicate', [$organisationChart, $node]) }}">Duplicate</button>
+            <form method="POST" action="{{ route('organisation-chart.nodes.destroy', [$organisationChart, $node]) }}" data-confirm="true" data-confirm-title="Delete chart box?" data-confirm-message="This chart box will be removed. Any boxes below it will be moved to the top level so the chart is not broken. Do you want to continue?" data-confirm-button="Delete box" data-confirm-variant="btn-danger">
+                @csrf
+                @method('DELETE')
+                <input type="hidden" name="redirect_to" value="designer">
+                <button type="submit" class="btn btn-sm btn-outline-danger w-100" title="Delete box" aria-label="Delete {{ $node->label }}">
+                    <i class="bi bi-trash" aria-hidden="true"></i>
+                </button>
+            </form>
             @if ($node->employee)
                 <a href="{{ route('employees.show', $node->employee) }}" class="btn btn-sm btn-secondary">Profile</a>
             @endif

@@ -171,6 +171,7 @@ Route::middleware(['auth', 'active', 'password.changed'])->group(function () use
     Route::get('/organisation-chart/{organisation_chart}/designer', [OrganisationChartController::class, 'designer'])->name('organisation-chart.designer');
     Route::patch('/organisation-chart/{organisation_chart}/layout', [OrganisationChartController::class, 'updateLayout'])->name('organisation-chart.layout.update');
     Route::post('/organisation-chart/{organisation_chart}/nodes/{node}/duplicate', [OrganisationChartController::class, 'duplicateNode'])->name('organisation-chart.nodes.duplicate');
+    Route::delete('/organisation-chart/{organisation_chart}/nodes/{node}', [OrganisationChartController::class, 'destroyNode'])->name('organisation-chart.nodes.destroy');
     Route::patch('/organisation-chart/{organisation_chart}/archive', [OrganisationChartController::class, 'archive'])->name('organisation-chart.archive');
     Route::patch('/organisation-chart/{id}/restore', [OrganisationChartController::class, 'restore'])->whereNumber('id')->name('organisation-chart.restore');
     Route::resource('organisation-chart', OrganisationChartController::class)

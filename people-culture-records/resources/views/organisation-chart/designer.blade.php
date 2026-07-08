@@ -83,6 +83,9 @@
         .designer-card-actions .btn {
             flex: 1 1 0;
         }
+        .designer-card-actions form {
+            flex: 0 0 2.25rem;
+        }
         .designer-drop-actions {
             display: grid;
             grid-template-columns: 1fr 1fr;

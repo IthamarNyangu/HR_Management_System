@@ -225,6 +225,45 @@ class OrganisationChartController extends Controller
             ->with('success', 'Chart box duplicated. Review the copied label and link it to the correct employee before publishing.');
     }
 
+    public function destroyNode(Request $request, OrganisationChart $organisationChart, OrganisationChartNode $node, ActivityLogger $activity): RedirectResponse
+    {
+        Gate::authorize('update', $organisationChart);
+        abort_unless((int) $node->organisation_chart_id === (int) $organisationChart->id, 404);
+
+        $nodeLabel = $node->label;
+        $childCount = 0;
+
+        DB::transaction(function () use ($request, $organisationChart, $node, &$childCount): void {
+            $childCount = $node->children()->count();
+            $node->children()->update(['parent_id' => null]);
+            $node->delete();
+
+            $organisationChart->update(['updated_by' => $request->user()->id]);
+        });
+
+        $activity->log(
+            'organisation_chart_box_deleted',
+            "{$request->user()->name} deleted chart box {$nodeLabel} from {$organisationChart->title}.",
+            $organisationChart,
+            [
+                'deleted_node_id' => $node->id,
+                'deleted_node_label' => $nodeLabel,
+                'child_boxes_moved_to_top_level' => $childCount,
+            ],
+            user: $request->user(),
+            request: $request,
+        );
+
+        $redirectRoute = $request->string('redirect_to')->toString() === 'designer'
+            ? 'organisation-chart.designer'
+            : 'organisation-chart.show';
+        $message = $childCount > 0
+            ? "Chart box deleted. {$childCount} child box(es) were moved to the top level."
+            : 'Chart box deleted.';
+
+        return redirect()->route($redirectRoute, $organisationChart)->with('success', $message);
+    }
+
     public function archive(Request $request, OrganisationChart $organisationChart, ActivityLogger $activity): RedirectResponse
     {
         Gate::authorize('archive', $organisationChart);
