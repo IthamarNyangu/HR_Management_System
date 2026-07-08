@@ -17,7 +17,7 @@
 @endsection
 
 @section('page-actions')
-    <div class="d-flex flex-wrap gap-2">
+    <div class="d-flex flex-wrap justify-content-end gap-2 org-chart-page-actions">
         @if ($rootNodes->isNotEmpty())
             <button type="button" class="btn btn-secondary btn-md" data-download-org-chart-png data-chart-filename="{{ $chartDownloadFilename }}">
                 <i class="bi bi-download" aria-hidden="true"></i>
@@ -28,12 +28,20 @@
             <a href="{{ route('organisation-chart.designer', $organisationChart) }}" class="btn btn-primary-outline btn-md">Open Designer</a>
             <a href="{{ route('organisation-chart.edit', $organisationChart) }}" class="btn btn-primary btn-md">Edit Chart</a>
         @endcan
-        <a href="{{ route('organisation-chart.index') }}" class="btn btn-secondary btn-md">Back</a>
+        <a href="{{ route('organisation-chart.index') }}" class="btn btn-secondary btn-md org-chart-back-action">Back</a>
     </div>
 @endsection
 
 @push('styles')
     <style>
+        .org-chart-page-actions {
+            max-width: 100%;
+        }
+
+        .org-chart-back-action {
+            margin-left: auto;
+        }
+
         .formal-org-shell {
             overflow-x: auto;
             padding-bottom: .5rem;
