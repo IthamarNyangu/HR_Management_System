@@ -53,9 +53,11 @@
             flex-direction: column;
             align-items: stretch;
             gap: .55rem;
+            position: relative;
+            width: 15rem;
         }
         .designer-card {
-            width: 15rem;
+            width: 100%;
             min-height: 6.5rem;
             border: 3px solid #9f2d14;
             border-radius: .25rem;
@@ -115,15 +117,6 @@
             padding-top: 1rem;
             position: relative;
         }
-        .designer-children:has(> .designer-node)::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 1px;
-            background: #1f2937;
-        }
         .designer-node > .designer-children > .designer-node::before {
             content: '';
             position: absolute;
@@ -133,14 +126,25 @@
             height: 1rem;
             background: #1f2937;
         }
-        .designer-node:has(> .designer-children > .designer-node)::after {
+        .designer-children:has(> .designer-node + .designer-node)::before {
             content: '';
             position: absolute;
-            top: 9.1rem;
+            top: 0;
+            left: var(--connector-left, 50%);
+            width: calc(var(--connector-right, 50%) - var(--connector-left, 50%));
+            height: 1px;
+            background: #1f2937;
+            pointer-events: none;
+        }
+        .designer-node:has(> .designer-children > .designer-node) > .designer-card-wrap::after {
+            content: '';
+            position: absolute;
+            top: 100%;
             left: 50%;
             width: 1px;
-            height: 1rem;
+            height: 2rem;
             background: #1f2937;
+            pointer-events: none;
         }
         .designer-node.is-dragging {
             opacity: .5;
@@ -276,6 +280,30 @@
                 }
 
                 walk(root, '');
+                alignConnectors();
+            }
+
+            function alignConnectors() {
+                document.querySelectorAll('.designer-children').forEach(function (container) {
+                    const nodes = Array.from(container.querySelectorAll(':scope > [data-designer-node]'));
+
+                    if (nodes.length < 2) {
+                        container.style.removeProperty('--connector-left');
+                        container.style.removeProperty('--connector-right');
+                        return;
+                    }
+
+                    const containerRect = container.getBoundingClientRect();
+                    const firstCard = nodes[0].querySelector(':scope > .designer-card-wrap') || nodes[0];
+                    const lastCard = nodes[nodes.length - 1].querySelector(':scope > .designer-card-wrap') || nodes[nodes.length - 1];
+                    const firstRect = firstCard.getBoundingClientRect();
+                    const lastRect = lastCard.getBoundingClientRect();
+                    const left = firstRect.left + (firstRect.width / 2) - containerRect.left;
+                    const right = lastRect.left + (lastRect.width / 2) - containerRect.left;
+
+                    container.style.setProperty('--connector-left', `${left}px`);
+                    container.style.setProperty('--connector-right', `${right}px`);
+                });
             }
 
             function nodeTitle(node) {
@@ -421,7 +449,14 @@
                 draggedNode?.classList.remove('is-dragging');
                 draggedNode = null;
                 clearDropTargets();
+                alignConnectors();
             });
+
+            requestAnimationFrame(alignConnectors);
+            if (document.fonts?.ready) {
+                document.fonts.ready.then(alignConnectors);
+            }
+            window.addEventListener('resize', alignConnectors);
         });
     </script>
 @endpush

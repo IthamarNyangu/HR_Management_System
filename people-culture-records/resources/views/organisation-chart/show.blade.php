@@ -64,6 +64,7 @@
             justify-content: center;
             text-align: center;
             box-shadow: 0 .25rem .9rem rgba(15, 23, 42, .05);
+            position: relative;
         }
 
         .formal-org-card-link {
@@ -115,16 +116,6 @@
             position: relative;
         }
 
-        .formal-org-children::before {
-            content: '';
-            position: absolute;
-            top: -1.15rem;
-            left: 0;
-            right: 0;
-            height: 1px;
-            background: #1f2937;
-        }
-
         .formal-org-node > .formal-org-children > .formal-org-node::before {
             content: '';
             position: absolute;
@@ -135,14 +126,26 @@
             background: #1f2937;
         }
 
-        .formal-org-node:has(> .formal-org-children)::after {
+        .formal-org-node > .formal-org-children:has(> .formal-org-node + .formal-org-node)::before {
             content: '';
             position: absolute;
-            top: 5.75rem;
+            top: -1.15rem;
+            left: var(--connector-left, 50%);
+            width: calc(var(--connector-right, 50%) - var(--connector-left, 50%));
+            height: 1px;
+            background: #1f2937;
+            pointer-events: none;
+        }
+
+        .formal-org-node:has(> .formal-org-children) > .formal-org-card::after {
+            content: '';
+            position: absolute;
+            top: 100%;
             left: 50%;
             width: 1px;
             height: 1.2rem;
             background: #1f2937;
+            pointer-events: none;
         }
 
         .org-node-key {
@@ -291,6 +294,29 @@
             const chartCanvas = document.querySelector('[data-org-chart-canvas]');
             const modalElement = document.getElementById('orgNodeActionModal');
 
+            function alignChartConnectors(rootElement = document) {
+                rootElement.querySelectorAll('.formal-org-children').forEach(function (container) {
+                    const nodes = Array.from(container.querySelectorAll(':scope > .formal-org-node'));
+
+                    if (nodes.length < 2) {
+                        container.style.removeProperty('--connector-left');
+                        container.style.removeProperty('--connector-right');
+                        return;
+                    }
+
+                    const containerRect = container.getBoundingClientRect();
+                    const firstCard = nodes[0].querySelector(':scope > .formal-org-card') || nodes[0];
+                    const lastCard = nodes[nodes.length - 1].querySelector(':scope > .formal-org-card') || nodes[nodes.length - 1];
+                    const firstRect = firstCard.getBoundingClientRect();
+                    const lastRect = lastCard.getBoundingClientRect();
+                    const left = firstRect.left + (firstRect.width / 2) - containerRect.left;
+                    const right = lastRect.left + (lastRect.width / 2) - containerRect.left;
+
+                    container.style.setProperty('--connector-left', `${left}px`);
+                    container.style.setProperty('--connector-right', `${right}px`);
+                });
+            }
+
             function waitForPaint() {
                 return new Promise(function (resolve) {
                     requestAnimationFrame(function () {
@@ -347,6 +373,7 @@
                 wrapper.appendChild(header);
                 wrapper.appendChild(clonedCanvas);
                 document.body.appendChild(wrapper);
+                alignChartConnectors(wrapper);
 
                 return wrapper;
             }
@@ -468,6 +495,20 @@
 
             deleteForm?.addEventListener('submit', function () {
                 modal.hide();
+            });
+
+            requestAnimationFrame(function () {
+                alignChartConnectors();
+            });
+
+            if (document.fonts?.ready) {
+                document.fonts.ready.then(function () {
+                    alignChartConnectors();
+                });
+            }
+
+            window.addEventListener('resize', function () {
+                alignChartConnectors();
             });
         });
     </script>
