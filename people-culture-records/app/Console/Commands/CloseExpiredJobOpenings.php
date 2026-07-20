@@ -2,8 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Models\JobOpening;
-use App\Services\ActivityLogger;
+use App\Services\Recruitment\ExpiredJobOpeningCloser;
 use Illuminate\Console\Command;
 
 class CloseExpiredJobOpenings extends Command
@@ -12,28 +11,11 @@ class CloseExpiredJobOpenings extends Command
 
     protected $description = 'Close published recruitment jobs whose closing date has passed.';
 
-    public function handle(ActivityLogger $activity): int
+    public function handle(ExpiredJobOpeningCloser $closer): int
     {
-        $jobs = JobOpening::query()
-            ->with(['province', 'facility'])
-            ->where('status', JobOpening::STATUS_PUBLISHED)
-            ->whereDate('closing_date', '<', today())
-            ->get();
+        $closedCount = $closer->closeExpired();
 
-        $jobs->each(function (JobOpening $job) use ($activity): void {
-            $job->update([
-                'status' => JobOpening::STATUS_CLOSED,
-                'closed_at' => now(),
-            ]);
-
-            $activity->log(
-                'job_opening_auto_closed',
-                "System auto-closed job opening {$job->reference_no}.",
-                $job->fresh(['province', 'facility']),
-            );
-        });
-
-        $this->info("Closed {$jobs->count()} expired recruitment job(s).");
+        $this->info("Closed {$closedCount} expired recruitment job(s).");
 
         return self::SUCCESS;
     }

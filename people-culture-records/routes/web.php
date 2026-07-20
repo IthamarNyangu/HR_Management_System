@@ -72,10 +72,10 @@ Route::middleware(['auth', 'active', 'password.changed'])->group(function () use
         ->name('dashboard');
 
     Route::get('/activity-logs', [ActivityLogController::class, 'index'])
-        ->middleware('can:access-dashboard')
+        ->middleware('can:view-audit-logs')
         ->name('activity-logs.index');
     Route::get('/activity-logs/export/pdf', [ActivityLogController::class, 'exportPdf'])
-        ->middleware('can:access-dashboard')
+        ->middleware('can:view-audit-logs')
         ->name('activity-logs.export.pdf');
 
     Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead'])

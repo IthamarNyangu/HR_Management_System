@@ -308,7 +308,9 @@
                     <h2 class="h5 mb-1">Recent Activity</h2>
                     <p class="text-muted small mb-0">Latest system history visible to your role and province.</p>
                 </div>
-                <a href="{{ route('activity-logs.index') }}" class="btn btn-secondary btn-sm">View all activity</a>
+                @can('view-audit-logs')
+                    <a href="{{ route('activity-logs.index') }}" class="btn btn-secondary btn-sm">View all activity</a>
+                @endcan
             </div>
 
             <div class="activity-list">

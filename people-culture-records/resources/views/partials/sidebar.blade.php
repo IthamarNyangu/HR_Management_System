@@ -13,7 +13,7 @@
         ['label' => 'Imports', 'icon' => 'bi-cloud-arrow-up', 'route' => 'imports.index', 'active' => request()->routeIs('imports.*'), 'enabled' => auth()->user()->can('view-imports')],
         ['label' => 'Admin Panel', 'icon' => 'bi-sliders', 'route' => 'admin.index', 'active' => request()->routeIs('admin.index') || request()->routeIs('admin.master-data.*'), 'enabled' => auth()->user()->can('manage-master-data')],
         ['label' => 'User Management', 'icon' => 'bi-person-gear', 'route' => 'admin.users.index', 'active' => request()->routeIs('admin.users.*'), 'enabled' => auth()->user()->can('manage-users')],
-        ['label' => 'Audit Logs', 'icon' => 'bi-clock-history', 'route' => 'activity-logs.index', 'active' => request()->routeIs('activity-logs.*'), 'enabled' => auth()->user()->is_active],
+        ['label' => 'Audit Logs', 'icon' => 'bi-clock-history', 'route' => 'activity-logs.index', 'active' => request()->routeIs('activity-logs.*'), 'enabled' => auth()->user()->can('view-audit-logs')],
         ['label' => 'Archived Records', 'icon' => 'bi-archive', 'route' => null, 'active' => false, 'enabled' => false],
     ];
 @endphp

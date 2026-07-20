@@ -11,13 +11,18 @@
 @endsection
 
 @section('page-actions')
+    @php
+        $isExpiredPublished = $jobOpening->is_expired_published;
+        $canPrepareForReadvertising = in_array($jobOpening->status, [App\Models\JobOpening::STATUS_CANCELLED, App\Models\JobOpening::STATUS_CLOSED], true)
+            || $isExpiredPublished;
+    @endphp
     <div class="d-flex flex-wrap gap-2">
         <a href="{{ route('recruitment.job-openings.announcement.pdf', $jobOpening) }}" class="btn btn-secondary btn-md">
             <i class="bi bi-download" aria-hidden="true"></i>
             <span>Announcement PDF</span>
         </a>
         @can('publish', $jobOpening)
-            @if (in_array($jobOpening->status, [App\Models\JobOpening::STATUS_DRAFT, App\Models\JobOpening::STATUS_CLOSED], true))
+            @if ($jobOpening->status === App\Models\JobOpening::STATUS_DRAFT)
                 <form method="POST" action="{{ route('recruitment.job-openings.publish', $jobOpening) }}" data-confirm="true" data-confirm-title="Publish job opening?" data-confirm-message="Published external or both-visible jobs can appear on public careers pages if the closing date has not passed." data-confirm-button="Publish job">
                     @csrf
                     @method('PATCH')
@@ -26,7 +31,7 @@
             @endif
         @endcan
         @can('update', $jobOpening)
-            @if ($jobOpening->status === App\Models\JobOpening::STATUS_CANCELLED)
+            @if ($canPrepareForReadvertising)
                 <form method="POST" action="{{ route('recruitment.job-openings.prepare-readvertising', $jobOpening) }}" data-confirm="true" data-confirm-title="Prepare for re-advertising?" data-confirm-message="This keeps the vacancy and its application history, then returns the recruitment to Draft so you can update its dates and details before publishing again." data-confirm-button="Prepare to Re-advertise">
                     @csrf
                     @method('PATCH')
@@ -43,16 +48,16 @@
             @endif
         @endcan
         @can('close', $jobOpening)
-            @if ($jobOpening->status !== App\Models\JobOpening::STATUS_CLOSED)
-                <form method="POST" action="{{ route('recruitment.job-openings.close', $jobOpening) }}" data-confirm="true" data-confirm-title="Close job opening?" data-confirm-message="Closed jobs are hidden from public careers pages and API." data-confirm-button="Close job">
+            @if ($jobOpening->status === App\Models\JobOpening::STATUS_PUBLISHED)
+                <form method="POST" action="{{ route('recruitment.job-openings.close', $jobOpening) }}" data-confirm="true" data-confirm-title="Close recruitment?" data-confirm-message="This recruitment will be closed and hidden from public careers pages. The vacancy and submitted applications will be kept for review or future re-advertising." data-confirm-button="Close Recruitment">
                     @csrf
                     @method('PATCH')
-                    <button type="submit" class="btn btn-secondary btn-md">Close</button>
+                    <button type="submit" class="btn btn-secondary btn-md">Close Recruitment</button>
                 </form>
             @endif
         @endcan
         @can('cancel', $jobOpening)
-            @if ($jobOpening->status !== App\Models\JobOpening::STATUS_CANCELLED)
+            @if (! $isExpiredPublished && in_array($jobOpening->status, [App\Models\JobOpening::STATUS_DRAFT, App\Models\JobOpening::STATUS_PUBLISHED], true))
                 <form method="POST" action="{{ route('recruitment.job-openings.cancel', $jobOpening) }}" data-confirm="true" data-confirm-title="Cancel recruitment?" data-confirm-message="This recruitment process will be withdrawn from the careers page. The vacancy and submitted applications will be kept so People & Culture can review or re-advertise it later." data-confirm-button="Cancel Recruitment" data-confirm-variant="btn-warning">
                     @csrf
                     @method('PATCH')
@@ -77,13 +82,21 @@
 @section('content')
     <div class="row g-4">
         <div class="col-xl-4">
+            @php
+                $statusLabel = $jobOpening->is_expired_published ? 'Expired' : str($jobOpening->status)->headline();
+                $statusClass = $jobOpening->is_expired_published
+                    ? 'warning'
+                    : ($jobOpening->status === App\Models\JobOpening::STATUS_PUBLISHED
+                        ? 'success'
+                        : ($jobOpening->status === App\Models\JobOpening::STATUS_CANCELLED ? 'danger' : 'light'));
+            @endphp
             <section class="bg-white border rounded-2 p-3 h-100">
                 <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
                     <div>
                         <div class="text-muted small">Job Opening</div>
                         <h2 class="h5 mb-0">{{ $jobOpening->title }}</h2>
                     </div>
-                    <span class="badge text-bg-{{ $jobOpening->status === 'published' ? 'success' : ($jobOpening->status === 'cancelled' ? 'danger' : 'light') }}">{{ str($jobOpening->status)->headline() }}</span>
+                    <span class="badge text-bg-{{ $statusClass }}">{{ $statusLabel }}</span>
                 </div>
 
                 <dl class="row mb-0">

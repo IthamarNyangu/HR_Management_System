@@ -14,14 +14,17 @@ use App\Models\StaffPromotion;
 use App\Models\StaffRelocation;
 use App\Models\AppointmentStatus;
 use App\Models\TemporaryAppointment;
+use App\Services\Recruitment\ExpiredJobOpeningCloser;
 use App\Services\StaffEstablishmentMetricsService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
-    public function __invoke(Request $request, StaffEstablishmentMetricsService $establishmentMetrics): View
+    public function __invoke(Request $request, StaffEstablishmentMetricsService $establishmentMetrics, ExpiredJobOpeningCloser $expiredJobCloser): View
     {
+        $expiredJobCloser->closeExpired();
+
         $user = $request->user();
         $employeeQuery = Employee::query()->visibleTo($user);
         $caseQuery = DisciplinaryCase::query()->visibleTo($user);
@@ -151,10 +154,11 @@ class DashboardController extends Controller
             ->get();
 
         $recruitmentOverview = [
-            ['label' => 'Published External Jobs', 'value' => (clone $jobOpeningQuery)->where('status', JobOpening::STATUS_PUBLISHED)->whereIn('visibility', [JobOpening::VISIBILITY_EXTERNAL, JobOpening::VISIBILITY_BOTH])->whereDate('closing_date', '>=', today())->count()],
-            ['label' => 'Internal Jobs', 'value' => (clone $jobOpeningQuery)->whereIn('visibility', [JobOpening::VISIBILITY_INTERNAL, JobOpening::VISIBILITY_BOTH])->count()],
+            ['label' => 'Open Jobs', 'value' => (clone $jobOpeningQuery)->where('status', JobOpening::STATUS_PUBLISHED)->whereDate('closing_date', '>=', today())->count()],
+            ['label' => 'External Jobs', 'value' => (clone $jobOpeningQuery)->where('status', JobOpening::STATUS_PUBLISHED)->whereIn('visibility', [JobOpening::VISIBILITY_EXTERNAL, JobOpening::VISIBILITY_BOTH])->whereDate('closing_date', '>=', today())->count()],
+            ['label' => 'Internal Jobs', 'value' => (clone $jobOpeningQuery)->where('status', JobOpening::STATUS_PUBLISHED)->whereIn('visibility', [JobOpening::VISIBILITY_INTERNAL, JobOpening::VISIBILITY_BOTH])->whereDate('closing_date', '>=', today())->count()],
             ['label' => 'Jobs Closing Soon', 'value' => (clone $jobOpeningQuery)->where('status', JobOpening::STATUS_PUBLISHED)->whereBetween('closing_date', [today(), today()->addDays(14)])->count()],
-            ['label' => 'Closed Jobs This Month', 'value' => (clone $jobOpeningQuery)->where('status', JobOpening::STATUS_CLOSED)->whereYear('closed_at', now()->year)->whereMonth('closed_at', now()->month)->count()],
+            ['label' => 'Closed Recently', 'value' => (clone $jobOpeningQuery)->where('status', JobOpening::STATUS_CLOSED)->where('closed_at', '>=', now()->subMonths(3))->count()],
             ['label' => 'Awaiting Review', 'value' => (clone $jobApplicationQuery)->where('status', JobApplication::STATUS_SUBMITTED)->count()],
             ['label' => 'Applications Under Review', 'value' => (clone $jobApplicationQuery)->where('status', JobApplication::STATUS_UNDER_REVIEW)->count()],
             ['label' => 'Rejected This Month', 'value' => (clone $jobApplicationQuery)->where('status', JobApplication::STATUS_REJECTED)->whereYear('rejected_at', now()->year)->whereMonth('rejected_at', now()->month)->count()],

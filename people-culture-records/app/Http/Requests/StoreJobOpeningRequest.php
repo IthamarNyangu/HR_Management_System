@@ -78,8 +78,19 @@ class StoreJobOpeningRequest extends FormRequest
             'work_level' => ['nullable', 'string'],
             'location_details' => ['nullable', 'string'],
             'application_instructions' => ['nullable', 'string'],
-            'opening_date' => ['nullable', 'date'],
+            'opening_date' => ['required', 'date'],
             'closing_date' => ['required', 'date', 'after_or_equal:today'],
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'opening_date.required' => 'Date advertised is required.',
+            'closing_date.after_or_equal' => 'Closing date cannot be before today.',
         ];
     }
 
@@ -89,7 +100,26 @@ class StoreJobOpeningRequest extends FormRequest
             $this->validateLocation($validator);
             $this->validateOfficerProvince($validator);
             $this->validateReportingTo($validator);
+            $this->validateDateRange($validator);
         });
+    }
+
+    protected function validateDateRange($validator): void
+    {
+        if (! $this->filled(['opening_date', 'closing_date'])) {
+            return;
+        }
+
+        try {
+            $openingDate = \Illuminate\Support\Carbon::parse($this->input('opening_date'))->startOfDay();
+            $closingDate = \Illuminate\Support\Carbon::parse($this->input('closing_date'))->startOfDay();
+        } catch (\Throwable) {
+            return;
+        }
+
+        if ($closingDate->lt($openingDate)) {
+            $validator->errors()->add('closing_date', 'Closing date must be on or after Date Advertised.');
+        }
     }
 
     protected function validateLocation($validator): void

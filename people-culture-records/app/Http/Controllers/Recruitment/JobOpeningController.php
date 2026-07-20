@@ -16,6 +16,7 @@ use App\Models\JobTitle;
 use App\Models\Project;
 use App\Models\Province;
 use App\Services\ActivityLogger;
+use App\Services\Recruitment\ExpiredJobOpeningCloser;
 use App\Services\ReferenceNumberService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Contracts\View\View;
@@ -31,17 +32,19 @@ use Symfony\Component\HttpFoundation\Response;
 
 class JobOpeningController extends Controller
 {
-    public function dashboard(Request $request): View
+    public function dashboard(Request $request, ExpiredJobOpeningCloser $expiredJobCloser): View
     {
         Gate::authorize('viewAny', JobOpening::class);
+        $expiredJobCloser->closeExpired();
 
         $jobs = JobOpening::query()->visibleTo($request->user());
 
         $cards = [
-            ['label' => 'Published Jobs', 'value' => (clone $jobs)->where('status', JobOpening::STATUS_PUBLISHED)->count()],
-            ['label' => 'Internal Jobs', 'value' => (clone $jobs)->whereIn('visibility', [JobOpening::VISIBILITY_INTERNAL, JobOpening::VISIBILITY_BOTH])->count()],
+            ['label' => 'Open Jobs', 'value' => $this->openJobsQuery(clone $jobs)->count()],
+            ['label' => 'External Jobs', 'value' => $this->openJobsQuery(clone $jobs)->whereIn('visibility', [JobOpening::VISIBILITY_EXTERNAL, JobOpening::VISIBILITY_BOTH])->count()],
+            ['label' => 'Internal Jobs', 'value' => $this->openJobsQuery(clone $jobs)->whereIn('visibility', [JobOpening::VISIBILITY_INTERNAL, JobOpening::VISIBILITY_BOTH])->count()],
             ['label' => 'Closing Soon', 'value' => (clone $jobs)->where('status', JobOpening::STATUS_PUBLISHED)->whereBetween('closing_date', [today(), today()->addDays(14)])->count()],
-            ['label' => 'Closed This Month', 'value' => (clone $jobs)->where('status', JobOpening::STATUS_CLOSED)->whereYear('closed_at', now()->year)->whereMonth('closed_at', now()->month)->count()],
+            ['label' => 'Closed Recently', 'value' => (clone $jobs)->where('status', JobOpening::STATUS_CLOSED)->where('closed_at', '>=', now()->subMonths(3))->count()],
         ];
 
         $latestJobs = JobOpening::query()
@@ -54,9 +57,10 @@ class JobOpeningController extends Controller
         return view('recruitment.index', compact('cards', 'latestJobs'));
     }
 
-    public function index(Request $request): View
+    public function index(Request $request, ExpiredJobOpeningCloser $expiredJobCloser): View
     {
         Gate::authorize('viewAny', JobOpening::class);
+        $expiredJobCloser->closeExpired();
 
         $perPage = (int) $request->input('per_page', 10);
         $perPage = in_array($perPage, [5, 10, 25, 50], true) ? $perPage : 10;
@@ -154,9 +158,11 @@ class JobOpeningController extends Controller
         return redirect()->route('recruitment.job-openings.show', $jobOpening)->with('success', 'Job opening created successfully.');
     }
 
-    public function show(JobOpening $jobOpening): View
+    public function show(JobOpening $jobOpening, ExpiredJobOpeningCloser $expiredJobCloser): View
     {
         Gate::authorize('view', $jobOpening);
+        $expiredJobCloser->closeExpired();
+        $jobOpening->refresh();
 
         $jobOpening->load($this->relations());
 
@@ -254,7 +260,7 @@ class JobOpeningController extends Controller
 
         $activity->log('job_opening_closed', "{$request->user()->name} closed job opening {$jobOpening->reference_no}.", $jobOpening, user: $request->user(), request: $request);
 
-        return back()->with('success', 'Job opening closed successfully.');
+        return back()->with('success', 'Recruitment closed successfully.');
     }
 
     public function cancel(Request $request, JobOpening $jobOpening, ActivityLogger $activity): RedirectResponse
@@ -275,8 +281,12 @@ class JobOpeningController extends Controller
     {
         Gate::authorize('update', $jobOpening);
 
-        if ($jobOpening->status !== JobOpening::STATUS_CANCELLED) {
-            return back()->with('error', 'Only cancelled recruitment can be prepared for re-advertising.');
+        $isExpiredPublished = $jobOpening->status === JobOpening::STATUS_PUBLISHED
+            && $jobOpening->closing_date?->isPast()
+            && ! $jobOpening->closing_date?->isToday();
+
+        if (! in_array($jobOpening->status, [JobOpening::STATUS_CANCELLED, JobOpening::STATUS_CLOSED], true) && ! $isExpiredPublished) {
+            return back()->with('error', 'Only cancelled, closed, or expired recruitment can be prepared for re-advertising.');
         }
 
         $jobOpening->update([
@@ -554,5 +564,12 @@ class JobOpeningController extends Controller
             'updated_by',
             'archived_by',
         ]);
+    }
+
+    private function openJobsQuery($query)
+    {
+        return $query
+            ->where('status', JobOpening::STATUS_PUBLISHED)
+            ->whereDate('closing_date', '>=', today());
     }
 }

@@ -5,6 +5,8 @@
         $jobOpening->reporting_to_tba ? 'tba' : $jobOpening->reporting_to_job_title_id
     );
     $contactEmail = config('mail.from.address') ?: 'hrms-noreply@righttocare-zambia.org';
+    $selectedOpeningDate = old('opening_date', $jobOpening->opening_date?->format('Y-m-d') ?? now()->toDateString());
+    $selectedClosingDate = old('closing_date', $jobOpening->closing_date?->format('Y-m-d') ?? now()->addWeeks(2)->toDateString());
 @endphp
 
 <div class="d-flex flex-column gap-4" data-job-opening-form>
@@ -51,13 +53,13 @@
                 <input type="text" class="form-control" value="{{ $jobOpening->reference_no ?: 'System generated on save' }}" disabled>
             </div>
             <div class="col-md-4">
-                <label for="opening_date" class="form-label">Date Advertised</label>
-                <input id="opening_date" name="opening_date" type="date" class="form-control @error('opening_date') is-invalid @enderror" value="{{ old('opening_date', $jobOpening->opening_date?->format('Y-m-d') ?? now()->toDateString()) }}">
+                <label for="opening_date" class="form-label">Date Advertised <span class="text-danger">*</span></label>
+                <input id="opening_date" name="opening_date" type="date" class="form-control @error('opening_date') is-invalid @enderror" value="{{ $selectedOpeningDate }}" required>
                 @error('opening_date')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
             <div class="col-md-4">
                 <label for="closing_date" class="form-label">Closing Date <span class="text-danger">*</span></label>
-                <input id="closing_date" name="closing_date" type="date" class="form-control @error('closing_date') is-invalid @enderror" value="{{ old('closing_date', $jobOpening->closing_date?->format('Y-m-d') ?? now()->addWeeks(2)->toDateString()) }}" required>
+                <input id="closing_date" name="closing_date" type="date" class="form-control @error('closing_date') is-invalid @enderror" value="{{ $selectedClosingDate }}" min="{{ $selectedOpeningDate }}" required>
                 @error('closing_date')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
 
@@ -275,6 +277,20 @@
             const province = form.querySelector('[data-province-select]');
             const district = form.querySelector('[data-district-select]');
             const facility = form.querySelector('[data-facility-select]');
+            const openingDate = form.querySelector('#opening_date');
+            const closingDate = form.querySelector('#closing_date');
+
+            function syncClosingDateMinimum() {
+                if (!openingDate || !closingDate || !openingDate.value) {
+                    return;
+                }
+
+                closingDate.min = openingDate.value;
+
+                if (closingDate.value && closingDate.value < openingDate.value) {
+                    closingDate.value = openingDate.value;
+                }
+            }
 
             function filterDistricts() {
                 const provinceId = province.value;
@@ -308,6 +324,8 @@
 
             province?.addEventListener('change', filterDistricts);
             district?.addEventListener('change', filterFacilities);
+            openingDate?.addEventListener('change', syncClosingDateMinimum);
+            syncClosingDateMinimum();
             filterDistricts();
             filterFacilities();
         });

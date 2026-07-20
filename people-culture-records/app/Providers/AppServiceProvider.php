@@ -54,6 +54,10 @@ class AppServiceProvider extends ServiceProvider
 
         Gate::define('access-dashboard', fn (User $user) => $user->is_active);
 
+        Gate::define('view-audit-logs', function (User $user) {
+            return $user->is_active && ($user->isAdmin() || $user->isHrManager());
+        });
+
         Gate::define('manage-master-data', function (User $user) {
             return $user->is_active && ($user->isAdmin() || $user->isHrManager());
         });

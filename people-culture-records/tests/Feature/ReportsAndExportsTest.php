@@ -132,6 +132,44 @@ class ReportsAndExportsTest extends TestCase
             ->assertSee(route('reports.employees.export.excel', ['search' => 'NOR']), false);
     }
 
+    public function test_empty_report_export_buttons_are_disabled(): void
+    {
+        $this->actingAs($this->user($this->adminRole))
+            ->get(route('reports.disciplinary-cases'))
+            ->assertOk()
+            ->assertSee('0 record(s) found.')
+            ->assertSee('No records to export.')
+            ->assertSee('disabled', false)
+            ->assertDontSee(route('reports.disciplinary-cases.export.excel'), false)
+            ->assertDontSee(route('reports.disciplinary-cases.export.pdf'), false);
+    }
+
+    public function test_empty_report_export_routes_do_not_download_or_log_exports(): void
+    {
+        Excel::fake();
+
+        $admin = $this->user($this->adminRole);
+
+        $this->actingAs($admin)
+            ->get(route('reports.disciplinary-cases.export.excel'))
+            ->assertRedirect(route('reports.disciplinary-cases'))
+            ->assertSessionHas('error', 'There are no records to export for the current report filters.');
+
+        $this->actingAs($admin)
+            ->get(route('reports.disciplinary-cases.export.pdf'))
+            ->assertRedirect(route('reports.disciplinary-cases'))
+            ->assertSessionHas('error', 'There are no records to export for the current report filters.');
+
+        $this->assertDatabaseMissing('activity_logs', [
+            'action' => 'report_exported_excel',
+            'user_id' => $admin->id,
+        ]);
+        $this->assertDatabaseMissing('activity_logs', [
+            'action' => 'report_exported_pdf',
+            'user_id' => $admin->id,
+        ]);
+    }
+
     public function test_employee_module_export_buttons_follow_current_results(): void
     {
         $admin = $this->user($this->adminRole);

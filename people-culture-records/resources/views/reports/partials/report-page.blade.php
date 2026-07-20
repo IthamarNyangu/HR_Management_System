@@ -1,5 +1,6 @@
 @php
     $query = request()->query();
+    $hasRows = $rows->total() > 0;
 @endphp
 
 <div class="d-flex flex-column gap-3">
@@ -314,9 +315,15 @@
                 <h2 class="h5 mb-1">{{ $report['title'] }}</h2>
                 <p class="text-muted small mb-0">{{ $rows->total() }} record(s) found.</p>
             </div>
-            <div class="d-flex gap-2">
-                <a href="{{ route($report['excel_route'], $query) }}" class="btn btn-primary btn-md">Export Excel</a>
-                <a href="{{ route($report['pdf_route'], $query) }}" class="btn btn-secondary btn-md">Export PDF</a>
+            <div class="d-flex flex-wrap gap-2">
+                @if ($hasRows)
+                    <a href="{{ route($report['excel_route'], $query) }}" class="btn btn-primary btn-md">Export Excel</a>
+                    <a href="{{ route($report['pdf_route'], $query) }}" class="btn btn-secondary btn-md">Export PDF</a>
+                @else
+                    <button type="button" class="btn btn-primary btn-md" disabled aria-disabled="true" title="No records to export">Export Excel</button>
+                    <button type="button" class="btn btn-secondary btn-md" disabled aria-disabled="true" title="No records to export">Export PDF</button>
+                    <span class="small text-muted align-self-center">No records to export.</span>
+                @endif
             </div>
         </div>
 

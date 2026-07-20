@@ -83,6 +83,7 @@ class JobOpening extends Model
         'is_closed',
         'is_external',
         'is_internal',
+        'is_expired_published',
         'days_until_closing',
         'closing_status_label',
     ];
@@ -212,6 +213,14 @@ class JobOpening extends Model
     public function getIsInternalAttribute(): bool
     {
         return in_array($this->visibility, [self::VISIBILITY_INTERNAL, self::VISIBILITY_BOTH], true);
+    }
+
+    public function getIsExpiredPublishedAttribute(): bool
+    {
+        return $this->status === self::STATUS_PUBLISHED
+            && $this->closing_date !== null
+            && $this->closing_date->isPast()
+            && ! $this->closing_date->isToday();
     }
 
     public function getDaysUntilClosingAttribute(): ?int

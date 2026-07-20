@@ -19,7 +19,7 @@
 
 @section('content')
     <div class="d-flex flex-column gap-4">
-        <div class="row row-cols-1 row-cols-md-2 row-cols-xl-4 g-3">
+        <div class="row row-cols-1 row-cols-md-2 row-cols-xl-5 g-3">
             @foreach ($cards as $card)
                 <div class="col">
                     <div class="summary-tile h-100">

@@ -232,6 +232,47 @@ class DashboardActivityTest extends TestCase
             ->assertDontSee('Approved disciplinary case for audit.');
     }
 
+    public function test_hr_officer_can_see_dashboard_recent_activity_but_cannot_access_audit_logs(): void
+    {
+        $officer = $this->user($this->officerRole, $this->northern);
+
+        ActivityLog::create([
+            'user_id' => $officer->id,
+            'action' => 'employee_updated',
+            'description' => 'Updated Northern employee record.',
+            'subject_type' => Employee::class,
+            'subject_id' => $this->northernEmployee->id,
+            'properties' => [
+                'employee_no' => $this->northernEmployee->employee_no,
+                'province_id' => $this->northern->id,
+                'province_name' => $this->northern->name,
+            ],
+        ]);
+
+        ActivityLog::create([
+            'action' => 'employee_updated',
+            'description' => 'Updated Luapula employee record.',
+            'subject_type' => Employee::class,
+            'subject_id' => $this->luapulaEmployee->id,
+            'properties' => [
+                'employee_no' => $this->luapulaEmployee->employee_no,
+                'province_id' => $this->luapula->id,
+                'province_name' => $this->luapula->name,
+            ],
+        ]);
+
+        $this->actingAs($officer)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('Updated Northern employee record.')
+            ->assertDontSee('Updated Luapula employee record.')
+            ->assertDontSee('View all activity');
+
+        $this->actingAs($officer)
+            ->get(route('activity-logs.index'))
+            ->assertForbidden();
+    }
+
     public function test_audit_logs_pdf_export_uses_filters_and_logs_export(): void
     {
         $admin = $this->user($this->adminRole);
@@ -260,7 +301,7 @@ class DashboardActivityTest extends TestCase
         ]);
     }
 
-    public function test_viewer_cannot_see_activity_outside_assigned_province(): void
+    public function test_viewer_can_see_dashboard_recent_activity_for_province_but_cannot_access_audit_logs(): void
     {
         $viewer = $this->user($this->viewerRole, $this->northern);
         $outsideCase = $this->disciplinaryCase(['reference_no' => 'DC-2026-2001', 'province_id' => $this->luapula->id, 'district_id' => $this->mansa->id, 'employee_id' => $this->luapulaEmployee->id]);
@@ -276,12 +317,12 @@ class DashboardActivityTest extends TestCase
         $this->actingAs($viewer)
             ->get(route('dashboard'))
             ->assertOk()
-            ->assertDontSee('Created outside province case.');
+            ->assertDontSee('Created outside province case.')
+            ->assertDontSee('View all activity');
 
         $this->actingAs($viewer)
             ->get(route('activity-logs.index'))
-            ->assertOk()
-            ->assertDontSee('Created outside province case.');
+            ->assertForbidden();
     }
 
     public function test_notification_count_appears_for_users_with_unread_notifications(): void

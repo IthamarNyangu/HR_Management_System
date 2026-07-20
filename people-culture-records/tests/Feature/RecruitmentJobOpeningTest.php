@@ -84,6 +84,40 @@ class RecruitmentJobOpeningTest extends TestCase
         $this->assertSame(JobOpening::STATUS_PUBLISHED, $job->fresh()->status);
     }
 
+    public function test_closing_date_cannot_be_before_date_advertised(): void
+    {
+        $admin = $this->user($this->adminRole);
+
+        $this->actingAs($admin)
+            ->from(route('recruitment.job-openings.create'))
+            ->post(route('recruitment.job-openings.store'), $this->payload([
+                'opening_date' => today()->addDays(5)->toDateString(),
+                'closing_date' => today()->addDays(4)->toDateString(),
+            ]))
+            ->assertRedirect(route('recruitment.job-openings.create'))
+            ->assertSessionHasErrors('closing_date');
+
+        $this->assertDatabaseCount('job_openings', 0);
+    }
+
+    public function test_closing_date_can_match_date_advertised_for_one_day_advertisements(): void
+    {
+        $admin = $this->user($this->adminRole);
+        $advertisedDate = today()->addDay()->toDateString();
+
+        $this->actingAs($admin)
+            ->post(route('recruitment.job-openings.store'), $this->payload([
+                'opening_date' => $advertisedDate,
+                'closing_date' => $advertisedDate,
+            ]))
+            ->assertRedirect();
+
+        $job = JobOpening::firstOrFail();
+
+        $this->assertTrue($job->opening_date->isSameDay($advertisedDate));
+        $this->assertTrue($job->closing_date->isSameDay($advertisedDate));
+    }
+
     public function test_cancelled_recruitment_is_preserved_and_can_be_prepared_for_readvertising(): void
     {
         $admin = $this->user($this->adminRole);
@@ -132,6 +166,64 @@ class RecruitmentJobOpeningTest extends TestCase
             ->assertRedirect();
 
         $this->assertSame(JobOpening::STATUS_CANCELLED, $job->fresh()->status);
+    }
+
+    public function test_expired_published_recruitment_is_auto_closed_and_can_be_prepared_for_readvertising(): void
+    {
+        $admin = $this->user($this->adminRole);
+        $job = $this->jobOpening([
+            'status' => JobOpening::STATUS_PUBLISHED,
+            'closing_date' => today()->subDays(24)->toDateString(),
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('recruitment.job-openings.show', $job))
+            ->assertOk()
+            ->assertSee('Expired 24 day(s) ago')
+            ->assertSee('Re-advertise')
+            ->assertSee('Closed')
+            ->assertDontSee('Close Recruitment')
+            ->assertDontSee('Cancel Recruitment');
+
+        $this->assertSame(JobOpening::STATUS_CLOSED, $job->fresh()->status);
+        $this->assertNotNull($job->fresh()->closed_at);
+
+        $this->actingAs($admin)
+            ->patch(route('recruitment.job-openings.prepare-readvertising', $job))
+            ->assertRedirect(route('recruitment.job-openings.edit', $job));
+
+        $job->refresh();
+
+        $this->assertSame(JobOpening::STATUS_DRAFT, $job->status);
+        $this->assertSame(2, $job->advertisement_round);
+        $this->assertTrue($job->opening_date->isSameDay(today()));
+        $this->assertNull($job->published_at);
+        $this->assertNull($job->closed_at);
+    }
+
+    public function test_expired_published_recruitment_displays_closed_status_in_internal_pages(): void
+    {
+        $admin = $this->user($this->adminRole);
+        $job = $this->jobOpening([
+            'status' => JobOpening::STATUS_PUBLISHED,
+            'closing_date' => today()->subDay()->toDateString(),
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('recruitment.job-openings.index'))
+            ->assertOk()
+            ->assertSee($job->reference_no)
+            ->assertSee('Closed');
+
+        $this->assertSame(JobOpening::STATUS_CLOSED, $job->fresh()->status);
+
+        $this->actingAs($admin)
+            ->get(route('recruitment.job-openings.show', $job))
+            ->assertOk()
+            ->assertSee('Closed')
+            ->assertDontSee('Close Recruitment')
+            ->assertSee('Re-advertise')
+            ->assertDontSee('Cancel Recruitment');
     }
 
     public function test_published_readvertisement_can_notify_previous_non_withdrawn_applicants_once(): void

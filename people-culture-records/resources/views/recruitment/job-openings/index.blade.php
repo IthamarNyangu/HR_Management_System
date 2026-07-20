@@ -101,6 +101,14 @@
                 </thead>
                 <tbody>
                     @forelse ($jobOpenings as $job)
+                        @php
+                            $statusLabel = $job->is_expired_published ? 'Expired' : str($job->status)->headline();
+                            $statusClass = $job->is_expired_published
+                                ? 'warning'
+                                : ($job->status === App\Models\JobOpening::STATUS_PUBLISHED
+                                    ? 'success'
+                                    : ($job->status === App\Models\JobOpening::STATUS_CANCELLED ? 'danger' : 'light'));
+                        @endphp
                         <tr>
                             <td>
                                 <div class="fw-semibold">{{ $job->reference_no }}</div>
@@ -113,7 +121,7 @@
                             <td>{{ $job->department?->name ?? '-' }}</td>
                             <td>{{ $job->location_label }}</td>
                             <td><span class="badge text-bg-light">{{ str($job->visibility)->headline() }}</span></td>
-                            <td><span class="badge text-bg-{{ $job->status === 'published' ? 'success' : ($job->status === 'cancelled' ? 'danger' : 'light') }}">{{ str($job->status)->headline() }}</span></td>
+                            <td><span class="badge text-bg-{{ $statusClass }}">{{ $statusLabel }}</span></td>
                             <td>
                                 <div>{{ $job->closing_date?->format('d M Y') }}</div>
                                 <div class="small text-muted">{{ $job->closing_status_label }}</div>

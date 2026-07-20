@@ -14,12 +14,11 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Maatwebsite\Excel\Facades\Excel;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\Response;
 
 class ReportExportController extends Controller
 {
-    public function employeesExcel(Request $request, ReportQueryService $reports, ActivityLogger $activity): BinaryFileResponse
+    public function employeesExcel(Request $request, ReportQueryService $reports, ActivityLogger $activity): Response
     {
         return $this->excel('employees', new EmployeesReportExport($reports, $request->user(), $request->query()), $request, $reports, $activity);
     }
@@ -29,7 +28,7 @@ class ReportExportController extends Controller
         return $this->pdf('employees', $request, $reports, $activity);
     }
 
-    public function disciplinaryCasesExcel(Request $request, ReportQueryService $reports, ActivityLogger $activity): BinaryFileResponse
+    public function disciplinaryCasesExcel(Request $request, ReportQueryService $reports, ActivityLogger $activity): Response
     {
         return $this->excel('disciplinary-cases', new DisciplinaryCasesReportExport($reports, $request->user(), $request->query()), $request, $reports, $activity);
     }
@@ -39,7 +38,7 @@ class ReportExportController extends Controller
         return $this->pdf('disciplinary-cases', $request, $reports, $activity);
     }
 
-    public function promotionsExcel(Request $request, ReportQueryService $reports, ActivityLogger $activity): BinaryFileResponse
+    public function promotionsExcel(Request $request, ReportQueryService $reports, ActivityLogger $activity): Response
     {
         return $this->excel('promotions', new StaffPromotionsReportExport($reports, $request->user(), $request->query()), $request, $reports, $activity);
     }
@@ -49,7 +48,7 @@ class ReportExportController extends Controller
         return $this->pdf('promotions', $request, $reports, $activity);
     }
 
-    public function relocationsExcel(Request $request, ReportQueryService $reports, ActivityLogger $activity): BinaryFileResponse
+    public function relocationsExcel(Request $request, ReportQueryService $reports, ActivityLogger $activity): Response
     {
         return $this->excel('relocations', new StaffRelocationsReportExport($reports, $request->user(), $request->query()), $request, $reports, $activity);
     }
@@ -59,7 +58,7 @@ class ReportExportController extends Controller
         return $this->pdf('relocations', $request, $reports, $activity);
     }
 
-    public function expiringCasesExcel(Request $request, ReportQueryService $reports, ActivityLogger $activity): BinaryFileResponse
+    public function expiringCasesExcel(Request $request, ReportQueryService $reports, ActivityLogger $activity): Response
     {
         $filters = $this->expiringFilters($request);
 
@@ -71,7 +70,7 @@ class ReportExportController extends Controller
         return $this->pdf('expiring-cases', $request, $reports, $activity, $this->expiringFilters($request));
     }
 
-    public function archivedRecordsExcel(Request $request, ReportQueryService $reports, ActivityLogger $activity): BinaryFileResponse
+    public function archivedRecordsExcel(Request $request, ReportQueryService $reports, ActivityLogger $activity): Response
     {
         return $this->excel('archived-records', new ArchivedRecordsReportExport($reports, $request->user(), $request->query()), $request, $reports, $activity);
     }
@@ -81,12 +80,19 @@ class ReportExportController extends Controller
         return $this->pdf('archived-records', $request, $reports, $activity);
     }
 
-    private function excel(string $type, $export, Request $request, ReportQueryService $reports, ActivityLogger $activity, ?array $filters = null): BinaryFileResponse
+    private function excel(string $type, $export, Request $request, ReportQueryService $reports, ActivityLogger $activity, ?array $filters = null): Response
     {
         Gate::authorize('export-reports');
 
         $filters ??= $request->query();
         $report = $reports->definition($type);
+
+        if ($reports->rows($type, $request->user(), $filters)->isEmpty()) {
+            return redirect()
+                ->route($report['route'], $filters)
+                ->with('error', 'There are no records to export for the current report filters.');
+        }
+
         $this->logExport($type, 'Excel', $request, $activity, $filters);
 
         return Excel::download($export, str($report['title'])->slug()->append('-')->append(now()->format('Ymd-His'))->append('.xlsx')->toString());
@@ -99,6 +105,13 @@ class ReportExportController extends Controller
         $filters ??= $request->query();
         $report = $reports->definition($type);
         $rows = $reports->rows($type, $request->user(), $filters);
+
+        if ($rows->isEmpty()) {
+            return redirect()
+                ->route($report['route'], $filters)
+                ->with('error', 'There are no records to export for the current report filters.');
+        }
+
         $this->logExport($type, 'PDF', $request, $activity, $filters);
 
         return Pdf::loadView("reports.pdf.{$type}", [
