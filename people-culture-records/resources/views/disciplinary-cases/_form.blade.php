@@ -1,6 +1,10 @@
 @php
     $isOfficer = auth()->user()->hasRole('HR Officer');
+    $employeeOption = $selectedEmployeeOption ?? null;
+    $employeeSearchValue = old('employee_search', $employeeOption['text'] ?? '');
 @endphp
+
+@include('partials.smart-employee-picker-assets')
 
 <div class="row g-3" data-disciplinary-case-form>
     @if ($case->exists)
@@ -13,15 +17,27 @@
     <input type="hidden" name="case_status_id" value="{{ old('case_status_id', $case->case_status_id ?: $draftStatusId) }}">
 
     <div class="col-md-{{ $case->exists ? '8' : '6' }}">
-        <label for="employee_id" class="form-label">Employee</label>
-        <select id="employee_id" name="employee_id" class="form-select @error('employee_id') is-invalid @enderror" data-employee-select required>
-            <option value="">Select employee</option>
-            @foreach ($employees as $employee)
-                <option value="{{ $employee->id }}" data-province-id="{{ $employee->province_id }}" data-district-id="{{ $employee->district_id }}" data-facility-id="{{ $employee->facility_id }}" data-project-id="{{ $employee->project_id }}" @selected((string) old('employee_id', $case->employee_id) === (string) $employee->id)>
-                    {{ $employee->display_name }}
-                </option>
-            @endforeach
-        </select>
+        <label for="employee_search" class="form-label">Employee</label>
+        <div class="smart-employee-select" data-smart-employee-select data-url="{{ route('employees.search') }}" data-selected='@json($employeeOption)'>
+            <input
+                id="employee_search"
+                name="employee_search"
+                type="search"
+                class="form-control @error('employee_id') is-invalid @enderror"
+                value="{{ $employeeSearchValue }}"
+                placeholder="Search employee number, name, email, job title, or location"
+                autocomplete="off"
+                data-smart-input
+                required
+            >
+            <input id="employee_id" name="employee_id" type="hidden" value="{{ old('employee_id', $case->employee_id) }}" data-smart-id>
+            <div class="smart-employee-results d-none" data-smart-results role="listbox"></div>
+            <div class="smart-employee-selected mt-2 {{ $employeeOption ? '' : 'd-none' }}" data-smart-selected>
+                <div class="fw-semibold" data-smart-selected-text>{{ $employeeOption['text'] ?? '' }}</div>
+                <div class="small text-muted" data-smart-selected-details>{{ $employeeOption['details'] ?? '' }}</div>
+            </div>
+        </div>
+        <div class="form-text">Start typing to find the employee, then choose the correct staff member from the list.</div>
         @error('employee_id')
             <div class="invalid-feedback">{{ $message }}</div>
         @enderror
@@ -201,7 +217,7 @@
             return;
         }
 
-        const employee = form.querySelector('[data-employee-select]');
+        const employeePicker = form.querySelector('[data-smart-employee-select]');
         const province = form.querySelector('[data-province-select]');
         const district = form.querySelector('[data-district-select]');
         const facility = form.querySelector('[data-facility-select]');
@@ -272,20 +288,6 @@
             uploadError?.classList.add('d-none');
         }
 
-        function filterEmployees() {
-            const provinceId = province.value;
-
-            employee.querySelectorAll('option[data-province-id]').forEach(function (option) {
-                const visible = !provinceId || option.dataset.provinceId === provinceId;
-                option.hidden = !visible;
-                option.disabled = !visible;
-            });
-
-            if (employee.selectedOptions[0]?.disabled) {
-                employee.value = '';
-            }
-        }
-
         function filterDistricts() {
             const provinceId = province.value;
 
@@ -300,7 +302,6 @@
             }
 
             filterFacilities();
-            filterEmployees();
         }
 
         function filterFacilities() {
@@ -317,22 +318,20 @@
             }
         }
 
-        function applyEmployeeDefaults() {
-            const option = employee.selectedOptions[0];
-
-            if (!option || !option.dataset.provinceId) {
+        function applyEmployeeDefaults(employee) {
+            if (!employee || !employee.province_id) {
                 return;
             }
 
             if (!province.disabled) {
-                province.value = option.dataset.provinceId || '';
+                province.value = employee.province_id || '';
             }
 
-            district.value = option.dataset.districtId || '';
-            window.setSearchableFacilityValue?.(facility, option.dataset.facilityId || '');
+            district.value = employee.district_id || '';
+            window.setSearchableFacilityValue?.(facility, employee.facility_id || '');
 
-            if (project && option.dataset.projectId) {
-                project.value = option.dataset.projectId;
+            if (project && employee.project_id) {
+                project.value = employee.project_id;
             }
 
             filterDistricts();
@@ -341,7 +340,10 @@
 
         province.addEventListener('change', filterDistricts);
         district.addEventListener('change', filterFacilities);
-        employee.addEventListener('change', applyEmployeeDefaults);
+        const employeePickerApi = window.setupSmartEmployeePicker?.(employeePicker, {
+            provinceId: () => province?.value || '',
+            onSelect: applyEmployeeDefaults,
+        });
         uploadInput?.addEventListener('change', function () {
             const file = uploadInput.files[0];
 
@@ -357,7 +359,12 @@
             }
         });
         uploadClear?.addEventListener('click', clearUploadPreview);
-        form.addEventListener('submit', function () {
+        form.addEventListener('submit', function (event) {
+            if (employeePickerApi && !employeePickerApi.requireSelection()) {
+                event.preventDefault();
+                return;
+            }
+
             if (!submitButton) {
                 return;
             }

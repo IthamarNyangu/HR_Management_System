@@ -75,7 +75,7 @@ class StaffRelocationController extends Controller
             'effective_date' => now()->toDateString(),
         ]);
 
-        return view('staff-relocations.create', $this->formData($request) + compact('relocation'));
+        return view('staff-relocations.create', $this->formData($request, $relocation) + compact('relocation'));
     }
 
     public function store(
@@ -128,7 +128,7 @@ class StaffRelocationController extends Controller
 
         $staffRelocation->load(['employee']);
 
-        return view('staff-relocations.edit', $this->formData($request) + ['relocation' => $staffRelocation]);
+        return view('staff-relocations.edit', $this->formData($request, $staffRelocation) + ['relocation' => $staffRelocation]);
     }
 
     public function update(
@@ -258,9 +258,10 @@ class StaffRelocationController extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function formData(Request $request): array
+    private function formData(Request $request, ?StaffRelocation $relocation = null): array
     {
         $user = $request->user();
+        $selectedEmployee = $this->selectedEmployeeForForm($request, $relocation?->employee_id);
         $employees = Employee::query()
             ->with(['province', 'district', 'facility', 'project', 'department', 'jobTitle'])
             ->when($user->hasRole('HR Officer'), function ($query) use ($user) {
@@ -271,6 +272,7 @@ class StaffRelocationController extends Controller
             ->get();
 
         return [
+            'selectedEmployeeOption' => $selectedEmployee ? $this->employeeSearchPayload($selectedEmployee) : null,
             'employees' => $employees,
             'provinces' => Province::where('is_active', true)->orderBy('name')->get(),
             'districts' => District::with('province')->where('is_active', true)->orderBy('name')->get(),
@@ -279,6 +281,46 @@ class StaffRelocationController extends Controller
             'departments' => Department::where('is_active', true)->orderBy('name')->get(),
             'jobTitles' => JobTitle::where('is_active', true)->orderBy('name')->get(),
             'relocationReasons' => RelocationReason::where('is_active', true)->orderBy('name')->get(),
+        ];
+    }
+
+    private function selectedEmployeeForForm(Request $request, ?int $fallbackId): ?Employee
+    {
+        $employeeId = $request->old('employee_id', $fallbackId);
+
+        if (! $employeeId) {
+            return null;
+        }
+
+        return Employee::query()
+            ->visibleTo($request->user())
+            ->with(['jobTitle', 'province', 'district', 'facility', 'project', 'department'])
+            ->find($employeeId);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function employeeSearchPayload(Employee $employee): array
+    {
+        return [
+            'id' => $employee->id,
+            'text' => $employee->display_name,
+            'details' => collect([
+                $employee->jobTitle?->name,
+                $employee->province?->name,
+                $employee->district?->name,
+                $employee->facility?->name,
+            ])->filter()->implode(' | '),
+            'employee_no' => $employee->employee_no,
+            'name' => $employee->full_name,
+            'email' => $employee->email,
+            'province_id' => $employee->province_id,
+            'district_id' => $employee->district_id,
+            'facility_id' => $employee->facility_id,
+            'project_id' => $employee->project_id,
+            'department_id' => $employee->department_id,
+            'job_title_id' => $employee->job_title_id,
         ];
     }
 

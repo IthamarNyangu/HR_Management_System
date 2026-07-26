@@ -71,7 +71,7 @@ class StaffPromotionController extends Controller
             'promotion_date' => now()->toDateString(),
         ]);
 
-        return view('staff-promotions.create', $this->formData($request) + compact('promotion'));
+        return view('staff-promotions.create', $this->formData($request, $promotion) + compact('promotion'));
     }
 
     public function store(
@@ -126,7 +126,7 @@ class StaffPromotionController extends Controller
 
         $staffPromotion->load(['employee']);
 
-        return view('staff-promotions.edit', $this->formData($request) + ['promotion' => $staffPromotion]);
+        return view('staff-promotions.edit', $this->formData($request, $staffPromotion) + ['promotion' => $staffPromotion]);
     }
 
     public function update(
@@ -254,11 +254,13 @@ class StaffPromotionController extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function formData(Request $request): array
+    private function formData(Request $request, ?StaffPromotion $promotion = null): array
     {
         $user = $request->user();
+        $selectedEmployee = $this->selectedEmployeeForForm($request, $promotion?->employee_id);
 
         return [
+            'selectedEmployeeOption' => $selectedEmployee ? $this->employeeSearchPayload($selectedEmployee) : null,
             'employees' => Employee::query()->visibleTo($user)->with(['province', 'district', 'facility', 'project', 'department', 'jobTitle'])->orderBy('last_name')->orderBy('first_name')->get(),
             'provinces' => Province::where('is_active', true)
                 ->when($user->hasRole('HR Officer'), fn ($query) => $query->whereKey($user->province_id))
@@ -270,6 +272,46 @@ class StaffPromotionController extends Controller
             'departments' => Department::where('is_active', true)->orderBy('name')->get(),
             'jobTitles' => JobTitle::where('is_active', true)->orderBy('name')->get(),
             'promotionTypes' => PromotionType::where('is_active', true)->orderBy('name')->get(),
+        ];
+    }
+
+    private function selectedEmployeeForForm(Request $request, ?int $fallbackId): ?Employee
+    {
+        $employeeId = $request->old('employee_id', $fallbackId);
+
+        if (! $employeeId) {
+            return null;
+        }
+
+        return Employee::query()
+            ->visibleTo($request->user())
+            ->with(['jobTitle', 'province', 'district', 'facility', 'project', 'department'])
+            ->find($employeeId);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function employeeSearchPayload(Employee $employee): array
+    {
+        return [
+            'id' => $employee->id,
+            'text' => $employee->display_name,
+            'details' => collect([
+                $employee->jobTitle?->name,
+                $employee->province?->name,
+                $employee->district?->name,
+                $employee->facility?->name,
+            ])->filter()->implode(' | '),
+            'employee_no' => $employee->employee_no,
+            'name' => $employee->full_name,
+            'email' => $employee->email,
+            'province_id' => $employee->province_id,
+            'district_id' => $employee->district_id,
+            'facility_id' => $employee->facility_id,
+            'project_id' => $employee->project_id,
+            'department_id' => $employee->department_id,
+            'job_title_id' => $employee->job_title_id,
         ];
     }
 

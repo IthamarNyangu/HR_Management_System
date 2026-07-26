@@ -1,6 +1,10 @@
 @php
     $isOfficer = auth()->user()->hasRole('HR Officer');
+    $employeeOption = $selectedEmployeeOption ?? null;
+    $employeeSearchValue = old('employee_search', $employeeOption['text'] ?? '');
 @endphp
+
+@include('partials.smart-employee-picker-assets')
 
 <div class="row g-3" data-relocation-form>
     @if ($relocation->exists)
@@ -11,26 +15,30 @@
     @endif
 
     <div class="col-md-{{ $relocation->exists ? '8' : '6' }}">
-        <label for="employee_id" class="form-label">Employee</label>
-        <select id="employee_id" name="employee_id" class="form-select @error('employee_id') is-invalid @enderror" data-employee-select required>
-            <option value="">Select employee</option>
-            @foreach ($employees as $employee)
-                <option
-                    value="{{ $employee->id }}"
-                    data-province-id="{{ $employee->province_id }}"
-                    data-district-id="{{ $employee->district_id }}"
-                    data-facility-id="{{ $employee->facility_id }}"
-                    data-project-id="{{ $employee->project_id }}"
-                    data-department-id="{{ $employee->department_id }}"
-                    data-job-title-id="{{ $employee->job_title_id }}"
-                    @selected((string) old('employee_id', $relocation->employee_id) === (string) $employee->id)
-                >
-                    {{ $employee->display_name }}{{ $employee->province ? ' - '.$employee->province->name : '' }}
-                </option>
-            @endforeach
-        </select>
+        <label for="employee_search" class="form-label">Employee</label>
+        <div class="smart-employee-select" data-smart-employee-select data-url="{{ route('employees.search') }}" data-selected='@json($employeeOption)'>
+            <input
+                id="employee_search"
+                name="employee_search"
+                type="search"
+                class="form-control @error('employee_id') is-invalid @enderror"
+                value="{{ $employeeSearchValue }}"
+                placeholder="Search employee number, name, email, job title, or location"
+                autocomplete="off"
+                data-smart-input
+                required
+            >
+            <input id="employee_id" name="employee_id" type="hidden" value="{{ old('employee_id', $relocation->employee_id) }}" data-smart-id>
+            <div class="smart-employee-results d-none" data-smart-results role="listbox"></div>
+            <div class="smart-employee-selected mt-2 {{ $employeeOption ? '' : 'd-none' }}" data-smart-selected>
+                <div class="fw-semibold" data-smart-selected-text>{{ $employeeOption['text'] ?? '' }}</div>
+                <div class="small text-muted" data-smart-selected-details>{{ $employeeOption['details'] ?? '' }}</div>
+            </div>
+        </div>
         @if ($isOfficer)
-            <div class="form-text">Employees from your assigned province appear first. Change the from province if you are recording an incoming relocation.</div>
+            <div class="form-text">Search is limited to employees you are allowed to access.</div>
+        @else
+            <div class="form-text">Choosing an employee will auto-fill the from location, project, department, and job title where available.</div>
         @endif
         @error('employee_id')
             <div class="invalid-feedback">{{ $message }}</div>
@@ -239,7 +247,7 @@
                 return;
             }
 
-            const employee = form.querySelector('[data-employee-select]');
+            const employeePicker = form.querySelector('[data-smart-employee-select]');
             const fromProvince = form.querySelector('[data-from-province-select]');
             const fromDistrict = form.querySelector('[data-from-district-select]');
             const fromFacility = form.querySelector('[data-from-facility-select]');
@@ -283,7 +291,6 @@
             function filterFromDistricts() {
                 filterSelectByParent(fromDistrict, fromProvince.value, 'data-province-id');
                 filterFromFacilities();
-                filterEmployees();
             }
 
             function filterFromFacilities() {
@@ -299,33 +306,17 @@
                 filterSelectByParent(toFacility, toDistrict.value, 'data-district-id');
             }
 
-            function filterEmployees() {
-                const provinceId = fromProvince.value;
-
-                employee.querySelectorAll('option[data-province-id]').forEach(function (option) {
-                    const visible = !provinceId || option.dataset.provinceId === provinceId;
-                    option.hidden = !visible;
-                    option.disabled = !visible;
-                });
-
-                if (employee.selectedOptions[0]?.disabled) {
-                    employee.value = '';
-                }
-            }
-
-            function applyEmployeeDefaults() {
-                const option = employee.selectedOptions[0];
-
-                if (!option || !option.dataset.provinceId) {
+            function applyEmployeeDefaults(employee) {
+                if (!employee || !employee.province_id) {
                     return;
                 }
 
-                fromProvince.value = option.dataset.provinceId || '';
-                fromDistrict.value = option.dataset.districtId || '';
-                window.setSearchableFacilityValue?.(fromFacility, option.dataset.facilityId || '');
-                project.value = option.dataset.projectId || '';
-                department.value = option.dataset.departmentId || '';
-                jobTitle.value = option.dataset.jobTitleId || '';
+                fromProvince.value = employee.province_id || '';
+                fromDistrict.value = employee.district_id || '';
+                window.setSearchableFacilityValue?.(fromFacility, employee.facility_id || '');
+                project.value = employee.project_id || '';
+                department.value = employee.department_id || '';
+                jobTitle.value = employee.job_title_id || '';
 
                 filterFromDistricts();
                 filterFromFacilities();
@@ -360,7 +351,17 @@
                 }
             });
 
-            form.addEventListener('submit', function () {
+            const employeePickerApi = window.setupSmartEmployeePicker?.(employeePicker, {
+                provinceId: () => fromProvince?.value || '',
+                onSelect: applyEmployeeDefaults,
+            });
+
+            form.addEventListener('submit', function (event) {
+                if (employeePickerApi && !employeePickerApi.requireSelection()) {
+                    event.preventDefault();
+                    return;
+                }
+
                 if (!submitButton) {
                     return;
                 }
@@ -373,7 +374,6 @@
             fromDistrict.addEventListener('change', filterFromFacilities);
             toProvince.addEventListener('change', filterToDistricts);
             toDistrict.addEventListener('change', filterToFacilities);
-            employee.addEventListener('change', applyEmployeeDefaults);
 
             filterFromDistricts();
             filterFromFacilities();
