@@ -11,6 +11,17 @@
 
 @section('page-actions')
     <div class="d-flex flex-wrap gap-2 justify-content-end">
+        @if ($promotion->is_acting_promotion)
+            @if ($promotion->temporaryAppointment)
+                @can('view', $promotion->temporaryAppointment)
+                    <a href="{{ route('temporary-appointments.show', $promotion->temporaryAppointment) }}" class="btn btn-primary btn-md">View Temporary Appointment</a>
+                @endcan
+            @else
+                @can('create', App\Models\TemporaryAppointment::class)
+                    <a href="{{ route('temporary-appointments.create', ['promotion_id' => $promotion->id]) }}" class="btn btn-primary btn-md">Create Temporary Appointment</a>
+                @endcan
+            @endif
+        @endif
         @can('update', $promotion)
             <a href="{{ route('staff-promotions.edit', $promotion) }}" class="btn btn-primary-outline btn-md">Edit</a>
         @endcan
@@ -55,11 +66,19 @@
                 <h2 class="h5">Promotion Details</h2>
                 <div class="row g-3">
                     <div class="col-md-6"><strong>Old Job Title:</strong> {{ $promotion->oldJobTitle?->name ?? '-' }}</div>
-                    <div class="col-md-6"><strong>New Job Title:</strong> {{ $promotion->newJobTitle?->name ?? '-' }}</div>
+                    <div class="col-md-6">
+                        <strong>{{ $promotion->is_acting_promotion ? 'Acting Job Title' : 'New Permanent Job Title' }}:</strong>
+                        {{ $promotion->newJobTitle?->name ?? '-' }}
+                    </div>
                     <div class="col-md-6"><strong>Promotion Type:</strong> {{ $promotion->promotionType?->name ?? '-' }}</div>
                     <div class="col-md-6"><strong>Promotion Date:</strong> {{ $promotion->promotion_date?->format('d M Y') }}</div>
                     <div class="col-md-6"><strong>Effective Date:</strong> {{ $promotion->effective_date?->format('d M Y') ?? '-' }}</div>
-                    <div class="col-md-6"><strong>Applied To Employee Profile:</strong> {{ $promotion->job_title_applied_at?->format('d M Y H:i') ?? 'Scheduled / pending' }}</div>
+                    @unless ($promotion->is_acting_promotion)
+                        <div class="col-md-6">
+                            <strong>Applied To Employee Profile:</strong>
+                            {{ $promotion->job_title_applied_at?->format('d M Y H:i') ?? 'Scheduled / pending' }}
+                        </div>
+                    @endunless
                     <div class="col-md-6"><strong>Created By:</strong> {{ $promotion->createdBy?->name ?? '-' }}</div>
                     <div class="col-md-6"><strong>Updated By:</strong> {{ $promotion->updatedBy?->name ?? '-' }}</div>
                 </div>

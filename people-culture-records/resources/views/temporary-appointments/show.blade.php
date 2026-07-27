@@ -61,6 +61,12 @@
             <section class="bg-white border rounded-2 p-4 mb-3">
                 <h2 class="h5">Appointment Details</h2>
                 <div class="row g-3">
+                    @if ($appointment->staffPromotion)
+                        <div class="col-md-6">
+                            <strong>Source Acting Promotion:</strong>
+                            <a href="{{ route('staff-promotions.show', $appointment->staffPromotion) }}">{{ $appointment->staffPromotion->reference_no }}</a>
+                        </div>
+                    @endif
                     <div class="col-md-6"><strong>Current Job Title:</strong> {{ $appointment->currentJobTitle?->name ?? '-' }}</div>
                     <div class="col-md-6"><strong>Temporary Job Title:</strong> {{ $appointment->temporaryJobTitle?->name ?? '-' }}</div>
                     <div class="col-md-6"><strong>Line Manager:</strong> {{ $appointment->supervisor_name ?? '-' }}</div>

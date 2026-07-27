@@ -46,7 +46,7 @@
         <select id="promotion_type_id" name="promotion_type_id" class="form-select @error('promotion_type_id') is-invalid @enderror">
             <option value="">Select promotion type</option>
             @foreach ($promotionTypes as $promotionType)
-                <option value="{{ $promotionType->id }}" @selected((string) old('promotion_type_id', $promotion->promotion_type_id) === (string) $promotionType->id)>{{ $promotionType->name }}</option>
+                <option value="{{ $promotionType->id }}" data-code="{{ $promotionType->code }}" @selected((string) old('promotion_type_id', $promotion->promotion_type_id) === (string) $promotionType->id)>{{ $promotionType->name }}</option>
             @endforeach
         </select>
         @error('promotion_type_id')
@@ -136,13 +136,14 @@
     </div>
 
     <div class="col-md-6">
-        <label for="new_job_title_id" class="form-label">New Job Title</label>
+        <label for="new_job_title_id" class="form-label" data-promotion-job-title-label>Promotion Job Title</label>
         <select id="new_job_title_id" name="new_job_title_id" class="form-select @error('new_job_title_id') is-invalid @enderror" required>
-            <option value="">Select new job title</option>
+            <option value="">Select job title</option>
             @foreach ($jobTitles as $jobTitle)
                 <option value="{{ $jobTitle->id }}" @selected((string) old('new_job_title_id', $promotion->new_job_title_id) === (string) $jobTitle->id)>{{ $jobTitle->name }}</option>
             @endforeach
         </select>
+        <div class="form-text" data-promotion-job-title-help>Select the title being recorded for this promotion.</div>
         @error('new_job_title_id')
             <div class="invalid-feedback">{{ $message }}</div>
         @enderror
@@ -159,7 +160,7 @@
     <div class="col-md-6">
         <label for="effective_date" class="form-label">Effective Date</label>
         <input id="effective_date" name="effective_date" type="date" class="form-control @error('effective_date') is-invalid @enderror" value="{{ old('effective_date', $promotion->effective_date?->format('Y-m-d')) }}">
-        <div class="form-text">If this date is today or earlier, the employee profile will update automatically. If it is in the future, the new title will be applied automatically on that date.</div>
+        <div class="form-text" data-effective-date-help>If this date is today or earlier, the employee profile updates automatically. Future titles are applied automatically on that date.</div>
         @error('effective_date')
             <div class="invalid-feedback">{{ $message }}</div>
         @enderror
@@ -214,6 +215,10 @@
             const project = form.querySelector('[data-project-select]');
             const department = form.querySelector('[data-department-select]');
             const oldJobTitle = form.querySelector('[data-old-job-title-select]');
+            const promotionType = form.querySelector('#promotion_type_id');
+            const promotionJobTitleLabel = form.querySelector('[data-promotion-job-title-label]');
+            const promotionJobTitleHelp = form.querySelector('[data-promotion-job-title-help]');
+            const effectiveDateHelp = form.querySelector('[data-effective-date-help]');
             const uploadInput = form.querySelector('#supporting_document');
             const uploadError = form.querySelector('[data-upload-error]');
             const uploadReady = form.querySelector('[data-upload-ready]');
@@ -282,6 +287,28 @@
                 filterFacilities();
             }
 
+            function updatePromotionLabels() {
+                const selectedType = promotionType?.selectedOptions[0];
+                const isActing = selectedType?.dataset.code === 'ACTING'
+                    || selectedType?.textContent.trim() === 'Acting Promotion';
+
+                if (promotionJobTitleLabel) {
+                    promotionJobTitleLabel.textContent = isActing ? 'Acting Job Title' : 'New Permanent Job Title';
+                }
+
+                if (promotionJobTitleHelp) {
+                    promotionJobTitleHelp.textContent = isActing
+                        ? 'Select the job title held during the acting appointment.'
+                        : 'Select the employee’s new permanent job title.';
+                }
+
+                if (effectiveDateHelp) {
+                    effectiveDateHelp.textContent = isActing
+                        ? 'This date becomes the proposed start date when the Temporary Appointment is created.'
+                        : 'If this date is today or earlier, the employee profile updates automatically. Future titles are applied automatically on that date.';
+                }
+            }
+
             uploadInput?.addEventListener('change', function () {
                 const file = uploadInput.files[0];
 
@@ -332,8 +359,10 @@
 
             province.addEventListener('change', filterDistricts);
             district.addEventListener('change', filterFacilities);
+            promotionType?.addEventListener('change', updatePromotionLabels);
             filterDistricts();
             filterFacilities();
+            updatePromotionLabels();
         });
     </script>
 @endpush

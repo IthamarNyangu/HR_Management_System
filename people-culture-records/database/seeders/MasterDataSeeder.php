@@ -2,16 +2,17 @@
 
 namespace Database\Seeders;
 
+use App\Models\AppointmentStatus;
+use App\Models\AppointmentType;
 use App\Models\CaseStatus;
 use App\Models\Department;
+use App\Models\District;
 use App\Models\DocumentType;
 use App\Models\EmploymentStatus;
 use App\Models\EmploymentType;
 use App\Models\Facility;
 use App\Models\JobTitle;
 use App\Models\OffenceCategory;
-use App\Models\AppointmentStatus;
-use App\Models\AppointmentType;
 use App\Models\PenaltyType;
 use App\Models\Project;
 use App\Models\PromotionType;
@@ -81,12 +82,15 @@ class MasterDataSeeder extends Seeder
             ['name' => 'Archived', 'code' => 'ARCHIVED'],
         ],
         PromotionType::class => [
-            ['name' => 'Merit', 'code' => 'MERIT'],
-            ['name' => 'Acting Appointment', 'code' => 'ACTING'],
+            ['name' => 'Permanent Promotion', 'code' => 'PERMANENT'],
+            ['name' => 'Acting Promotion', 'code' => 'ACTING'],
         ],
         RelocationReason::class => [
-            ['name' => 'Operational Need', 'code' => 'OPS'],
-            ['name' => 'Employee Request', 'code' => 'REQ'],
+            ['name' => 'Employee Request', 'code' => 'EMPLOYEE_REQUEST'],
+            ['name' => 'Lateral Movement', 'code' => 'LATERAL_MOVEMENT'],
+            ['name' => 'Temporal Movement', 'code' => 'TEMPORAL_MOVEMENT'],
+            ['name' => 'Operation Movement', 'code' => 'OPERATION_MOVEMENT'],
+            ['name' => 'Amount List', 'code' => 'AMOUNT_LIST'],
         ],
         AppointmentStatus::class => [
             ['name' => 'Draft', 'code' => 'DRAFT'],
@@ -126,7 +130,18 @@ class MasterDataSeeder extends Seeder
         AppointmentType::where('name', '!=', 'Interim / Acting Appointment')
             ->update(['is_active' => false]);
 
-        $lusakaDistrict = \App\Models\District::whereHas('province', fn ($query) => $query->where('name', 'Lusaka'))
+        PromotionType::whereNotIn('code', ['PERMANENT', 'ACTING'])
+            ->update(['is_active' => false]);
+
+        RelocationReason::whereNotIn('code', [
+            'EMPLOYEE_REQUEST',
+            'LATERAL_MOVEMENT',
+            'TEMPORAL_MOVEMENT',
+            'OPERATION_MOVEMENT',
+            'AMOUNT_LIST',
+        ])->update(['is_active' => false]);
+
+        $lusakaDistrict = District::whereHas('province', fn ($query) => $query->where('name', 'Lusaka'))
             ->where('name', 'Lusaka')
             ->first();
 

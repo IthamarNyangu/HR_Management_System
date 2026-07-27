@@ -83,6 +83,12 @@ class StaffPromotionApplicationService
         return StaffPromotion::query()
             ->whereNull('deleted_at')
             ->whereNull('job_title_applied_at')
+            ->where(function ($query) {
+                $query->whereNull('promotion_type_id')
+                    ->orWhereHas('promotionType', fn ($query) => $query
+                        ->where('code', '!=', 'ACTING')
+                        ->where('name', '!=', 'Acting Promotion'));
+            })
             ->whereDate(DB::raw('coalesce(effective_date, promotion_date)'), '<=', today())
             ->orderBy('employee_id')
             ->pluck('employee_id')
@@ -96,6 +102,12 @@ class StaffPromotionApplicationService
         return StaffPromotion::query()
             ->whereNull('deleted_at')
             ->where('employee_id', $employeeId)
+            ->where(function ($query) {
+                $query->whereNull('promotion_type_id')
+                    ->orWhereHas('promotionType', fn ($query) => $query
+                        ->where('code', '!=', 'ACTING')
+                        ->where('name', '!=', 'Acting Promotion'));
+            })
             ->whereDate(DB::raw('coalesce(effective_date, promotion_date)'), '<=', today());
     }
 

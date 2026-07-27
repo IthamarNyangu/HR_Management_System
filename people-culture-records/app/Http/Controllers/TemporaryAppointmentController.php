@@ -14,6 +14,7 @@ use App\Models\Facility;
 use App\Models\JobTitle;
 use App\Models\Project;
 use App\Models\Province;
+use App\Models\StaffPromotion;
 use App\Models\TemporaryAppointment;
 use App\Services\ActivityLogger;
 use App\Services\ReferenceNumberService;
@@ -83,12 +84,16 @@ class TemporaryAppointmentController extends Controller
     {
         Gate::authorize('create', TemporaryAppointment::class);
 
-        $appointment = new TemporaryAppointment([
-            'province_id' => $request->user()->hasRole('HR Officer') ? $request->user()->province_id : null,
-            'start_date' => now()->toDateString(),
-        ]);
+        $sourcePromotion = $this->sourcePromotionForCreate($request);
 
-        return view('temporary-appointments.create', $this->formData($request, $appointment) + compact('appointment'));
+        $appointment = $sourcePromotion
+            ? $this->appointmentFromPromotion($sourcePromotion)
+            : new TemporaryAppointment([
+                'province_id' => $request->user()->hasRole('HR Officer') ? $request->user()->province_id : null,
+                'start_date' => now()->toDateString(),
+            ]);
+
+        return view('temporary-appointments.create', $this->formData($request, $appointment) + compact('appointment', 'sourcePromotion'));
     }
 
     public function store(StoreTemporaryAppointmentRequest $request, ReferenceNumberService $referenceNumbers, ActivityLogger $activity): RedirectResponse
@@ -284,6 +289,7 @@ class TemporaryAppointmentController extends Controller
     {
         return [
             'employee',
+            'staffPromotion.promotionType',
             'province',
             'district',
             'facility',
@@ -328,7 +334,7 @@ class TemporaryAppointmentController extends Controller
     }
 
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
     private function appointmentData(array $data): array
@@ -341,6 +347,7 @@ class TemporaryAppointmentController extends Controller
 
         $appointmentData = Arr::only($data, [
             'reference_no',
+            'staff_promotion_id',
             'employee_id',
             'province_id',
             'district_id',
@@ -385,6 +392,49 @@ class TemporaryAppointmentController extends Controller
         }
 
         return (int) $type->id;
+    }
+
+    private function sourcePromotionForCreate(Request $request): ?StaffPromotion
+    {
+        if (! $request->filled('promotion_id')) {
+            return null;
+        }
+
+        $promotion = StaffPromotion::query()
+            ->with(['employee.supervisor', 'promotionType', 'temporaryAppointment'])
+            ->visibleTo($request->user())
+            ->findOrFail($request->integer('promotion_id'));
+
+        Gate::authorize('view', $promotion);
+
+        abort_unless($promotion->is_acting_promotion, 422, 'Only Acting Promotions can create temporary appointments.');
+        abort_if($promotion->temporaryAppointment, 422, 'This Acting Promotion already has a temporary appointment.');
+
+        return $promotion;
+    }
+
+    private function appointmentFromPromotion(StaffPromotion $promotion): TemporaryAppointment
+    {
+        $startDate = $promotion->application_date ?? today();
+        $statusCode = $startDate->isFuture() ? 'UPCOMING' : 'ACTIVE';
+
+        return new TemporaryAppointment([
+            'staff_promotion_id' => $promotion->id,
+            'employee_id' => $promotion->employee_id,
+            'province_id' => $promotion->province_id,
+            'district_id' => $promotion->district_id,
+            'facility_id' => $promotion->facility_id,
+            'project_id' => $promotion->project_id,
+            'department_id' => $promotion->department_id,
+            'current_job_title_id' => $promotion->old_job_title_id,
+            'temporary_job_title_id' => $promotion->new_job_title_id,
+            'appointment_status_id' => $this->statusId($statusCode),
+            'start_date' => $startDate->toDateString(),
+            'reason' => "Created from Acting Promotion {$promotion->reference_no}.",
+            'supervisor_employee_id' => $promotion->employee?->supervisor_employee_id,
+            'supervisor_name' => $promotion->employee?->supervisor?->full_name
+                ?? $promotion->employee?->supervisor_name,
+        ]);
     }
 
     private function statusId(string $code): int

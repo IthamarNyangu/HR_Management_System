@@ -79,8 +79,7 @@ class StaffPromotionController extends Controller
         ReferenceNumberService $referenceNumbers,
         ActivityLogger $activity,
         StaffPromotionApplicationService $promotionApplications,
-    ): RedirectResponse
-    {
+    ): RedirectResponse {
         $promotion = DB::transaction(function () use ($request, $referenceNumbers) {
             $data = $this->promotionData($request->validated());
             $data['reference_no'] = $referenceNumbers->generate('PROM', 'staff_promotions');
@@ -134,8 +133,7 @@ class StaffPromotionController extends Controller
         StaffPromotion $staffPromotion,
         ActivityLogger $activity,
         StaffPromotionApplicationService $promotionApplications,
-    ): RedirectResponse
-    {
+    ): RedirectResponse {
         $data = $this->promotionData($request->validated());
         $data['updated_by'] = $request->user()->id;
 
@@ -244,6 +242,7 @@ class StaffPromotionController extends Controller
             'oldJobTitle',
             'newJobTitle',
             'promotionType',
+            'temporaryAppointment.appointmentStatus',
             'createdBy',
             'updatedBy',
             'archivedBy',
@@ -316,7 +315,7 @@ class StaffPromotionController extends Controller
     }
 
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
     private function promotionData(array $data): array

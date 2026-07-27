@@ -27,10 +27,14 @@ class TemporaryAppointmentNotification extends Notification
 
     public function toDatabase(object $notifiable): DatabaseMessage
     {
+        $url = $notifiable->can('view', $this->appointment)
+            ? route('temporary-appointments.show', $this->appointment)
+            : route('temporary-appointments.index');
+
         return new DatabaseMessage([
             'title' => $this->title,
             'message' => $this->message,
-            'url' => route('temporary-appointments.show', $this->appointment),
+            'url' => $url,
             'reference_no' => $this->appointment->reference_no,
         ]);
     }

@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Models\District;
 use App\Models\Employee;
 use App\Models\Facility;
+use App\Models\StaffPromotion;
 use App\Models\TemporaryAppointment;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -49,6 +50,7 @@ class StoreTemporaryAppointmentRequest extends FormRequest
     {
         return [
             'employee_id' => ['required', 'exists:employees,id'],
+            'staff_promotion_id' => ['nullable', 'exists:staff_promotions,id', 'unique:temporary_appointments,staff_promotion_id'],
             'province_id' => ['required', 'exists:provinces,id'],
             'district_id' => ['nullable', 'exists:districts,id'],
             'facility_id' => ['nullable', 'exists:facilities,id'],
@@ -74,6 +76,7 @@ class StoreTemporaryAppointmentRequest extends FormRequest
             $this->validateEmployeeProvince($validator);
             $this->validateSupervisorVisibility($validator);
             $this->validateOfficerProvince($validator);
+            $this->validateSourcePromotion($validator);
         });
     }
 
@@ -137,6 +140,25 @@ class StoreTemporaryAppointmentRequest extends FormRequest
 
         if (! $visible) {
             $validator->errors()->add('supervisor_employee_id', 'The selected line manager is not available to your province access.');
+        }
+    }
+
+    private function validateSourcePromotion($validator): void
+    {
+        if (! $this->filled('staff_promotion_id')) {
+            return;
+        }
+
+        $promotion = StaffPromotion::with('promotionType')->find($this->input('staff_promotion_id'));
+
+        if (! $promotion?->is_acting_promotion) {
+            $validator->errors()->add('staff_promotion_id', 'The selected promotion must be an Acting Promotion.');
+
+            return;
+        }
+
+        if ((int) $promotion->employee_id !== (int) $this->input('employee_id')) {
+            $validator->errors()->add('employee_id', 'The temporary appointment employee must match the Acting Promotion employee.');
         }
     }
 }

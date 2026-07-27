@@ -2,6 +2,7 @@
     $isOfficer = auth()->user()->hasRole('HR Officer');
     $employeeOption = $selectedEmployeeOption ?? null;
     $supervisorOption = $selectedSupervisorOption ?? null;
+    $sourcePromotion = $sourcePromotion ?? $appointment->staffPromotion;
     $employeeSearchValue = old('employee_search', $employeeOption['text'] ?? '');
             $supervisorSearchValue = old('supervisor_search', $supervisorOption['text'] ?? old('supervisor_name', $appointment->supervisor_name));
 @endphp
@@ -46,6 +47,19 @@
 @endpush
 
 <div class="d-grid gap-4" data-temporary-appointment-form>
+    @if ($sourcePromotion)
+        <input type="hidden" name="staff_promotion_id" value="{{ old('staff_promotion_id', $sourcePromotion->id) }}">
+        <div class="alert alert-info mb-0">
+            <div class="fw-semibold">Creating from Acting Promotion {{ $sourcePromotion->reference_no }}</div>
+            <div class="small mt-1">
+                Employee, organisation, and job-title details have been prefilled. Confirm the appointment status and enter the required end date before saving.
+            </div>
+        </div>
+        @error('staff_promotion_id')
+            <div class="alert alert-danger mb-0">{{ $message }}</div>
+        @enderror
+    @endif
+
     <section class="border rounded-2 bg-white p-4">
         <div class="mb-3">
             <h2 class="h5 mb-1">Employee</h2>

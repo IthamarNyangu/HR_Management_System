@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -39,6 +40,7 @@ class StaffPromotion extends Model
         'display_name',
         'promotion_year',
         'promotion_month',
+        'is_acting_promotion',
     ];
 
     protected function casts(): array
@@ -96,6 +98,11 @@ class StaffPromotion extends Model
         return $this->belongsTo(PromotionType::class);
     }
 
+    public function temporaryAppointment(): HasOne
+    {
+        return $this->hasOne(TemporaryAppointment::class);
+    }
+
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
@@ -129,6 +136,12 @@ class StaffPromotion extends Model
     public function getPromotionMonthAttribute(): ?int
     {
         return $this->promotion_date?->month;
+    }
+
+    public function getIsActingPromotionAttribute(): bool
+    {
+        return $this->promotionType?->code === 'ACTING'
+            || $this->promotionType?->name === 'Acting Promotion';
     }
 
     public function getApplicationDateAttribute()

@@ -18,6 +18,7 @@ class TemporaryAppointment extends Model
      */
     protected $fillable = [
         'reference_no',
+        'staff_promotion_id',
         'employee_id',
         'province_id',
         'district_id',
@@ -64,6 +65,11 @@ class TemporaryAppointment extends Model
     public function employee(): BelongsTo
     {
         return $this->belongsTo(Employee::class);
+    }
+
+    public function staffPromotion(): BelongsTo
+    {
+        return $this->belongsTo(StaffPromotion::class);
     }
 
     public function province(): BelongsTo
@@ -134,6 +140,11 @@ class TemporaryAppointment extends Model
     public function extensions(): HasMany
     {
         return $this->hasMany(TemporaryAppointmentExtension::class)->latest('extended_at');
+    }
+
+    public function reminders(): HasMany
+    {
+        return $this->hasMany(TemporaryAppointmentReminder::class);
     }
 
     public function attachments(): MorphMany

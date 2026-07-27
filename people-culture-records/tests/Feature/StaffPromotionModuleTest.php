@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\AppointmentStatus;
 use App\Models\Department;
 use App\Models\District;
 use App\Models\Employee;
@@ -10,6 +11,7 @@ use App\Models\PromotionType;
 use App\Models\Province;
 use App\Models\Role;
 use App\Models\StaffPromotion;
+use App\Models\TemporaryAppointment;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -21,18 +23,31 @@ class StaffPromotionModuleTest extends TestCase
     use RefreshDatabase;
 
     private Role $adminRole;
+
     private Role $managerRole;
+
     private Role $officerRole;
+
     private Role $viewerRole;
+
     private Province $northern;
+
     private Province $luapula;
+
     private District $kasama;
+
     private District $mansa;
+
     private Department $peopleCulture;
+
     private JobTitle $oldTitle;
+
     private JobTitle $newTitle;
+
     private PromotionType $promotionType;
+
     private Employee $northernEmployee;
+
     private Employee $luapulaEmployee;
 
     protected function setUp(): void
@@ -209,6 +224,67 @@ class StaffPromotionModuleTest extends TestCase
         $this->assertNotNull($promotion->fresh()->job_title_applied_at);
     }
 
+    public function test_acting_promotion_preserves_permanent_title_and_can_create_linked_temporary_appointment_later(): void
+    {
+        $actingType = PromotionType::where('code', 'ACTING')->firstOrFail();
+        $admin = $this->user($this->adminRole);
+        $activeStatusId = AppointmentStatus::create([
+            'name' => 'Active',
+            'code' => 'ACTIVE',
+            'is_active' => true,
+        ])->id;
+
+        $this->actingAs($admin)
+            ->post(route('staff-promotions.store'), $this->promotionPayload([
+                'promotion_type_id' => $actingType->id,
+            ]))
+            ->assertRedirect();
+
+        $promotion = StaffPromotion::firstOrFail();
+
+        $this->assertDatabaseHas('employees', [
+            'id' => $this->northernEmployee->id,
+            'job_title_id' => $this->oldTitle->id,
+        ]);
+        $this->assertNull($promotion->job_title_applied_at);
+
+        $this->actingAs($admin)
+            ->get(route('staff-promotions.show', $promotion))
+            ->assertOk()
+            ->assertSee('Create Temporary Appointment')
+            ->assertSee('Acting Job Title');
+
+        $createResponse = $this->actingAs($admin)
+            ->get(route('temporary-appointments.create', ['promotion_id' => $promotion->id]));
+
+        $createResponse
+            ->assertOk()
+            ->assertSee("Creating from Acting Promotion {$promotion->reference_no}")
+            ->assertSee('name="staff_promotion_id"', false)
+            ->assertSee('value="'.$promotion->id.'"', false);
+
+        $this->actingAs($admin)
+            ->post(route('temporary-appointments.store'), [
+                'staff_promotion_id' => $promotion->id,
+                'employee_id' => $this->northernEmployee->id,
+                'province_id' => $this->northern->id,
+                'district_id' => $this->kasama->id,
+                'current_job_title_id' => $this->oldTitle->id,
+                'temporary_job_title_id' => $this->newTitle->id,
+                'appointment_status_id' => $activeStatusId,
+                'start_date' => now()->toDateString(),
+                'end_date' => now()->addMonths(3)->toDateString(),
+                'reason' => 'Acting promotion period.',
+            ])
+            ->assertRedirect();
+
+        $appointment = TemporaryAppointment::firstOrFail();
+
+        $this->assertSame($promotion->id, $appointment->staff_promotion_id);
+        $this->assertSame($promotion->id, $appointment->staffPromotion->id);
+        $this->assertSame($appointment->id, $promotion->fresh()->temporaryAppointment->id);
+    }
+
     public function test_editing_an_already_applied_old_promotion_does_not_overwrite_employee_current_job_title_again(): void
     {
         $promotion = $this->promotion([
@@ -322,7 +398,7 @@ class StaffPromotionModuleTest extends TestCase
     }
 
     /**
-     * @param array<string, mixed> $attributes
+     * @param  array<string, mixed>  $attributes
      */
     private function employee(array $attributes = []): Employee
     {
@@ -336,7 +412,7 @@ class StaffPromotionModuleTest extends TestCase
     }
 
     /**
-     * @param array<string, mixed> $attributes
+     * @param  array<string, mixed>  $attributes
      */
     private function promotion(array $attributes = []): StaffPromotion
     {
@@ -354,7 +430,7 @@ class StaffPromotionModuleTest extends TestCase
     }
 
     /**
-     * @param array<string, mixed> $overrides
+     * @param  array<string, mixed>  $overrides
      * @return array<string, mixed>
      */
     private function promotionPayload(array $overrides = []): array
