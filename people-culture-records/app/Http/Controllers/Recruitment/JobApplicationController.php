@@ -52,7 +52,14 @@ class JobApplicationController extends Controller
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')))
             ->when($request->filled('job_opening_id'), fn ($query) => $query->where('job_opening_id', $request->integer('job_opening_id')))
             ->when($request->filled('visibility'), fn ($query) => $query->whereHas('jobOpening', fn (Builder $query) => $query->where('visibility', $request->string('visibility'))))
-            ->when($request->filled('province_id'), fn ($query) => $query->whereHas('jobOpening', fn (Builder $query) => $query->where('province_id', $request->integer('province_id'))))
+            ->when($request->filled('province_id'), function ($query) use ($request) {
+                $provinceId = $request->integer('province_id');
+
+                $query->whereHas('jobOpening', function (Builder $query) use ($provinceId) {
+                    $query->whereHas('provinces', fn (Builder $query) => $query->whereKey($provinceId))
+                        ->orWhere('province_id', $provinceId);
+                });
+            })
             ->when($request->filled('district_id'), fn ($query) => $query->whereHas('jobOpening', fn (Builder $query) => $query->where('district_id', $request->integer('district_id'))))
             ->when($request->filled('facility_id'), fn ($query) => $query->whereHas('jobOpening', fn (Builder $query) => $query->where('facility_id', $request->integer('facility_id'))))
             ->when($request->filled('highest_qualification'), fn ($query) => $query->where('highest_qualification', $request->string('highest_qualification')))

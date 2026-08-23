@@ -125,7 +125,8 @@
         .searchable-select-option { width: 100%; border: 0; background: transparent; color: #111827; text-align: left; padding: .45rem .55rem; border-radius: .3rem; display: block; }
         .searchable-select-option:hover, .searchable-select-option:focus, .searchable-select-option.active { background: #eff6ff; color: #1d4ed8; outline: 0; }
         .searchable-select-empty { color: #64748b; padding: .45rem .55rem; }
-        select.facility-search-source { position: absolute !important; width: 1px !important; height: 1px !important; opacity: 0 !important; pointer-events: none !important; }
+        select.facility-search-source,
+        select.searchable-select-source { position: absolute !important; width: 1px !important; height: 1px !important; opacity: 0 !important; pointer-events: none !important; }
         @media (max-width: 991.98px) {
             .sidebar { width: 100%; min-width: 100%; flex-basis: auto; }
             .sidebar .nav-link { white-space: normal; }
@@ -291,7 +292,8 @@
                 'select.form-select[name$="[facility_id]"]',
                 'select[data-facility-select]',
                 'select[data-from-facility-select]',
-                'select[data-to-facility-select]'
+                'select[data-to-facility-select]',
+                'select[data-searchable-select]'
             ].join(',');
 
             const enhanceFacilitySelect = function (select) {
@@ -300,7 +302,7 @@
                 }
 
                 select.dataset.searchableFacilityEnhanced = 'true';
-                select.classList.add('facility-search-source');
+                select.classList.add(select.hasAttribute('data-searchable-select') ? 'searchable-select-source' : 'facility-search-source');
 
                 const wrapper = document.createElement('div');
                 wrapper.className = 'searchable-select';
@@ -309,8 +311,8 @@
                 input.type = 'text';
                 input.className = 'searchable-select-control';
                 input.autocomplete = 'off';
-                input.placeholder = select.options[0]?.textContent?.trim() || 'Search facilities';
-                input.setAttribute('aria-label', 'Search facilities');
+                input.placeholder = select.dataset.searchPlaceholder || select.options[0]?.textContent?.trim() || 'Search';
+                input.setAttribute('aria-label', select.dataset.searchPlaceholder || 'Search');
 
                 const clearButton = document.createElement('button');
                 clearButton.type = 'button';
@@ -369,7 +371,7 @@
                     if (matches.length === 0) {
                         const empty = document.createElement('div');
                         empty.className = 'searchable-select-empty';
-                        empty.textContent = 'No matching facilities found.';
+                        empty.textContent = select.dataset.searchEmpty || 'No matching options found.';
                         menu.appendChild(empty);
                         return;
                     }
@@ -443,6 +445,7 @@
             };
 
             window.enhanceFacilitySelect = enhanceFacilitySelect;
+            window.enhanceSearchableSelect = enhanceFacilitySelect;
 
             document.querySelectorAll(facilitySelectSelector).forEach(enhanceFacilitySelect);
 
@@ -454,6 +457,7 @@
                 select.value = value || '';
                 select.dispatchEvent(new Event('change', { bubbles: true }));
             };
+            window.setSearchableSelectValue = window.setSearchableFacilityValue;
         });
     </script>
     @stack('scripts')

@@ -18,7 +18,7 @@ class PublicCareerController extends Controller
     {
         $jobs = JobOpening::query()
             ->publiclyVisible()
-            ->with(['department', 'project', 'province', 'district', 'facility', 'employmentType'])
+            ->with(['department', 'project', 'province', 'provinces', 'district', 'facility', 'employmentType'])
             ->orderBy('closing_date')
             ->paginate(10);
 
@@ -29,7 +29,7 @@ class PublicCareerController extends Controller
     {
         abort_unless(JobOpening::query()->publiclyVisible()->whereKey($jobOpening->getKey())->exists(), 404);
 
-        $jobOpening->load(['department', 'project', 'province', 'district', 'facility', 'employmentType', 'reportingToJobTitle']);
+        $jobOpening->load(['department', 'project', 'province', 'provinces', 'district', 'facility', 'employmentType', 'reportingToJobTitle']);
 
         return view('public.careers.show', compact('jobOpening'));
     }
@@ -45,7 +45,7 @@ class PublicCareerController extends Controller
             'recipient_email.email' => 'Enter a valid email address.',
         ]);
 
-        $jobOpening->load(['department', 'project', 'province', 'district', 'facility', 'employmentType', 'reportingToJobTitle']);
+        $jobOpening->load(['department', 'project', 'province', 'provinces', 'district', 'facility', 'employmentType', 'reportingToJobTitle']);
 
         try {
             Mail::to($validated['recipient_email'])->send(new SharedJobOpeningMail($jobOpening, $validated['recipient_email']));
@@ -68,7 +68,7 @@ class PublicCareerController extends Controller
     {
         abort_unless(JobOpening::query()->publiclyVisible()->whereKey($jobOpening->getKey())->exists(), 404);
 
-        $jobOpening->load(['department', 'project', 'province', 'district', 'facility', 'employmentType', 'reportingToJobTitle']);
+        $jobOpening->load(['department', 'project', 'province', 'provinces', 'district', 'facility', 'employmentType', 'reportingToJobTitle']);
 
         $pdf = Pdf::loadView('recruitment.job-openings.pdf', [
             'jobOpening' => $jobOpening,

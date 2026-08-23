@@ -49,7 +49,7 @@ class JobOpeningController extends Controller
 
         $latestJobs = JobOpening::query()
             ->visibleTo($request->user())
-            ->with(['department', 'province'])
+            ->with(['department', 'province', 'provinces'])
             ->latest()
             ->take(5)
             ->get();
@@ -66,7 +66,7 @@ class JobOpeningController extends Controller
         $perPage = in_array($perPage, [5, 10, 25, 50], true) ? $perPage : 10;
 
         $jobOpenings = JobOpening::query()
-            ->with(['department', 'project', 'province', 'district', 'facility', 'jobTitle', 'employmentType'])
+            ->with(['department', 'project', 'province', 'provinces', 'district', 'facility', 'jobTitle', 'employmentType'])
             ->visibleTo($request->user())
             ->when($request->filled('search'), function ($query) use ($request) {
                 $search = $request->string('search');
@@ -79,7 +79,14 @@ class JobOpeningController extends Controller
             })
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')))
             ->when($request->filled('visibility'), fn ($query) => $query->where('visibility', $request->string('visibility')))
-            ->when($request->filled('province_id'), fn ($query) => $query->where('province_id', $request->integer('province_id')))
+            ->when($request->filled('province_id'), function ($query) use ($request) {
+                $provinceId = $request->integer('province_id');
+
+                $query->where(function ($query) use ($provinceId) {
+                    $query->whereHas('provinces', fn ($query) => $query->whereKey($provinceId))
+                        ->orWhere('province_id', $provinceId);
+                });
+            })
             ->when($request->filled('department_id'), fn ($query) => $query->where('department_id', $request->integer('department_id')))
             ->when($request->filled('project_id'), fn ($query) => $query->where('project_id', $request->integer('project_id')))
             ->when($request->filled('closing_from'), fn ($query) => $query->whereDate('closing_date', '>=', $request->date('closing_from')))
@@ -144,7 +151,10 @@ class JobOpeningController extends Controller
                 $data['province_id'] = $request->user()->province_id;
             }
 
-            return JobOpening::create($data);
+            $jobOpening = JobOpening::create($data);
+            $jobOpening->provinces()->sync($request->input('province_ids', []));
+
+            return $jobOpening;
         });
 
         $activity->log(
@@ -211,7 +221,10 @@ class JobOpeningController extends Controller
             $data['province_id'] = $request->user()->province_id;
         }
 
-        $jobOpening->update($data);
+        DB::transaction(function () use ($jobOpening, $data, $request): void {
+            $jobOpening->update($data);
+            $jobOpening->provinces()->sync($request->input('province_ids', []));
+        });
 
         $activity->log(
             'job_opening_updated',
@@ -407,7 +420,7 @@ class JobOpeningController extends Controller
         Gate::authorize('viewAny', JobOpening::class);
 
         $jobOpenings = JobOpening::onlyTrashed()
-            ->with(['department', 'province', 'archivedBy'])
+            ->with(['department', 'province', 'provinces', 'archivedBy'])
             ->visibleTo($request->user())
             ->when($request->filled('search'), function ($query) use ($request) {
                 $search = $request->string('search');
@@ -463,6 +476,7 @@ class JobOpeningController extends Controller
             'project',
             'department',
             'province',
+            'provinces',
             'district',
             'facility',
             'employmentType',

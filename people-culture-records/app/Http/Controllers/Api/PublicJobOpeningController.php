@@ -12,7 +12,7 @@ class PublicJobOpeningController extends Controller
     {
         $jobs = JobOpening::query()
             ->publiclyVisible()
-            ->with(['department', 'project', 'province', 'district', 'facility'])
+            ->with(['department', 'project', 'province', 'provinces', 'district', 'facility'])
             ->orderBy('closing_date')
             ->get()
             ->map(fn (JobOpening $job) => $this->summaryPayload($job));
@@ -24,7 +24,7 @@ class PublicJobOpeningController extends Controller
     {
         $job = JobOpening::query()
             ->publiclyVisible()
-            ->with(['department', 'project', 'province', 'district', 'facility', 'employmentType', 'reportingToJobTitle'])
+            ->with(['department', 'project', 'province', 'provinces', 'district', 'facility', 'employmentType', 'reportingToJobTitle'])
             ->where('slug', $slug)
             ->firstOrFail();
 

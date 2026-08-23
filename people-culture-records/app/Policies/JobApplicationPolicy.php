@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Models\JobApplication;
 use App\Models\JobApplicationDocument;
+use App\Models\JobOpening;
 use App\Models\User;
 
 class JobApplicationPolicy
@@ -25,7 +26,7 @@ class JobApplicationPolicy
         }
 
         return $user->province_id !== null
-            && ($jobApplication->jobOpening?->province_id === null || $jobApplication->jobOpening?->province_id === $user->province_id);
+            && JobOpening::query()->visibleTo($user)->whereKey($jobApplication->job_opening_id)->exists();
     }
 
     public function downloadDocument(User $user, JobApplication $jobApplication, JobApplicationDocument $document): bool
@@ -73,6 +74,12 @@ class JobApplicationPolicy
             return false;
         }
 
-        return $jobApplication->jobOpening?->province_id === $user->province_id;
+        $jobOpening = $jobApplication->jobOpening;
+
+        return $jobOpening !== null
+            && (
+                $jobOpening->provinces()->whereKey($user->province_id)->exists()
+                || (int) $jobOpening->province_id === (int) $user->province_id
+            );
     }
 }

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -130,6 +131,11 @@ class JobOpening extends Model
     public function province(): BelongsTo
     {
         return $this->belongsTo(Province::class);
+    }
+
+    public function provinces(): BelongsToMany
+    {
+        return $this->belongsToMany(Province::class, 'job_opening_province')->withTimestamps();
     }
 
     public function district(): BelongsTo
@@ -260,16 +266,37 @@ class JobOpening extends Model
             return $this->location_details;
         }
 
-        return collect([$this->province?->name, $this->district?->name, $this->facility?->name])
+        $provinceLabel = $this->province_list_label;
+
+        return collect([$provinceLabel !== 'Zambia' ? $provinceLabel : null, $this->district?->name, $this->facility?->name])
             ->filter()
-            ->implode(' / ') ?: 'Not specified';
+            ->implode(' / ') ?: 'Zambia';
     }
 
     public function getPublicLocationLabelAttribute(): string
     {
-        return collect([$this->province?->name, $this->district?->name])
+        $provinceLabel = $this->province_list_label;
+
+        return collect([$provinceLabel !== 'Zambia' ? $provinceLabel : 'Zambia', $this->district?->name])
             ->filter()
-            ->implode(' / ') ?: 'Location not specified';
+            ->implode(' / ');
+    }
+
+    public function getProvinceListLabelAttribute(): string
+    {
+        if ($this->relationLoaded('provinces') && $this->provinces->isNotEmpty()) {
+            return $this->provinces->pluck('name')->implode(', ');
+        }
+
+        if (! $this->relationLoaded('provinces') && $this->exists) {
+            $names = $this->provinces()->orderBy('name')->pluck('name');
+
+            if ($names->isNotEmpty()) {
+                return $names->implode(', ');
+            }
+        }
+
+        return $this->province?->name ?? 'Zambia';
     }
 
     public function getVacancyAnnouncementTitleAttribute(): string
@@ -355,8 +382,12 @@ class JobOpening extends Model
 
         if ($user->province_id) {
             return $query->where(function (Builder $query) use ($user) {
-                $query->where('province_id', $user->province_id)
-                    ->orWhereNull('province_id');
+                $query->whereHas('provinces', fn (Builder $query) => $query->whereKey($user->province_id))
+                    ->orWhere('province_id', $user->province_id)
+                    ->orWhere(function (Builder $query): void {
+                        $query->whereNull('province_id')
+                            ->whereDoesntHave('provinces');
+                    });
             });
         }
 

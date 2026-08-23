@@ -43,7 +43,7 @@
                             <td>{{ $job->reference_no }}</td>
                             <td>{{ $job->title }}</td>
                             <td>{{ $job->department?->name ?? '-' }}</td>
-                            <td>{{ $job->province?->name ?? 'Global / HQ' }}</td>
+                            <td>{{ $job->province_list_label }}</td>
                             <td>{{ str($job->status)->headline() }}</td>
                             <td>
                                 <div>{{ $job->deleted_at?->format('d M Y') }}</div>

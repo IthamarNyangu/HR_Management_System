@@ -23,17 +23,37 @@ class StoreJobOpeningRequest extends FormRequest
             : null;
         $reportingTo = $this->input('reporting_to_job_title_id');
 
+        $rawProvinceIds = $this->input('province_ids', []);
+
+        if (! is_array($rawProvinceIds)) {
+            $rawProvinceIds = [$rawProvinceIds];
+        }
+
+        if ($rawProvinceIds === [] && $this->filled('province_id')) {
+            $rawProvinceIds = [$this->input('province_id')];
+        }
+
+        $provinceIds = collect($rawProvinceIds)
+            ->filter(fn ($value) => filled($value))
+            ->map(fn ($value) => (int) $value)
+            ->unique()
+            ->values()
+            ->all();
+
         $this->merge([
             'show_number_of_positions' => $this->boolean('show_number_of_positions'),
             'reporting_to_tba' => $reportingTo === 'tba',
             'reporting_to_job_title_id' => $reportingTo === 'tba' || blank($reportingTo) ? null : $reportingTo,
             'status' => $this->input('status') ?: JobOpening::STATUS_DRAFT,
             'title' => $jobTitleName ?: $this->input('title'),
+            'province_ids' => $provinceIds,
+            'province_id' => $provinceIds[0] ?? null,
         ]);
 
         if ($this->user()?->hasRole('HR Officer')) {
             $this->merge([
                 'province_id' => $this->user()->province_id,
+                'province_ids' => [$this->user()->province_id],
             ]);
         }
     }
@@ -49,6 +69,8 @@ class StoreJobOpeningRequest extends FormRequest
             'project_id' => ['nullable', 'exists:projects,id'],
             'department_id' => ['nullable', 'exists:departments,id'],
             'province_id' => ['nullable', 'exists:provinces,id'],
+            'province_ids' => ['nullable', 'array'],
+            'province_ids.*' => ['integer', 'exists:provinces,id'],
             'district_id' => ['nullable', 'exists:districts,id'],
             'facility_id' => ['nullable', 'exists:facilities,id'],
             'employment_type_id' => ['nullable', 'exists:employment_types,id'],
@@ -124,13 +146,23 @@ class StoreJobOpeningRequest extends FormRequest
 
     protected function validateLocation($validator): void
     {
-        if ($this->filled(['province_id', 'district_id'])) {
-            $districtBelongsToProvince = District::whereKey($this->input('district_id'))
-                ->where('province_id', $this->input('province_id'))
-                ->exists();
+        if ($this->filled('district_id')) {
+            $provinceIds = collect($this->input('province_ids', []))
+                ->filter()
+                ->map(fn ($value) => (int) $value)
+                ->values();
+
+            if ($provinceIds->isEmpty() && $this->filled('province_id')) {
+                $provinceIds->push((int) $this->input('province_id'));
+            }
+
+            $districtBelongsToProvince = $provinceIds->isNotEmpty()
+                && District::whereKey($this->input('district_id'))
+                    ->whereIn('province_id', $provinceIds)
+                    ->exists();
 
             if (! $districtBelongsToProvince) {
-                $validator->errors()->add('district_id', 'The selected district must belong to the selected province.');
+                $validator->errors()->add('district_id', 'The selected district must belong to one of the selected provinces.');
             }
         }
 
@@ -153,8 +185,10 @@ class StoreJobOpeningRequest extends FormRequest
             return;
         }
 
-        if (! $user->province_id || (int) $this->input('province_id') !== (int) $user->province_id) {
-            $validator->errors()->add('province_id', 'HR Officers can only create jobs for their assigned province.');
+        $provinceIds = collect($this->input('province_ids', []))->map(fn ($value) => (int) $value);
+
+        if (! $user->province_id || $provinceIds->count() !== 1 || $provinceIds->first() !== (int) $user->province_id) {
+            $validator->errors()->add('province_ids', 'HR Officers can only create jobs for their assigned province.');
         }
     }
 

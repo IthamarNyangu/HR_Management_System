@@ -23,7 +23,11 @@ class JobOpeningPolicy
         }
 
         return $user->province_id !== null
-            && ($jobOpening->province_id === null || $jobOpening->province_id === $user->province_id);
+            && (
+                $jobOpening->provinces()->whereKey($user->province_id)->exists()
+                || (int) $jobOpening->province_id === (int) $user->province_id
+                || ($jobOpening->province_id === null && ! $jobOpening->provinces()->exists())
+            );
     }
 
     public function create(User $user): bool

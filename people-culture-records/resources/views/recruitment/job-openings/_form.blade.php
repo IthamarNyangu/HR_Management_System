@@ -7,6 +7,10 @@
     $contactEmail = config('mail.from.address') ?: 'hrms-noreply@righttocare-zambia.org';
     $selectedOpeningDate = old('opening_date', $jobOpening->opening_date?->format('Y-m-d') ?? now()->toDateString());
     $selectedClosingDate = old('closing_date', $jobOpening->closing_date?->format('Y-m-d') ?? now()->addWeeks(2)->toDateString());
+    $selectedProvinceIds = collect(old('province_ids', $jobOpening->exists ? $jobOpening->provinces->pluck('id')->all() : array_filter([$jobOpening->province_id])))
+        ->filter()
+        ->map(fn ($value) => (string) $value)
+        ->all();
 @endphp
 
 <div class="d-flex flex-column gap-4" data-job-opening-form>
@@ -65,7 +69,7 @@
 
             <div class="col-lg-6">
                 <label for="job_title_id" class="form-label">Position <span class="text-danger">*</span></label>
-                <select id="job_title_id" name="job_title_id" class="form-select @error('job_title_id') is-invalid @enderror" required>
+                <select id="job_title_id" name="job_title_id" class="form-select @error('job_title_id') is-invalid @enderror" data-searchable-select data-search-placeholder="Search job titles" data-search-empty="No matching job titles found." required>
                     <option value="">Select job title</option>
                     @foreach ($jobTitles as $jobTitle)
                         <option value="{{ $jobTitle->id }}" @selected((string) old('job_title_id', $jobOpening->job_title_id) === (string) $jobTitle->id)>{{ $jobTitle->name }}</option>
@@ -114,7 +118,7 @@
             </div>
             <div class="col-md-4">
                 <label for="reporting_to_job_title_id" class="form-label">Reporting To <span class="text-danger">*</span></label>
-                <select id="reporting_to_job_title_id" name="reporting_to_job_title_id" class="form-select @error('reporting_to_job_title_id') is-invalid @enderror" required>
+                <select id="reporting_to_job_title_id" name="reporting_to_job_title_id" class="form-select @error('reporting_to_job_title_id') is-invalid @enderror" data-searchable-select data-search-placeholder="Search reporting job title" data-search-empty="No matching job titles found." required>
                     <option value="">Select reporting job title</option>
                     <option value="tba" @selected((string) $selectedReportingTo === 'tba')>TBA</option>
                     @foreach ($jobTitles as $jobTitle)
@@ -174,21 +178,32 @@
                 @error('department_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
             <div class="col-md-4">
-                <label for="province_id" class="form-label">Province</label>
+                <label class="form-label">Province</label>
                 @if ($isOfficer)
                     <input type="hidden" name="province_id" value="{{ auth()->user()->province_id }}">
+                    <input type="hidden" name="province_ids[]" value="{{ auth()->user()->province_id }}">
                 @endif
-                <select id="province_id" name="{{ $isOfficer ? '_province_display' : 'province_id' }}" class="form-select @error('province_id') is-invalid @enderror" data-province-select @disabled($isOfficer)>
-                    <option value="">Global / organisation-wide</option>
+                <div class="border rounded-2 bg-white p-2 @error('province_ids') border-danger @enderror" data-province-checkboxes>
+                    @if (! $isOfficer)
+                        <div class="form-check">
+                            <input id="province_global" type="checkbox" class="form-check-input" data-global-province @checked(empty($selectedProvinceIds))>
+                            <label for="province_global" class="form-check-label">Global / organisation-wide</label>
+                        </div>
+                    @endif
                     @foreach ($provinces as $province)
-                        <option value="{{ $province->id }}" @selected((string) old('province_id', $jobOpening->province_id) === (string) $province->id)>{{ $province->name }}</option>
+                        <div class="form-check">
+                            <input id="province_{{ $province->id }}" name="{{ $isOfficer ? '_province_ids_display[]' : 'province_ids[]' }}" type="checkbox" value="{{ $province->id }}" class="form-check-input" data-province-option @checked(in_array((string) $province->id, $selectedProvinceIds, true) || ($isOfficer && (int) auth()->user()->province_id === (int) $province->id)) @disabled($isOfficer)>
+                            <label for="province_{{ $province->id }}" class="form-check-label">{{ $province->name }}</label>
+                        </div>
                     @endforeach
-                </select>
+                </div>
                 @error('province_id')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                @error('province_ids')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                <div class="form-text">Leave all provinces unticked for Zambia / organisation-wide vacancies.</div>
             </div>
             <div class="col-md-4">
                 <label for="district_id" class="form-label">District</label>
-                <select id="district_id" name="district_id" class="form-select @error('district_id') is-invalid @enderror" data-district-select>
+                <select id="district_id" name="district_id" class="form-select @error('district_id') is-invalid @enderror" data-district-select data-searchable-select data-search-placeholder="Search districts" data-search-empty="No matching districts found.">
                     <option value="">Select district</option>
                     @foreach ($districts as $district)
                         <option value="{{ $district->id }}" data-province-id="{{ $district->province_id }}" @selected((string) old('district_id', $jobOpening->district_id) === (string) $district->id)>{{ $district->name }}</option>
@@ -274,7 +289,8 @@
                 return;
             }
 
-            const province = form.querySelector('[data-province-select]');
+            const provinceOptions = Array.from(form.querySelectorAll('[data-province-option]'));
+            const globalProvince = form.querySelector('[data-global-province]');
             const district = form.querySelector('[data-district-select]');
             const facility = form.querySelector('[data-facility-select]');
             const openingDate = form.querySelector('#opening_date');
@@ -293,16 +309,18 @@
             }
 
             function filterDistricts() {
-                const provinceId = province.value;
+                const provinceIds = provinceOptions
+                    .filter(function (option) { return option.checked && !option.disabled; })
+                    .map(function (option) { return option.value; });
 
                 district.querySelectorAll('option[data-province-id]').forEach(function (option) {
-                    const visible = !provinceId || option.dataset.provinceId === provinceId;
+                    const visible = provinceIds.length === 0 || provinceIds.includes(option.dataset.provinceId);
                     option.hidden = !visible;
                     option.disabled = !visible;
                 });
 
                 if (district.selectedOptions[0]?.disabled) {
-                    district.value = '';
+                    window.setSearchableSelectValue?.(district, '');
                 }
 
                 filterFacilities();
@@ -322,7 +340,25 @@
                 }
             }
 
-            province?.addEventListener('change', filterDistricts);
+            provinceOptions.forEach(function (option) {
+                option.addEventListener('change', function () {
+                    if (globalProvince && option.checked) {
+                        globalProvince.checked = false;
+                    }
+
+                    filterDistricts();
+                });
+            });
+
+            globalProvince?.addEventListener('change', function () {
+                if (globalProvince.checked) {
+                    provinceOptions.forEach(function (option) {
+                        option.checked = false;
+                    });
+                }
+
+                filterDistricts();
+            });
             district?.addEventListener('change', filterFacilities);
             openingDate?.addEventListener('change', syncClosingDateMinimum);
             syncClosingDateMinimum();
