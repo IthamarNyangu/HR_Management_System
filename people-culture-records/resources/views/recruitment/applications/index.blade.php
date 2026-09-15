@@ -1,12 +1,12 @@
 @extends('layouts.app')
 
-@section('title', 'Job Applications')
-@section('page-title', 'Job Applications')
+@section('title', 'Vacancy Applications')
+@section('page-title', 'Vacancy Applications')
 
 @section('breadcrumb')
     <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
     <li class="breadcrumb-item"><a href="{{ route('recruitment.index') }}">Recruitment</a></li>
-    <li class="breadcrumb-item active" aria-current="page">Applications</li>
+    <li class="breadcrumb-item active" aria-current="page">Vacancy Applications</li>
 @endsection
 
 @section('content')
@@ -121,7 +121,7 @@
     <section class="bg-white border rounded-2 p-3">
         <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
             <div>
-                <h2 class="h5 mb-1">Applications</h2>
+                <h2 class="h5 mb-1">Vacancy Applications</h2>
                 <div class="text-muted">{{ $applications->total() }} record(s) found.</div>
             </div>
         </div>

@@ -8,7 +8,18 @@
         ['label' => 'Staff Relocations', 'icon' => 'bi-geo-alt', 'route' => 'staff-relocations.index', 'active' => request()->routeIs('staff-relocations.*'), 'enabled' => auth()->user()->can('viewAny', App\Models\StaffRelocation::class)],
         ['label' => 'Temporary Appointments', 'icon' => 'bi-calendar-event', 'route' => 'temporary-appointments.index', 'active' => request()->routeIs('temporary-appointments.*'), 'enabled' => auth()->user()->can('viewAny', App\Models\TemporaryAppointment::class)],
         ['label' => 'Staff Establishment', 'icon' => 'bi-building-check', 'route' => 'staff-establishment.index', 'active' => request()->routeIs('staff-establishment.*'), 'enabled' => auth()->user()->can('viewAny', App\Models\StaffEstablishmentPlan::class)],
-        ['label' => 'Recruitment', 'icon' => 'bi-briefcase', 'route' => 'recruitment.index', 'active' => request()->routeIs('recruitment.*'), 'enabled' => auth()->user()->can('viewAny', App\Models\JobOpening::class)],
+        [
+            'label' => 'Recruitment',
+            'icon' => 'bi-briefcase',
+            'route' => 'recruitment.index',
+            'active' => request()->routeIs('recruitment.*'),
+            'enabled' => auth()->user()->can('viewAny', App\Models\JobOpening::class),
+            'children' => [
+                ['label' => 'Overview', 'route' => 'recruitment.index', 'active' => request()->routeIs('recruitment.index'), 'enabled' => auth()->user()->can('viewAny', App\Models\JobOpening::class)],
+                ['label' => 'Job Openings', 'route' => 'recruitment.job-openings.index', 'active' => request()->routeIs('recruitment.job-openings.*'), 'enabled' => auth()->user()->can('viewAny', App\Models\JobOpening::class)],
+                ['label' => 'Vacancy Applications', 'route' => 'recruitment.applications.index', 'active' => request()->routeIs('recruitment.applications.*'), 'enabled' => auth()->user()->can('viewAny', App\Models\JobApplication::class)],
+            ],
+        ],
         ['label' => 'Reports & Exports', 'icon' => 'bi-bar-chart', 'route' => 'reports.index', 'active' => request()->routeIs('reports.*'), 'enabled' => auth()->user()->can('view-reports')],
         ['label' => 'Imports', 'icon' => 'bi-cloud-arrow-up', 'route' => 'imports.index', 'active' => request()->routeIs('imports.*'), 'enabled' => auth()->user()->can('view-imports')],
         ['label' => 'Admin Panel', 'icon' => 'bi-sliders', 'route' => 'admin.index', 'active' => request()->routeIs('admin.index') || request()->routeIs('admin.master-data.*'), 'enabled' => auth()->user()->can('manage-master-data')],
@@ -32,10 +43,27 @@
     <nav class="nav flex-column gap-1">
         @foreach ($items as $item)
             @if ($item['enabled'] && $item['route'])
-                <a class="nav-link {{ $item['active'] ? 'active' : '' }}" href="{{ route($item['route']) }}" title="{{ $item['label'] }}">
-                    <i class="bi {{ $item['icon'] }} nav-icon" aria-hidden="true"></i>
-                    <span class="sidebar-label">{{ $item['label'] }}</span>
-                </a>
+                @if (! empty($item['children']))
+                    <button type="button" class="nav-link sidebar-group-toggle {{ $item['active'] ? 'active' : '' }}" title="{{ $item['label'] }}" aria-expanded="{{ $item['active'] ? 'true' : 'false' }}" data-sidebar-subnav-toggle>
+                        <i class="bi {{ $item['icon'] }} nav-icon" aria-hidden="true"></i>
+                        <span class="sidebar-label">{{ $item['label'] }}</span>
+                        <i class="bi bi-chevron-down sidebar-label sidebar-caret ms-auto" aria-hidden="true"></i>
+                    </button>
+                    <div class="sidebar-subnav" @unless($item['active']) hidden @endunless>
+                        @foreach ($item['children'] as $child)
+                            @if ($child['enabled'])
+                                <a class="sidebar-subnav-link {{ $child['active'] ? 'active' : '' }}" href="{{ route($child['route']) }}" title="{{ $child['label'] }}">
+                                    <span class="sidebar-label">{{ $child['label'] }}</span>
+                                </a>
+                            @endif
+                        @endforeach
+                    </div>
+                @else
+                    <a class="nav-link {{ $item['active'] ? 'active' : '' }}" href="{{ route($item['route']) }}" title="{{ $item['label'] }}">
+                        <i class="bi {{ $item['icon'] }} nav-icon" aria-hidden="true"></i>
+                        <span class="sidebar-label">{{ $item['label'] }}</span>
+                    </a>
+                @endif
             @else
                 <span class="nav-link disabled" title="{{ $item['label'] }}">
                     <i class="bi {{ $item['icon'] }} nav-icon" aria-hidden="true"></i>

@@ -6,7 +6,7 @@
 @section('breadcrumb')
     <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
     <li class="breadcrumb-item"><a href="{{ route('recruitment.index') }}">Recruitment</a></li>
-    <li class="breadcrumb-item"><a href="{{ route('recruitment.applications.index') }}">Applications</a></li>
+    <li class="breadcrumb-item"><a href="{{ route('recruitment.applications.index') }}">Vacancy Applications</a></li>
     <li class="breadcrumb-item active" aria-current="page">{{ $jobApplication->reference_no }}</li>
 @endsection
 
