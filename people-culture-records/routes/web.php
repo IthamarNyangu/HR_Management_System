@@ -183,6 +183,8 @@ Route::middleware(['auth', 'active', 'password.changed'])->group(function () use
         ->except(['destroy']);
     Route::get('/employees/archived', [EmployeeController::class, 'archived'])->name('employees.archived');
     Route::post('/employees/{employee}/workpulse/validate', [EmployeeController::class, 'validateWorkPulse'])->name('employees.workpulse.validate');
+    Route::post('/employees/{employee}/workpulse/invite', [EmployeeController::class, 'inviteToWorkPulse'])->name('employees.workpulse.invite');
+    Route::post('/employees/{employee}/workpulse/resend', [EmployeeController::class, 'resendWorkPulseSetup'])->name('employees.workpulse.resend');
     Route::post('/employees/bulk-action', [EmployeeBulkActionController::class, 'handle'])->name('employees.bulk-action');
     Route::patch('/employees/{employee}/archive', [EmployeeController::class, 'archive'])->name('employees.archive');
     Route::patch('/employees/{id}/restore', [EmployeeController::class, 'restore'])->whereNumber('id')->name('employees.restore');

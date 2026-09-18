@@ -207,6 +207,70 @@ class EmployeeController extends Controller
         }
     }
 
+    public function inviteToWorkPulse(Employee $employee): RedirectResponse
+    {
+        Gate::authorize('update', $employee);
+
+        $baseUrl = rtrim((string) config('services.workpulse.base_url'), '/');
+        $token = (string) config('services.workpulse.sync_token');
+        if ($baseUrl === '' || $token === '') {
+            return back()->with('workpulse_validation', [
+                'type' => 'danger',
+                'message' => 'WorkPulse integration is not configured on this HR system.',
+            ]);
+        }
+
+        try {
+            $response = Http::acceptJson()
+                ->withToken($token)
+                ->timeout(20)
+                ->post("{$baseUrl}/api/integrations/hr/provision", [
+                    'employee_source_id' => $employee->id,
+                    'action' => 'invite',
+                ]);
+            $payload = $response->json();
+
+            return back()->with('workpulse_validation', [
+                'type' => $response->successful() ? 'success' : ($response->status() === 409 ? 'info' : 'danger'),
+                'message' => $payload['message'] ?? 'WorkPulse did not return an invitation result.',
+            ]);
+        } catch (\Throwable $exception) {
+            report($exception);
+
+            return back()->with('workpulse_validation', [
+                'type' => 'danger',
+                'message' => 'The HR system could not reach WorkPulse. No account was created.',
+            ]);
+        }
+    }
+
+    public function resendWorkPulseSetup(Employee $employee): RedirectResponse
+    {
+        Gate::authorize('update', $employee);
+
+        $baseUrl = rtrim((string) config('services.workpulse.base_url'), '/');
+        $token = (string) config('services.workpulse.sync_token');
+        if ($baseUrl === '' || $token === '') {
+            return back()->with('workpulse_validation', ['type' => 'danger', 'message' => 'WorkPulse integration is not configured on this HR system.']);
+        }
+
+        try {
+            $response = Http::acceptJson()->withToken($token)->timeout(20)->post("{$baseUrl}/api/integrations/hr/provision", [
+                'employee_source_id' => $employee->id,
+                'action' => 'resend',
+            ]);
+
+            return back()->with('workpulse_validation', [
+                'type' => $response->successful() ? 'success' : 'danger',
+                'message' => $response->json('message') ?: 'WorkPulse did not return an email result.',
+            ]);
+        } catch (\Throwable $exception) {
+            report($exception);
+
+            return back()->with('workpulse_validation', ['type' => 'danger', 'message' => 'The HR system could not reach WorkPulse. No setup email was requested.']);
+        }
+    }
+
     private function workPulseAccountStatus(Employee $employee): array
     {
         $baseUrl = rtrim((string) config('services.workpulse.base_url'), '/');

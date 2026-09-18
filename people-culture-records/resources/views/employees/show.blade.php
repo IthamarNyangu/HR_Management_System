@@ -19,6 +19,15 @@
     </div>
 @endsection
 
+@push('styles')
+    <style>
+        .workpulse-access-card { position: relative; overflow: hidden; isolation: isolate; }
+        .workpulse-access-card::after { content: ""; position: absolute; z-index: 0; inset: 1rem; background: url("{{ asset('images/workpulse-app-icon.png') }}") center/auto min(82%, 32rem) no-repeat; opacity: .035; pointer-events: none; }
+        .workpulse-access-card > * { position: relative; z-index: 1; }
+        @media (max-width: 767.98px) { .workpulse-access-card::after { inset: .5rem; background-size: auto min(65%, 18rem); } }
+    </style>
+@endpush
+
 @section('content')
     @php
         $canViewSensitivePersonalData = auth()->user()->can('viewSensitivePersonalData', $employee);
@@ -92,7 +101,8 @@
                     $workPulseStatusLabels = [
                         'not_enabled' => ['Not enabled', 'text-bg-secondary'],
                         'ready' => ['Ready to onboard', 'text-bg-success'],
-                        'invitation_pending' => ['Invitation pending', 'text-bg-warning'],
+                        'account_created' => ['Account created', 'text-bg-info'],
+                        'invitation_pending' => ['Invitation requested', 'text-bg-warning'],
                         'active' => ['Account active', 'text-bg-success'],
                         'deactivated' => ['Account deactivated', 'text-bg-secondary'],
                         'invitation_failed' => ['Invitation failed', 'text-bg-danger'],
@@ -102,21 +112,45 @@
                     $workPulseStatus = $workPulseAccountStatus['status'] ?? 'unavailable';
                     $workPulseStatusDisplay = $workPulseStatusLabels[$workPulseStatus] ?? ['Unknown', 'text-bg-secondary'];
                 @endphp
-                <section class="bg-white border rounded-2 p-4 mb-3">
+                <section class="workpulse-access-card bg-white border rounded-2 p-4 mb-3">
                     <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
                         <div>
                             <div class="d-flex align-items-center gap-2 mb-1">
                                 <h2 class="h5 mb-0">WorkPulse Access</h2>
                                 <span class="badge {{ $workPulseStatusDisplay[1] }}">{{ $workPulseStatusDisplay[0] }}</span>
                             </div>
-                            <p class="text-muted mb-0">Check whether this employee is ready for a WorkPulse account. This does not create an account or send email.</p>
+                            <p class="text-muted mb-0">
+                                @if ($workPulseStatus === 'ready')
+                                    Requirements are confirmed. Creating the account will send a WorkPulse invitation email.
+                                @elseif ($workPulseStatus === 'invitation_pending')
+                                    WorkPulse requested an invitation email. Delivery is not confirmed; the account is awaiting the employee's first sign-in.
+                                @elseif ($workPulseStatus === 'account_created')
+                                    A linked WorkPulse account exists, but no sign-in has been recorded.
+                                @elseif ($workPulseStatus === 'active')
+                                    This employee has an active linked WorkPulse account.
+                                @else
+                                    Check whether this employee is ready for a WorkPulse account. Validation does not create an account or send email.
+                                @endif
+                            </p>
                         </div>
-                        <form method="POST" action="{{ route('employees.workpulse.validate', $employee) }}">
-                            @csrf
-                            <button type="submit" class="btn btn-outline-primary" {{ $workPulseReadyLocally ? '' : 'disabled' }}>
-                                Validate WorkPulse readiness
-                            </button>
-                        </form>
+                        @if (!in_array($workPulseStatus, ['ready', 'account_created', 'invitation_pending', 'active', 'deactivated'], true))
+                            <form method="POST" action="{{ route('employees.workpulse.validate', $employee) }}">
+                                @csrf
+                                <button type="submit" class="btn btn-outline-primary" {{ $workPulseReadyLocally ? '' : 'disabled' }}>
+                                    Validate WorkPulse readiness
+                                </button>
+                            </form>
+                        @elseif ($workPulseStatus === 'ready')
+                            <form method="POST" action="{{ route('employees.workpulse.invite', $employee) }}" data-confirm="true" data-confirm-title="Create WorkPulse account?" data-confirm-message="This will create a WorkPulse login for {{ $employee->full_name }} and send an invitation to {{ $employee->email }}." data-confirm-button="Create account">
+                                @csrf
+                                <button type="submit" class="btn btn-success"><i class="bi bi-person-plus"></i> Create WorkPulse account</button>
+                            </form>
+                        @elseif (in_array($workPulseStatus, ['account_created', 'invitation_pending'], true))
+                            <form method="POST" action="{{ route('employees.workpulse.resend', $employee) }}" data-confirm="true" data-confirm-title="Send account setup email?" data-confirm-message="WorkPulse will request another secure password setup email for {{ $employee->email }}." data-confirm-button="Send email">
+                                @csrf
+                                <button type="submit" class="btn btn-outline-primary"><i class="bi bi-envelope"></i> Send setup email</button>
+                            </form>
+                        @endif
                     </div>
 
                     @if ($workPulseValidation)
