@@ -12,15 +12,14 @@ use App\Models\Facility;
 use App\Models\JobTitle;
 use App\Models\Project;
 use App\Models\Province;
-use App\Models\StaffRelocation;
 use App\Models\TerminationReason;
-use App\Models\TemporaryAppointment;
 use App\Services\ActivityLogger;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Http;
 
 class EmployeeController extends Controller
 {
@@ -154,7 +153,9 @@ class EmployeeController extends Controller
             ->sortBy([['last_name', 'asc'], ['first_name', 'asc']])
             ->values();
 
-        return view('employees.show', compact('employee', 'directReports', 'disciplinaryCases', 'staffPromotions', 'staffRelocations', 'temporaryAppointments', 'activeTemporaryAppointment'));
+        $workPulseAccountStatus = $this->workPulseAccountStatus($employee);
+
+        return view('employees.show', compact('employee', 'directReports', 'disciplinaryCases', 'staffPromotions', 'staffRelocations', 'temporaryAppointments', 'activeTemporaryAppointment', 'workPulseAccountStatus'));
     }
 
     public function edit(Request $request, Employee $employee): View
@@ -162,6 +163,77 @@ class EmployeeController extends Controller
         Gate::authorize('update', $employee);
 
         return view('employees.edit', $this->formData($request, $employee) + compact('employee'));
+    }
+
+    public function validateWorkPulse(Employee $employee): RedirectResponse
+    {
+        Gate::authorize('update', $employee);
+
+        $baseUrl = rtrim((string) config('services.workpulse.base_url'), '/');
+        $token = (string) config('services.workpulse.sync_token');
+
+        if ($baseUrl === '' || $token === '') {
+            return back()->with('workpulse_validation', [
+                'type' => 'danger',
+                'message' => 'WorkPulse integration is not configured on this HR system.',
+            ]);
+        }
+
+        try {
+            $response = Http::acceptJson()
+                ->withToken($token)
+                ->timeout(15)
+                ->post("{$baseUrl}/api/integrations/hr/provision", [
+                    'employee_source_id' => $employee->id,
+                    'action' => 'validate',
+                ]);
+
+            $payload = $response->json();
+            $ready = $response->successful() && ($payload['ready'] ?? false);
+
+            return back()->with('workpulse_validation', [
+                'type' => $ready ? 'success' : ($response->status() === 409 ? 'info' : 'warning'),
+                'message' => $payload['message'] ?? 'WorkPulse did not return a validation message.',
+                'ready' => $ready,
+                'missing' => $payload['missing'] ?? [],
+            ]);
+        } catch (\Throwable $exception) {
+            report($exception);
+
+            return back()->with('workpulse_validation', [
+                'type' => 'danger',
+                'message' => 'The HR system could not reach WorkPulse. Confirm that the WorkPulse portal is running and try again.',
+            ]);
+        }
+    }
+
+    private function workPulseAccountStatus(Employee $employee): array
+    {
+        $baseUrl = rtrim((string) config('services.workpulse.base_url'), '/');
+        $token = (string) config('services.workpulse.sync_token');
+
+        if ($baseUrl === '' || $token === '') {
+            return ['status' => 'unavailable', 'message' => 'WorkPulse integration is not configured.'];
+        }
+
+        try {
+            $response = Http::acceptJson()
+                ->withToken($token)
+                ->timeout(5)
+                ->get("{$baseUrl}/api/integrations/hr/provision", [
+                    'employee_source_id' => $employee->id,
+                ]);
+
+            if (! $response->successful()) {
+                return ['status' => 'unavailable', 'message' => $response->json('message') ?: 'WorkPulse status is unavailable.'];
+            }
+
+            return $response->json();
+        } catch (\Throwable $exception) {
+            report($exception);
+
+            return ['status' => 'unavailable', 'message' => 'The HR system could not reach WorkPulse.'];
+        }
     }
 
     public function update(UpdateEmployeeRequest $request, Employee $employee, ActivityLogger $activity): RedirectResponse
@@ -296,7 +368,7 @@ class EmployeeController extends Controller
     }
 
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
     private function employeeData(array $data): array

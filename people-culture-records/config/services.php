@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'workpulse' => [
+        'base_url' => env('WORKPULSE_BASE_URL', 'http://localhost:3000'),
+        'sync_token' => env('WORKPULSE_SYNC_TOKEN'),
+    ],
+
 ];

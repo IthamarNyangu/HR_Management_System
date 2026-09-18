@@ -20,7 +20,9 @@
 @endsection
 
 @section('content')
-    @php($canViewSensitivePersonalData = auth()->user()->can('viewSensitivePersonalData', $employee))
+    @php
+        $canViewSensitivePersonalData = auth()->user()->can('viewSensitivePersonalData', $employee);
+    @endphp
 
     <div class="row g-3">
         <div class="col-lg-4">
@@ -74,6 +76,75 @@
                     </div>
                 </div>
             </section>
+
+            @can('update', $employee)
+                @php
+                    $workPulseChecks = [
+                        'Active employment status' => !$employee->trashed() && !$employee->termination_date && (!$employee->employmentStatus?->code || strtoupper($employee->employmentStatus->code) === 'ACTIVE'),
+                        'Employee number' => filled($employee->employee_no),
+                        'Employee name' => filled($employee->first_name) && filled($employee->last_name),
+                        'Valid work email' => filled($employee->email) && filter_var($employee->email, FILTER_VALIDATE_EMAIL),
+                        'Department' => filled($employee->department_id),
+                        'Job title' => filled($employee->job_title_id),
+                    ];
+                    $workPulseReadyLocally = !in_array(false, $workPulseChecks, true);
+                    $workPulseValidation = session('workpulse_validation');
+                    $workPulseStatusLabels = [
+                        'not_enabled' => ['Not enabled', 'text-bg-secondary'],
+                        'ready' => ['Ready to onboard', 'text-bg-success'],
+                        'invitation_pending' => ['Invitation pending', 'text-bg-warning'],
+                        'active' => ['Account active', 'text-bg-success'],
+                        'deactivated' => ['Account deactivated', 'text-bg-secondary'],
+                        'invitation_failed' => ['Invitation failed', 'text-bg-danger'],
+                        'ineligible' => ['Not eligible', 'text-bg-secondary'],
+                        'unavailable' => ['Status unavailable', 'text-bg-danger'],
+                    ];
+                    $workPulseStatus = $workPulseAccountStatus['status'] ?? 'unavailable';
+                    $workPulseStatusDisplay = $workPulseStatusLabels[$workPulseStatus] ?? ['Unknown', 'text-bg-secondary'];
+                @endphp
+                <section class="bg-white border rounded-2 p-4 mb-3">
+                    <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
+                        <div>
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <h2 class="h5 mb-0">WorkPulse Access</h2>
+                                <span class="badge {{ $workPulseStatusDisplay[1] }}">{{ $workPulseStatusDisplay[0] }}</span>
+                            </div>
+                            <p class="text-muted mb-0">Check whether this employee is ready for a WorkPulse account. This does not create an account or send email.</p>
+                        </div>
+                        <form method="POST" action="{{ route('employees.workpulse.validate', $employee) }}">
+                            @csrf
+                            <button type="submit" class="btn btn-outline-primary" {{ $workPulseReadyLocally ? '' : 'disabled' }}>
+                                Validate WorkPulse readiness
+                            </button>
+                        </form>
+                    </div>
+
+                    @if ($workPulseValidation)
+                        <div class="alert alert-{{ $workPulseValidation['type'] }} mt-3 mb-0" role="status">
+                            <strong>{{ ($workPulseValidation['ready'] ?? false) ? 'Ready:' : 'WorkPulse:' }}</strong>
+                            {{ $workPulseValidation['message'] }}
+                        </div>
+                    @endif
+
+                    @if ($workPulseStatus === 'unavailable')
+                        <div class="alert alert-warning mt-3 mb-0" role="status">{{ $workPulseAccountStatus['message'] ?? 'WorkPulse account status is unavailable.' }}</div>
+                    @elseif (!empty($workPulseAccountStatus['last_sign_in_at']))
+                        <div class="small text-muted mt-3">Last WorkPulse sign-in: {{ \Illuminate\Support\Carbon::parse($workPulseAccountStatus['last_sign_in_at'])->format('d M Y, H:i') }}</div>
+                    @endif
+
+                    <div class="row g-2 mt-3">
+                        @foreach ($workPulseChecks as $label => $complete)
+                            <div class="col-md-6">
+                                <div class="border rounded-2 px-3 py-2 d-flex align-items-center justify-content-between">
+                                    <span>{{ $label }}</span>
+                                    <span class="badge {{ $complete ? 'text-bg-success' : 'text-bg-danger' }}">{{ $complete ? 'Available' : 'Missing' }}</span>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                    <div class="small text-muted mt-3">Line manager is recommended but does not block account creation.</div>
+                </section>
+            @endcan
 
             <section class="bg-white border rounded-2 p-4 mb-3">
                 <h2 class="h5">Direct Reports</h2>

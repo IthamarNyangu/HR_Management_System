@@ -26,6 +26,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'active' => \App\Http\Middleware\EnsureUserIsActive::class,
             'guest' => \App\Http\Middleware\RedirectIfAuthenticated::class,
             'password.changed' => \App\Http\Middleware\EnsurePasswordHasBeenChanged::class,
+            'workpulse.integration' => \App\Http\Middleware\VerifyWorkPulseIntegrationToken::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

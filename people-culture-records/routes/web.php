@@ -21,6 +21,7 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ReportExportController;
 use App\Http\Controllers\StaffEstablishmentController;
 use App\Http\Controllers\Api\PublicJobOpeningController;
+use App\Http\Controllers\Api\WorkPulseDirectoryController;
 use App\Http\Controllers\Recruitment\JobApplicationController;
 use App\Http\Controllers\Recruitment\JobApplicationDocumentController;
 use App\Http\Controllers\Recruitment\JobOpeningController;
@@ -51,6 +52,9 @@ Route::get('/applications/{jobApplication}/withdraw/{token}', [PublicJobApplicat
 Route::post('/applications/{jobApplication}/withdraw/{token}', [PublicJobApplicationController::class, 'withdrawConfirm'])->middleware('signed')->name('applications.withdraw.confirm');
 Route::get('/api/careers/jobs', [PublicJobOpeningController::class, 'index'])->name('api.careers.jobs.index');
 Route::get('/api/careers/jobs/{slug}', [PublicJobOpeningController::class, 'show'])->name('api.careers.jobs.show');
+Route::get('/api/integrations/workpulse/directory', WorkPulseDirectoryController::class)
+    ->middleware(['workpulse.integration', 'throttle:60,1'])
+    ->name('api.integrations.workpulse.directory');
 
 Route::post('/sign-out', function (Request $request) {
     Auth::logout();
@@ -178,6 +182,7 @@ Route::middleware(['auth', 'active', 'password.changed'])->group(function () use
         ->parameters(['organisation-chart' => 'organisation_chart'])
         ->except(['destroy']);
     Route::get('/employees/archived', [EmployeeController::class, 'archived'])->name('employees.archived');
+    Route::post('/employees/{employee}/workpulse/validate', [EmployeeController::class, 'validateWorkPulse'])->name('employees.workpulse.validate');
     Route::post('/employees/bulk-action', [EmployeeBulkActionController::class, 'handle'])->name('employees.bulk-action');
     Route::patch('/employees/{employee}/archive', [EmployeeController::class, 'archive'])->name('employees.archive');
     Route::patch('/employees/{id}/restore', [EmployeeController::class, 'restore'])->whereNumber('id')->name('employees.restore');
