@@ -1,5 +1,17 @@
 <?php
 
+use App\Console\Commands\ApplyEffectiveStaffPromotions;
+use App\Console\Commands\ApplyEffectiveStaffRelocations;
+use App\Console\Commands\AutoCloseExpiredDisciplinaryCases;
+use App\Console\Commands\AutoCompleteTemporaryAppointments;
+use App\Console\Commands\NotifyTemporaryAppointmentsEndingSoon;
+use App\Console\Commands\ReconcileWorkPulse;
+use App\Console\Commands\SendMailTest;
+use App\Console\Commands\SyncEmployeeImportMasterData;
+use App\Http\Middleware\EnsurePasswordHasBeenChanged;
+use App\Http\Middleware\EnsureUserIsActive;
+use App\Http\Middleware\RedirectIfAuthenticated;
+use App\Http\Middleware\VerifyWorkPulseIntegrationToken;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -13,20 +25,21 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withCommands([
-        \App\Console\Commands\AutoCloseExpiredDisciplinaryCases::class,
-        \App\Console\Commands\ApplyEffectiveStaffPromotions::class,
-        \App\Console\Commands\ApplyEffectiveStaffRelocations::class,
-        \App\Console\Commands\AutoCompleteTemporaryAppointments::class,
-        \App\Console\Commands\NotifyTemporaryAppointmentsEndingSoon::class,
-        \App\Console\Commands\SyncEmployeeImportMasterData::class,
-        \App\Console\Commands\SendMailTest::class,
+        AutoCloseExpiredDisciplinaryCases::class,
+        ApplyEffectiveStaffPromotions::class,
+        ApplyEffectiveStaffRelocations::class,
+        AutoCompleteTemporaryAppointments::class,
+        NotifyTemporaryAppointmentsEndingSoon::class,
+        SyncEmployeeImportMasterData::class,
+        SendMailTest::class,
+        ReconcileWorkPulse::class,
     ])
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
-            'active' => \App\Http\Middleware\EnsureUserIsActive::class,
-            'guest' => \App\Http\Middleware\RedirectIfAuthenticated::class,
-            'password.changed' => \App\Http\Middleware\EnsurePasswordHasBeenChanged::class,
-            'workpulse.integration' => \App\Http\Middleware\VerifyWorkPulseIntegrationToken::class,
+            'active' => EnsureUserIsActive::class,
+            'guest' => RedirectIfAuthenticated::class,
+            'password.changed' => EnsurePasswordHasBeenChanged::class,
+            'workpulse.integration' => VerifyWorkPulseIntegrationToken::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
