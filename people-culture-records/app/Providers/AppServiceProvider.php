@@ -2,8 +2,8 @@
 
 namespace App\Providers;
 
-use App\Models\Employee;
 use App\Models\DisciplinaryCase;
+use App\Models\Employee;
 use App\Models\JobApplication;
 use App\Models\JobOpening;
 use App\Models\OrganisationChart;
@@ -12,6 +12,7 @@ use App\Models\StaffPromotion;
 use App\Models\StaffRelocation;
 use App\Models\TemporaryAppointment;
 use App\Models\User;
+use App\Observers\EmployeeObserver;
 use App\Policies\DisciplinaryCasePolicy;
 use App\Policies\EmployeePolicy;
 use App\Policies\JobApplicationPolicy;
@@ -41,6 +42,8 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Paginator::useBootstrapFive();
+
+        Employee::observe(EmployeeObserver::class);
 
         Gate::policy(DisciplinaryCase::class, DisciplinaryCasePolicy::class);
         Gate::policy(Employee::class, EmployeePolicy::class);

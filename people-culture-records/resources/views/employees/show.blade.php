@@ -21,10 +21,13 @@
 
 @push('styles')
     <style>
-        .workpulse-access-card { position: relative; overflow: hidden; isolation: isolate; }
-        .workpulse-access-card::after { content: ""; position: absolute; z-index: 0; inset: 1rem; background: url("{{ asset('images/workpulse-app-icon.png') }}") center/auto min(82%, 32rem) no-repeat; opacity: .035; pointer-events: none; }
+        .workpulse-access-card { position: relative; overflow: hidden; isolation: isolate; border-color: #d9d7ee !important; background: linear-gradient(145deg, #f8f7ff 0%, #f1f5ff 54%, #eef8f4 100%) !important; color: #142440; }
+        .workpulse-access-card::after { content: ""; position: absolute; z-index: 0; left: 50%; top: 50%; width: min(72%, 30rem); aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; background: url("{{ asset('images/workpulse-app-icon.png') }}") center/cover no-repeat; opacity: .075; pointer-events: none; }
         .workpulse-access-card > * { position: relative; z-index: 1; }
-        @media (max-width: 767.98px) { .workpulse-access-card::after { inset: .5rem; background-size: auto min(65%, 18rem); } }
+        .workpulse-access-card > .d-flex p, .workpulse-access-card > .small { color: #52627a !important; }
+        .workpulse-access-card .row .border { border-color: rgba(111, 118, 159, .24) !important; background: rgba(255, 255, 255, .72); backdrop-filter: blur(1px); }
+        .workpulse-title-icon { width: 2rem; height: 2rem; border-radius: 50%; object-fit: cover; box-shadow: 0 0 0 1px rgba(23,32,51,.1); }
+        @media (max-width: 767.98px) { .workpulse-access-card::after { width: min(82%, 20rem); } }
     </style>
 @endpush
 
@@ -116,6 +119,7 @@
                     <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
                         <div>
                             <div class="d-flex align-items-center gap-2 mb-1">
+                                <img class="workpulse-title-icon" src="{{ asset('images/workpulse-app-icon.png') }}" alt="">
                                 <h2 class="h5 mb-0">WorkPulse Access</h2>
                                 <span class="badge {{ $workPulseStatusDisplay[1] }}">{{ $workPulseStatusDisplay[0] }}</span>
                             </div>
