@@ -8,6 +8,17 @@
         <section>
             <div class="row row-cols-1 row-cols-md-2 row-cols-xl-4 g-3">
                 @foreach ($needsAttention as $card)
+                    @php
+                        $context = match ($card['label']) {
+                            'Awaiting Approval' => 'Cases waiting for review',
+                            'Expiring Within 30 Days' => 'Approaching expiry',
+                            'Expired Active Cases' => 'Requires attention',
+                            'Active Cases' => 'Currently active',
+                            'Appointments Ending Soon' => 'Ending within 30 days',
+                            'Expired Appointments' => 'Past end date',
+                            default => '',
+                        };
+                    @endphp
                     <div class="col">
                         <a href="{{ $card['url'] }}" class="text-decoration-none text-reset">
                             <div class="dashboard-card dashboard-card-{{ $card['tone'] }} h-100">
@@ -15,6 +26,9 @@
                                     <div>
                                         <div class="dashboard-label">{{ $card['label'] }}</div>
                                         <div class="dashboard-value">{{ $card['value'] }}</div>
+                                        @if ($context)
+                                            <div class="dashboard-context">{{ $context }}</div>
+                                        @endif
                                     </div>
                                     <span class="dashboard-icon">
                                         <i class="bi {{ $card['icon'] }}" aria-hidden="true"></i>
