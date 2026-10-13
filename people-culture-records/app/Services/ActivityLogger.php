@@ -7,6 +7,7 @@ use App\Models\Attachment;
 use App\Models\DisciplinaryCase;
 use App\Models\Employee;
 use App\Models\EmployeeDependant;
+use App\Models\FuneralClaim;
 use App\Models\JobApplication;
 use App\Models\JobApplicationDocument;
 use App\Models\JobOpening;
@@ -69,6 +70,18 @@ class ActivityLogger
                 'province_id' => $subject->employee?->province_id,
                 'province_name' => $subject->employee?->province?->name,
                 'category' => $subject->category,
+            ];
+        }
+
+        if ($subject instanceof FuneralClaim) {
+            return [
+                'reference_no' => $subject->reference_no,
+                'employee_id' => $subject->employee_id,
+                'employee_no' => $subject->employee?->employee_no,
+                'province_id' => $subject->province_id,
+                'province_name' => $subject->province?->name,
+                'deceased_category' => $subject->deceased_category,
+                'status' => $subject->status,
             ];
         }
 

@@ -161,14 +161,31 @@ class EmployeeDependantModuleTest extends TestCase
         $this->actingAs($admin)
             ->from(route('employees.dependants.create', $employee))
             ->post(route('employees.dependants.store', $employee), $this->dependantPayload([
-                'category' => 'spouse',
-                'relationship_detail' => 'stepchild',
+                'category' => 'child',
+                'relationship_detail' => 'spouse',
                 'date_of_birth' => today()->addDay()->toDateString(),
-                'relationship_start_date' => '2025-02-01',
-                'relationship_end_date' => '2025-01-31',
             ]))
             ->assertRedirect(route('employees.dependants.create', $employee))
-            ->assertSessionHasErrors(['relationship_detail', 'date_of_birth', 'relationship_end_date']);
+            ->assertSessionHasErrors(['relationship_detail', 'date_of_birth']);
+    }
+
+    public function test_spouse_category_normalizes_relationship_to_spouse(): void
+    {
+        $admin = $this->user($this->adminRole);
+        $employee = $this->employee();
+
+        $this->actingAs($admin)
+            ->post(route('employees.dependants.store', $employee), $this->dependantPayload([
+                'category' => 'spouse',
+                'relationship_detail' => 'biological_child',
+            ]))
+            ->assertRedirect(route('employees.show', $employee));
+
+        $this->assertDatabaseHas('employee_dependants', [
+            'employee_id' => $employee->id,
+            'category' => 'spouse',
+            'relationship_detail' => 'spouse',
+        ]);
     }
 
     public function test_verifying_dependant_records_verifier_and_time(): void
@@ -268,8 +285,6 @@ class EmployeeDependantModuleTest extends TestCase
             'gender' => 'Female',
             'date_of_birth' => '2015-04-06',
             'national_id' => '123456/78/1',
-            'relationship_start_date' => '2015-04-06',
-            'relationship_end_date' => null,
             'verification_status' => EmployeeDependant::VERIFICATION_PENDING,
             'is_active' => true,
             'internal_notes' => 'Sensitive family note.',

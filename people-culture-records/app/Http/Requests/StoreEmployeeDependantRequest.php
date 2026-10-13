@@ -19,10 +19,16 @@ class StoreEmployeeDependantRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
+        $relationshipDetail = $this->filled('relationship_detail') ? $this->input('relationship_detail') : null;
+
+        if ($this->input('category') === EmployeeDependant::CATEGORY_SPOUSE) {
+            $relationshipDetail = 'spouse';
+        }
+
         $this->merge([
             'full_name' => trim((string) $this->input('full_name')),
             'national_id' => $this->filled('national_id') ? trim((string) $this->input('national_id')) : null,
-            'relationship_detail' => $this->filled('relationship_detail') ? $this->input('relationship_detail') : null,
+            'relationship_detail' => $relationshipDetail,
             'is_active' => $this->boolean('is_active'),
         ]);
     }
@@ -39,8 +45,6 @@ class StoreEmployeeDependantRequest extends FormRequest
             'gender' => ['nullable', 'string', 'max:50'],
             'date_of_birth' => ['nullable', 'date', 'before_or_equal:today'],
             'national_id' => ['nullable', 'string', 'max:255'],
-            'relationship_start_date' => ['nullable', 'required_with:relationship_end_date', 'date'],
-            'relationship_end_date' => ['nullable', 'date', 'after_or_equal:relationship_start_date'],
             'verification_status' => ['required', Rule::in(array_keys(EmployeeDependant::verificationStatuses()))],
             'is_active' => ['required', 'boolean'],
             'internal_notes' => ['nullable', 'string', 'max:5000'],
@@ -52,10 +56,6 @@ class StoreEmployeeDependantRequest extends FormRequest
         $validator->after(function ($validator): void {
             $category = $this->input('category');
             $detail = $this->input('relationship_detail');
-
-            if ($category === EmployeeDependant::CATEGORY_SPOUSE && $detail !== 'spouse') {
-                $validator->errors()->add('relationship_detail', 'A spouse must use the spouse relationship detail.');
-            }
 
             if ($category === EmployeeDependant::CATEGORY_CHILD && ! in_array($detail, ['biological_child', 'adopted_child', 'stepchild', 'other'], true)) {
                 $validator->errors()->add('relationship_detail', 'Select the type of child relationship.');

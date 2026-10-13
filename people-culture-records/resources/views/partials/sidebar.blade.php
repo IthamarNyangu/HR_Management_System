@@ -7,6 +7,7 @@
         ['label' => 'Staff Promotions', 'icon' => 'bi-graph-up-arrow', 'route' => 'staff-promotions.index', 'active' => request()->routeIs('staff-promotions.*'), 'enabled' => auth()->user()->can('viewAny', App\Models\StaffPromotion::class)],
         ['label' => 'Staff Relocations', 'icon' => 'bi-geo-alt', 'route' => 'staff-relocations.index', 'active' => request()->routeIs('staff-relocations.*'), 'enabled' => auth()->user()->can('viewAny', App\Models\StaffRelocation::class)],
         ['label' => 'Temporary Appointments', 'icon' => 'bi-calendar-event', 'route' => 'temporary-appointments.index', 'active' => request()->routeIs('temporary-appointments.*'), 'enabled' => auth()->user()->can('viewAny', App\Models\TemporaryAppointment::class)],
+        ['label' => 'Funeral Benefits', 'icon' => 'bi-heart-pulse', 'route' => 'funeral-claims.index', 'active' => request()->routeIs('funeral-claims.*'), 'enabled' => auth()->user()->can('viewAny', App\Models\FuneralClaim::class)],
         ['label' => 'Staff Establishment', 'icon' => 'bi-building-check', 'route' => 'staff-establishment.index', 'active' => request()->routeIs('staff-establishment.*'), 'enabled' => auth()->user()->can('viewAny', App\Models\StaffEstablishmentPlan::class)],
         [
             'label' => 'Recruitment',

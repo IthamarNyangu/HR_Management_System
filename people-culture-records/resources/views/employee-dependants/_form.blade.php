@@ -16,12 +16,18 @@
     </div>
 
     <div class="col-md-6">
-        <label for="relationship_detail" class="form-label">Relationship <span class="text-danger">*</span></label>
-        <select id="relationship_detail" name="relationship_detail" class="form-select @error('relationship_detail') is-invalid @enderror" required>
-            <option value="">Select relationship</option>
-            @foreach ($relationshipDetails as $value => $label)
-                <option value="{{ $value }}" @selected($selectedRelationship === $value)>{{ $label }}</option>
-            @endforeach
+        <label id="relationship_detail_label" for="relationship_detail" class="form-label">Relationship <span class="text-danger">*</span></label>
+        <select id="relationship_detail" name="relationship_detail" data-selected="{{ $selectedRelationship }}" class="form-select @error('relationship_detail') is-invalid @enderror" required>
+            @if ($selectedCategory === App\Models\EmployeeDependant::CATEGORY_SPOUSE)
+                <option value="spouse" selected>Spouse</option>
+            @elseif ($selectedCategory === App\Models\EmployeeDependant::CATEGORY_CHILD)
+                <option value="">Select child type</option>
+                @foreach (collect($relationshipDetails)->except('spouse') as $value => $label)
+                    <option value="{{ $value }}" @selected($selectedRelationship === $value)>{{ $label }}</option>
+                @endforeach
+            @else
+                <option value="">Select a dependant category first</option>
+            @endif
         </select>
         @error('relationship_detail')<div class="invalid-feedback">{{ $message }}</div>@enderror
     </div>
@@ -56,18 +62,6 @@
     </div>
 
     <div class="col-md-6">
-        <label for="relationship_start_date" class="form-label">Relationship start date</label>
-        <input id="relationship_start_date" name="relationship_start_date" type="date" value="{{ old('relationship_start_date', $dependant->relationship_start_date?->toDateString()) }}" class="form-control @error('relationship_start_date') is-invalid @enderror">
-        @error('relationship_start_date')<div class="invalid-feedback">{{ $message }}</div>@enderror
-    </div>
-
-    <div class="col-md-6">
-        <label for="relationship_end_date" class="form-label">Relationship end date</label>
-        <input id="relationship_end_date" name="relationship_end_date" type="date" value="{{ old('relationship_end_date', $dependant->relationship_end_date?->toDateString()) }}" class="form-control @error('relationship_end_date') is-invalid @enderror">
-        @error('relationship_end_date')<div class="invalid-feedback">{{ $message }}</div>@enderror
-    </div>
-
-    <div class="col-md-6">
         <label for="verification_status" class="form-label">Verification status <span class="text-danger">*</span></label>
         <select id="verification_status" name="verification_status" class="form-select @error('verification_status') is-invalid @enderror" required>
             @foreach ($verificationStatuses as $value => $label)
@@ -99,17 +93,46 @@
         document.addEventListener('DOMContentLoaded', function () {
             const category = document.getElementById('category');
             const relationship = document.getElementById('relationship_detail');
+            const relationshipLabel = document.getElementById('relationship_detail_label');
+            const childRelationships = @json(collect($relationshipDetails)->except('spouse'));
 
-            function alignRelationship() {
-                if (category.value === 'spouse') {
-                    relationship.value = 'spouse';
-                } else if (category.value === 'child' && relationship.value === 'spouse') {
-                    relationship.value = '';
-                }
+            function addOption(value, label, selected = false) {
+                const option = document.createElement('option');
+                option.value = value;
+                option.textContent = label;
+                option.selected = selected;
+                relationship.appendChild(option);
             }
 
-            category.addEventListener('change', alignRelationship);
-            alignRelationship();
+            function rebuildRelationships(preserveSelection = false) {
+                const previousValue = preserveSelection ? relationship.value : relationship.dataset.selected;
+                relationship.innerHTML = '';
+
+                if (category.value === 'spouse') {
+                    relationshipLabel.firstChild.textContent = 'Relationship ';
+                    addOption('spouse', 'Spouse', true);
+                    return;
+                }
+
+                if (category.value === 'child') {
+                    relationshipLabel.firstChild.textContent = 'Child type ';
+                    addOption('', 'Select child type');
+
+                    Object.entries(childRelationships).forEach(([value, label]) => {
+                        addOption(value, label, previousValue === value);
+                    });
+
+                    return;
+                }
+
+                relationshipLabel.firstChild.textContent = 'Relationship ';
+                addOption('', 'Select a dependant category first', true);
+            }
+
+            category.addEventListener('change', function () {
+                rebuildRelationships(true);
+            });
+            rebuildRelationships(false);
         });
     </script>
 @endpush

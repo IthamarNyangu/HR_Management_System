@@ -14,6 +14,8 @@ use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\EmployeeDependantController;
 use App\Http\Controllers\EmployeeImportController;
 use App\Http\Controllers\EmployeeSearchController;
+use App\Http\Controllers\FuneralClaimController;
+use App\Http\Controllers\FuneralClaimDocumentController;
 use App\Http\Controllers\ImportController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OrganisationChartController;
@@ -241,6 +243,14 @@ Route::middleware(['auth', 'active', 'password.changed'])->group(function () use
     Route::resource('temporary-appointments', TemporaryAppointmentController::class)
         ->parameters(['temporary-appointments' => 'temporary_appointment'])
         ->except(['destroy']);
+
+    Route::patch('/funeral-claims/{funeral_claim}/status', [FuneralClaimController::class, 'updateStatus'])->name('funeral-claims.update-status');
+    Route::post('/funeral-claims/{funeral_claim}/documents', [FuneralClaimDocumentController::class, 'add'])->name('funeral-claims.documents.add');
+    Route::patch('/funeral-claims/{funeral_claim}/documents/{document}', [FuneralClaimDocumentController::class, 'update'])->name('funeral-claims.documents.update');
+    Route::post('/funeral-claims/{funeral_claim}/documents/{document}/upload', [FuneralClaimDocumentController::class, 'upload'])->name('funeral-claims.documents.upload');
+    Route::get('/funeral-claims/{funeral_claim}/documents/{document}/attachments/{attachment}/view', [FuneralClaimDocumentController::class, 'view'])->name('funeral-claims.documents.view');
+    Route::get('/funeral-claims/{funeral_claim}/documents/{document}/attachments/{attachment}/download', [FuneralClaimDocumentController::class, 'download'])->name('funeral-claims.documents.download');
+    Route::resource('funeral-claims', FuneralClaimController::class)->except(['destroy']);
 
     Route::prefix('admin')->name('admin.')->group(function () use ($masterDataTypes) {
         Route::middleware('can:manage-master-data')->group(function () use ($masterDataTypes) {
