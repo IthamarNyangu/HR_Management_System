@@ -1,8 +1,8 @@
 @php($selectedEmployee = old('employee_id', $claim->employee_id))
 <div class="row g-3">
- <div class="col-md-6"><label for="employee_id" class="form-label">Employee record</label><select id="employee_id" name="employee_id" class="form-select @error('employee_id') is-invalid @enderror" data-searchable-select data-search-placeholder="Search employee" required><option value="">Select employee</option>@foreach($employees as $employee)<option value="{{ $employee->id }}" @selected((string)$selectedEmployee===(string)$employee->id)>{{ $employee->display_name }} - {{ $employee->employee_no }}</option>@endforeach</select>@error('employee_id')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
+ <div class="col-md-6"><label for="employee_id" class="form-label">Employee record</label><select id="employee_id" name="employee_id" class="form-select @error('employee_id') is-invalid @enderror" data-searchable-select data-search-placeholder="Search employee" required><option value="">Select employee</option>@foreach($employees as $employee)<option value="{{ $employee->id }}" data-name="{{ $employee->display_name }}" data-date-of-birth="{{ optional($employee->date_of_birth)->format('Y-m-d') }}" @selected((string)$selectedEmployee===(string)$employee->id)>{{ $employee->display_name }} - {{ $employee->employee_no }}</option>@endforeach</select>@error('employee_id')<div class="invalid-feedback">{{ $message }}</div>@enderror</div>
  <div class="col-md-3"><label for="deceased_category" class="form-label">Deceased category</label><select id="deceased_category" name="deceased_category" class="form-select" required><option value="">Select category</option>@foreach($categories as $value=>$label)<option value="{{ $value }}" @selected(old('deceased_category',$claim->deceased_category)===$value)>{{ $label }}</option>@endforeach</select></div>
- <div class="col-md-3"><label for="employee_dependant_id" class="form-label">Registered dependant</label><select id="employee_dependant_id" name="employee_dependant_id" class="form-select"><option value="">Not registered / select</option>@foreach($employees as $employee)@foreach($employee->dependants as $dependant)<option value="{{ $dependant->id }}" data-employee="{{ $employee->id }}" data-category="{{ $dependant->category }}" @selected((string)old('employee_dependant_id',$claim->employee_dependant_id)===(string)$dependant->id)>{{ $dependant->full_name }} ({{ $dependant->verification_status }})</option>@endforeach @endforeach</select>@error('employee_dependant_id')<div class="text-danger small">{{ $message }}</div>@enderror</div>
+ <div class="col-md-3"><label for="employee_dependant_id" class="form-label">Registered dependant</label><select id="employee_dependant_id" name="employee_dependant_id" class="form-select"><option value="">Not registered / select</option>@foreach($employees as $employee)@foreach($employee->dependants as $dependant)<option value="{{ $dependant->id }}" data-employee="{{ $employee->id }}" data-category="{{ $dependant->category }}" data-name="{{ $dependant->full_name }}" data-date-of-birth="{{ optional($dependant->date_of_birth)->format('Y-m-d') }}" @selected((string)old('employee_dependant_id',$claim->employee_dependant_id)===(string)$dependant->id)>{{ $dependant->full_name }} ({{ str($dependant->verification_status)->headline() }})</option>@endforeach @endforeach</select>@error('employee_dependant_id')<div class="text-danger small">{{ $message }}</div>@enderror</div>
  <div class="col-md-3"><label for="date_of_death" class="form-label">Date of death</label><input type="date" id="date_of_death" name="date_of_death" class="form-control" value="{{ old('date_of_death',optional($claim->date_of_death)->format('Y-m-d')) }}" max="{{ today()->format('Y-m-d') }}" required></div>
  <div class="col-md-3"><label for="notification_date" class="form-label">Notification date</label><input type="date" id="notification_date" name="notification_date" class="form-control" value="{{ old('notification_date',optional($claim->notification_date)->format('Y-m-d')) }}" max="{{ today()->format('Y-m-d') }}" required></div>
  <div class="col-md-3 manual-field"><label for="deceased_name" class="form-label">Deceased full name</label><input id="deceased_name" name="deceased_name" class="form-control" value="{{ old('deceased_name',$claim->deceased_name) }}"></div>
@@ -12,4 +12,60 @@
  <div class="col-md-8"><label for="internal_notes" class="form-label">Internal notes</label><textarea id="internal_notes" name="internal_notes" class="form-control" rows="3">{{ old('internal_notes',$claim->internal_notes) }}</textarea></div>
 </div>
 @foreach($errors->all() as $error)<div class="text-danger small mt-1">{{ $error }}</div>@endforeach
-@push('scripts')<script>document.addEventListener('DOMContentLoaded',()=>{const e=document.getElementById('employee_id'),c=document.getElementById('deceased_category'),d=document.getElementById('employee_dependant_id'),options=[...d.options];function sync(){const selected=d.value;d.innerHTML='';options.forEach(o=>{if(!o.value||(o.dataset.employee===e.value&&o.dataset.category===c.value))d.append(o)});if([...d.options].some(o=>o.value===selected))d.value=selected;document.querySelectorAll('.child-field').forEach(x=>x.hidden=c.value!=='child');d.disabled=c.value==='employee'||!e.value||!c.value;if(d.disabled)d.value='';}e.addEventListener('change',sync);c.addEventListener('change',sync);sync();});</script>@endpush
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const employee = document.getElementById('employee_id');
+    const category = document.getElementById('deceased_category');
+    const dependant = document.getElementById('employee_dependant_id');
+    const deceasedName = document.getElementById('deceased_name');
+    const deceasedDob = document.getElementById('deceased_date_of_birth');
+    const dependantOptions = [...dependant.options];
+
+    const selectedOption = select => [...select.options].find(option => option.value === select.value);
+
+    function syncDeceasedDetails() {
+        const source = category.value === 'employee'
+            ? selectedOption(employee)
+            : selectedOption(dependant);
+        const hasRegisteredSource = Boolean(source?.value);
+
+        if (hasRegisteredSource) {
+            deceasedName.value = source.dataset.name || '';
+            deceasedDob.value = source.dataset.dateOfBirth || '';
+        } else if (deceasedName.dataset.autofilled === 'true') {
+            deceasedName.value = '';
+            deceasedDob.value = '';
+        }
+
+        deceasedName.readOnly = hasRegisteredSource;
+        deceasedDob.readOnly = hasRegisteredSource;
+        deceasedName.dataset.autofilled = hasRegisteredSource ? 'true' : 'false';
+        deceasedDob.dataset.autofilled = hasRegisteredSource ? 'true' : 'false';
+    }
+
+    function syncForm() {
+        const selectedDependant = dependant.value;
+        dependant.innerHTML = '';
+        dependantOptions.forEach(option => {
+            if (!option.value || (option.dataset.employee === employee.value && option.dataset.category === category.value)) {
+                dependant.append(option);
+            }
+        });
+        if ([...dependant.options].some(option => option.value === selectedDependant)) {
+            dependant.value = selectedDependant;
+        }
+
+        document.querySelectorAll('.child-field').forEach(field => field.hidden = category.value !== 'child');
+        dependant.disabled = category.value === 'employee' || !employee.value || !category.value;
+        if (dependant.disabled) dependant.value = '';
+        syncDeceasedDetails();
+    }
+
+    employee.addEventListener('change', syncForm);
+    category.addEventListener('change', syncForm);
+    dependant.addEventListener('change', syncDeceasedDetails);
+    syncForm();
+});
+</script>
+@endpush

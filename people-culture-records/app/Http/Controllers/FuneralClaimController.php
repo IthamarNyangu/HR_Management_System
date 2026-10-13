@@ -142,7 +142,7 @@ class FuneralClaimController extends Controller
 
     private function createDocumentChecklist(FuneralClaim $claim): void
     {
-        $documents = [['document_type' => 'death_certificate', 'is_required' => true], ['document_type' => 'certified_nrc', 'is_required' => true]];
+        $documents = [['document_type' => 'death_certificate', 'is_required' => true], ['document_type' => 'certified_nrc', 'is_required' => false]];
         if ($claim->deceased_category === FuneralClaim::CATEGORY_CHILD) {
             $documents[] = ['document_type' => 'birth_confirmation', 'is_required' => true];
         }

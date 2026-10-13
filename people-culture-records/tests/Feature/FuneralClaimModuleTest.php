@@ -68,6 +68,26 @@ class FuneralClaimModuleTest extends TestCase
             ->assertSee($employee->employee_no);
     }
 
+    public function test_registration_form_exposes_registered_dependant_details_for_auto_fill(): void
+    {
+        $admin = $this->user($this->adminRole);
+        $employee = $this->employee();
+        $employee->dependants()->create([
+            'category' => 'child',
+            'relationship_detail' => 'stepchild',
+            'full_name' => 'Registered Child',
+            'date_of_birth' => '2018-06-15',
+            'verification_status' => EmployeeDependant::VERIFICATION_VERIFIED,
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('funeral-claims.create'))
+            ->assertOk()
+            ->assertSee('data-name="Registered Child"', false)
+            ->assertSee('data-date-of-birth="2018-06-15"', false);
+    }
+
     public function test_hr_officer_can_only_register_and_view_assigned_province_claims(): void
     {
         $officer = $this->user($this->officerRole, $this->northern);
@@ -120,6 +140,38 @@ class FuneralClaimModuleTest extends TestCase
         $this->assertDatabaseHas('funeral_claims', ['id' => $claim->id, 'status' => FuneralClaim::STATUS_READY_FOR_APPROVAL]);
     }
 
+    public function test_document_statuses_save_independently_and_received_requires_attachment(): void
+    {
+        $admin = $this->user($this->adminRole);
+        $employee = $this->employee();
+        $this->actingAs($admin)->post(route('funeral-claims.store'), $this->payload($employee))->assertRedirect();
+        $claim = FuneralClaim::firstOrFail();
+        $deathCertificate = $claim->documents()->where('document_type', 'death_certificate')->firstOrFail();
+        $certifiedNrc = $claim->documents()->where('document_type', 'certified_nrc')->firstOrFail();
+
+        $this->assertFalse($certifiedNrc->is_required);
+        $this->actingAs($admin)
+            ->patch(route('funeral-claims.documents.update', [$claim, $deathCertificate]), ['status' => FuneralClaimDocument::RECEIVED])
+            ->assertSessionHasErrors("document_status_{$deathCertificate->id}", null, 'documents');
+        $errorPage = $this->actingAs($admin)->get(route('funeral-claims.show', $claim));
+        $errorPage->assertOk();
+        $this->assertSame(1, substr_count($errorPage->getContent(), 'Upload the supporting document before marking it as received.'));
+        $errorPage
+            ->assertSee("data-document-row=\"claim-document-{$deathCertificate->id}\"", false)
+            ->assertSee('documentRow.scrollIntoView', false);
+
+        $deathCertificate->attachments()->create(['original_filename' => 'death.pdf', 'stored_filename' => 'death.pdf', 'file_path' => 'test/death.pdf', 'mime_type' => 'application/pdf', 'file_size' => 100, 'uploaded_by' => $admin->id]);
+        $this->actingAs($admin)
+            ->patch(route('funeral-claims.documents.update', [$claim, $deathCertificate]), ['status' => FuneralClaimDocument::RECEIVED])
+            ->assertSessionHasNoErrors();
+        $this->actingAs($admin)
+            ->patch(route('funeral-claims.documents.update', [$claim, $certifiedNrc]), ['status' => FuneralClaimDocument::ADDITIONAL_REQUESTED])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame(FuneralClaimDocument::RECEIVED, $deathCertificate->fresh()->status);
+        $this->assertSame(FuneralClaimDocument::ADDITIONAL_REQUESTED, $certifiedNrc->fresh()->status);
+    }
+
     public function test_former_employee_dependant_claim_requires_family_meeting(): void
     {
         $admin = $this->user($this->adminRole);
@@ -131,6 +183,26 @@ class FuneralClaimModuleTest extends TestCase
         $claim = FuneralClaim::firstOrFail();
         $this->assertTrue($claim->family_meeting_required);
         $this->assertSame('required', $claim->family_meeting_status);
+        $this->actingAs($admin)
+            ->get(route('funeral-claims.show', $claim))
+            ->assertOk()
+            ->assertSee('Meeting outcome');
+    }
+
+    public function test_current_employee_dependant_claim_does_not_show_meeting_fields(): void
+    {
+        $admin = $this->user($this->adminRole);
+        $employee = $this->employee();
+        $child = $employee->dependants()->create(['category' => 'child', 'relationship_detail' => 'biological_child', 'full_name' => 'Current Child', 'date_of_birth' => '2018-01-01', 'verification_status' => EmployeeDependant::VERIFICATION_VERIFIED, 'is_active' => true]);
+        $this->actingAs($admin)->post(route('funeral-claims.store'), $this->payload($employee, ['deceased_category' => 'child', 'employee_dependant_id' => $child->id]))->assertRedirect();
+        $claim = FuneralClaim::firstOrFail();
+
+        $this->assertFalse($claim->family_meeting_required);
+        $this->actingAs($admin)
+            ->get(route('funeral-claims.show', $claim))
+            ->assertOk()
+            ->assertDontSee('Meeting outcome')
+            ->assertDontSee('Scheduled for');
     }
 
     public function test_hr_officer_cannot_approve_claim_and_manager_cannot_approve_without_prerequisites(): void
