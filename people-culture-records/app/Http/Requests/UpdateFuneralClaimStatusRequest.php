@@ -15,6 +15,6 @@ class UpdateFuneralClaimStatusRequest extends FormRequest
 
     public function rules(): array
     {
-        return ['status' => ['required', Rule::in(array_keys(FuneralClaim::statuses()))], 'comment' => ['nullable', 'string', 'max:2000']];
+        return ['status' => ['required', Rule::in(array_keys(FuneralClaim::reviewStatuses()))], 'comment' => ['nullable', 'string', 'max:2000']];
     }
 }

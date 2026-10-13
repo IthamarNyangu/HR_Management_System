@@ -27,6 +27,16 @@ class FuneralClaimPolicy
         return $this->manage($user, $claim);
     }
 
+    public function approve(User $user, FuneralClaim $claim): bool
+    {
+        return $user->is_active && ($user->isAdmin() || $user->isHrManager());
+    }
+
+    public function reopen(User $user, FuneralClaim $claim): bool
+    {
+        return $this->approve($user, $claim);
+    }
+
     private function manage(User $user, FuneralClaim $claim): bool
     {
         if (! $user->is_active) {

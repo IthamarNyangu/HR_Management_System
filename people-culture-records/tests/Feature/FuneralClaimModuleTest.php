@@ -21,6 +21,8 @@ class FuneralClaimModuleTest extends TestCase
 
     private Role $adminRole;
 
+    private Role $managerRole;
+
     private Role $officerRole;
 
     private Role $viewerRole;
@@ -39,6 +41,7 @@ class FuneralClaimModuleTest extends TestCase
         Queue::fake();
         Http::fake(['*' => Http::response(['status' => 'not_enabled'])]);
         $this->adminRole = Role::create(['name' => 'Admin', 'code' => 'ADMIN', 'is_active' => true]);
+        $this->managerRole = Role::create(['name' => 'HR Manager', 'code' => 'HRM', 'is_active' => true]);
         $this->officerRole = Role::create(['name' => 'HR Officer', 'code' => 'HRO', 'is_active' => true]);
         $this->viewerRole = Role::create(['name' => 'Viewer', 'code' => 'VIEWER', 'is_active' => true]);
         $this->northern = Province::create(['name' => 'Northern', 'code' => 'NOR', 'is_active' => true]);
@@ -117,6 +120,72 @@ class FuneralClaimModuleTest extends TestCase
         $this->assertDatabaseHas('funeral_claims', ['id' => $claim->id, 'status' => FuneralClaim::STATUS_READY_FOR_APPROVAL]);
     }
 
+    public function test_former_employee_dependant_claim_requires_family_meeting(): void
+    {
+        $admin = $this->user($this->adminRole);
+        $employee = $this->employee(['termination_date' => '2025-12-01']);
+        $spouse = $employee->dependants()->create(['category' => 'spouse', 'relationship_detail' => 'spouse', 'full_name' => 'Former Spouse', 'date_of_birth' => '1982-01-01', 'verification_status' => EmployeeDependant::VERIFICATION_VERIFIED, 'is_active' => true]);
+
+        $this->actingAs($admin)->post(route('funeral-claims.store'), $this->payload($employee, ['deceased_category' => 'spouse', 'employee_dependant_id' => $spouse->id]))->assertRedirect();
+
+        $claim = FuneralClaim::firstOrFail();
+        $this->assertTrue($claim->family_meeting_required);
+        $this->assertSame('required', $claim->family_meeting_status);
+    }
+
+    public function test_hr_officer_cannot_approve_claim_and_manager_cannot_approve_without_prerequisites(): void
+    {
+        $admin = $this->user($this->adminRole);
+        $manager = $this->user($this->managerRole);
+        $officer = $this->user($this->officerRole, $this->northern);
+        $claim = $this->readyClaim($admin);
+
+        $this->actingAs($officer)->patch(route('funeral-claims.decision', $claim), ['decision' => 'approve', 'comment' => 'Officer approval.'])->assertForbidden();
+        $this->actingAs($manager)->patch(route('funeral-claims.decision', $claim), ['decision' => 'approve', 'comment' => 'Manager approval.'])->assertSessionHasErrors('decision');
+        $this->assertSame(FuneralClaim::STATUS_READY_FOR_APPROVAL, $claim->fresh()->status);
+    }
+
+    public function test_approved_claim_can_progress_to_recorded_payment(): void
+    {
+        $admin = $this->user($this->adminRole);
+        $manager = $this->user($this->managerRole);
+        $claim = $this->readyClaim($admin);
+
+        $this->actingAs($admin)->patch(route('funeral-claims.processing.update', $claim), [
+            'family_meeting_status' => 'not_required',
+            'grant_consent_confirmed' => 1,
+            'grant_consent_date' => '2026-01-03',
+            'banking_details_verified' => 1,
+            'payreq_reference' => 'PR-1001',
+            'payreq_raised_date' => '2026-01-03',
+            'payreq_status' => 'approved',
+            'payreq_approved_date' => '2026-01-04',
+        ])->assertSessionHasNoErrors();
+
+        $this->actingAs($manager)->patch(route('funeral-claims.decision', $claim), ['decision' => 'approve', 'grant_amount_approved' => 30000, 'comment' => 'Approved after verification.'])->assertSessionHasNoErrors();
+        $this->actingAs($admin)->patch(route('funeral-claims.start-payment', $claim))->assertSessionHasNoErrors();
+        $this->actingAs($admin)->patch(route('funeral-claims.payment', $claim), ['payment_date' => '2026-01-05', 'payment_reference' => 'PAY-1001', 'family_payment_confirmed_date' => '2026-01-05'])->assertSessionHasNoErrors();
+
+        $claim->refresh();
+        $this->assertSame(FuneralClaim::STATUS_PAID, $claim->status);
+        $this->assertSame('paid', $claim->payment_status);
+        $this->assertSame('30000.00', $claim->grant_amount_approved);
+        $this->assertDatabaseHas('funeral_claim_workflow_events', ['funeral_claim_id' => $claim->id, 'event_type' => 'payment_recorded']);
+    }
+
+    public function test_only_manager_or_admin_can_reopen_rejected_claim(): void
+    {
+        $admin = $this->user($this->adminRole);
+        $manager = $this->user($this->managerRole);
+        $officer = $this->user($this->officerRole, $this->northern);
+        $claim = $this->readyClaim($admin);
+        $this->actingAs($manager)->patch(route('funeral-claims.decision', $claim), ['decision' => 'reject', 'comment' => 'Insufficient support.'])->assertSessionHasNoErrors();
+
+        $this->actingAs($officer)->patch(route('funeral-claims.reopen', $claim), ['reason' => 'New documents received.'])->assertForbidden();
+        $this->actingAs($manager)->patch(route('funeral-claims.reopen', $claim), ['reason' => 'New documents received.'])->assertSessionHasNoErrors();
+        $this->assertSame(FuneralClaim::STATUS_UNDER_VERIFICATION, $claim->fresh()->status);
+    }
+
     private function user(Role $role, ?Province $province = null): User
     {
         return User::factory()->create(['role_id' => $role->id, 'province_id' => $province?->id, 'is_active' => true]);
@@ -130,5 +199,16 @@ class FuneralClaimModuleTest extends TestCase
     private function payload(Employee $employee, array $overrides = []): array
     {
         return array_merge(['employee_id' => $employee->id, 'deceased_category' => 'employee', 'date_of_death' => '2026-01-01', 'notification_date' => '2026-01-02', 'internal_notes' => 'Private claim note.'], $overrides);
+    }
+
+    private function readyClaim(User $creator): FuneralClaim
+    {
+        $employee = $this->employee();
+        $this->actingAs($creator)->post(route('funeral-claims.store'), $this->payload($employee))->assertRedirect();
+        $claim = FuneralClaim::latest('id')->firstOrFail();
+        $claim->documents()->where('is_required', true)->update(['status' => FuneralClaimDocument::APPROVED_CLOSED]);
+        $this->actingAs($creator)->patch(route('funeral-claims.update-status', $claim), ['status' => FuneralClaim::STATUS_READY_FOR_APPROVAL, 'comment' => 'Ready.'])->assertSessionHasNoErrors();
+
+        return $claim->fresh();
     }
 }

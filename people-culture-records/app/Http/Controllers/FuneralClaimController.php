@@ -11,6 +11,7 @@ use App\Models\FuneralClaim;
 use App\Models\FuneralClaimDocument;
 use App\Models\Province;
 use App\Models\User;
+use App\Notifications\FuneralClaimApprovalRequiredNotification;
 use App\Services\ActivityLogger;
 use App\Services\FuneralClaimEligibilityService;
 use App\Services\ReferenceNumberService;
@@ -20,6 +21,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\ValidationException;
 
 class FuneralClaimController extends Controller
@@ -28,7 +30,7 @@ class FuneralClaimController extends Controller
     {
         Gate::authorize('viewAny', FuneralClaim::class);
         $claims = FuneralClaim::query()->visibleTo($request->user())->with(['employee', 'province'])
-            ->when($request->filled('search'), fn ($q) => $q->where(fn ($inner) => $inner->where('reference_no', 'like', '%'.$request->search.'%')->orWhere('deceased_name', 'like', '%'.$request->search.'%')->orWhereHas('employee', fn ($employee) => $employee->where('display_name', 'like', '%'.$request->search.'%')->orWhere('employee_no', 'like', '%'.$request->search.'%'))))
+            ->when($request->filled('search'), fn ($q) => $q->where(fn ($inner) => $inner->where('reference_no', 'like', '%'.$request->search.'%')->orWhere('deceased_name', 'like', '%'.$request->search.'%')->orWhereHas('employee', fn ($employee) => $employee->where('first_name', 'like', '%'.$request->search.'%')->orWhere('last_name', 'like', '%'.$request->search.'%')->orWhere('employee_no', 'like', '%'.$request->search.'%'))))
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->status))
             ->when($request->filled('deceased_category'), fn ($q) => $q->where('deceased_category', $request->deceased_category))
             ->when($request->filled('province_id'), fn ($q) => $q->where('province_id', $request->province_id))
@@ -63,9 +65,9 @@ class FuneralClaimController extends Controller
     public function show(FuneralClaim $funeralClaim): View
     {
         Gate::authorize('view', $funeralClaim);
-        $funeralClaim->load(['employee', 'dependant', 'province', 'benefitRule', 'assignedTo', 'documents.attachments.uploadedBy', 'documents.statusUpdatedBy', 'statusHistories.changedBy']);
+        $funeralClaim->load(['employee', 'dependant', 'province', 'benefitRule', 'assignedTo', 'approvedBy', 'bankingDetailsVerifiedBy', 'documents.attachments.uploadedBy', 'documents.statusUpdatedBy', 'statusHistories.changedBy', 'workflowEvents.performedBy']);
 
-        return view('funeral-claims.show', ['claim' => $funeralClaim, 'statuses' => FuneralClaim::statuses(), 'documentStatuses' => FuneralClaimDocument::statuses()]);
+        return view('funeral-claims.show', ['claim' => $funeralClaim, 'statuses' => FuneralClaim::statuses(), 'reviewStatuses' => FuneralClaim::reviewStatuses(), 'documentStatuses' => FuneralClaimDocument::statuses()]);
     }
 
     public function edit(Request $request, FuneralClaim $funeralClaim): View
@@ -78,6 +80,9 @@ class FuneralClaimController extends Controller
     public function update(UpdateFuneralClaimRequest $request, FuneralClaim $funeralClaim, FuneralClaimEligibilityService $eligibility, ActivityLogger $activity): RedirectResponse
     {
         $data = $this->claimData($request->validated(), $eligibility);
+        if ((bool) $data['family_meeting_required'] === $funeralClaim->family_meeting_required) {
+            unset($data['family_meeting_status']);
+        }
         $data['updated_by'] = $request->user()->id;
         $funeralClaim->update($data);
         $activity->log('funeral_claim_updated', "{$request->user()->name} updated {$funeralClaim->reference_no}.", $funeralClaim, user: $request->user(), request: $request);
@@ -87,9 +92,14 @@ class FuneralClaimController extends Controller
 
     public function updateStatus(UpdateFuneralClaimStatusRequest $request, FuneralClaim $funeralClaim, ActivityLogger $activity): RedirectResponse
     {
+        if (! array_key_exists($funeralClaim->status, FuneralClaim::reviewStatuses())) {
+            throw ValidationException::withMessages(['status' => 'Use the available workflow action to change this claim status.']);
+        }
         $newStatus = $request->validated('status');
         if ($newStatus === FuneralClaim::STATUS_READY_FOR_APPROVAL) {
-            if ($funeralClaim->eligibility_status !== FuneralClaim::ELIGIBLE) {
+            $managerOverride = $funeralClaim->eligibility_status === FuneralClaim::REQUIRES_REVIEW
+                && $request->user()->can('approve', $funeralClaim);
+            if ($funeralClaim->eligibility_status !== FuneralClaim::ELIGIBLE && ! $managerOverride) {
                 throw ValidationException::withMessages(['status' => 'Only an eligible claim can be marked ready for approval.']);
             }
             if ($funeralClaim->documents()->where('is_required', true)->where('status', '!=', FuneralClaimDocument::APPROVED_CLOSED)->exists()) {
@@ -103,6 +113,10 @@ class FuneralClaimController extends Controller
                 $funeralClaim->statusHistories()->create(['from_status' => $oldStatus, 'to_status' => $newStatus, 'changed_by' => $request->user()->id, 'comment' => $request->validated('comment')]);
             });
             $activity->log('funeral_claim_status_changed', "{$request->user()->name} changed {$funeralClaim->reference_no} from {$oldStatus} to {$newStatus}.", $funeralClaim, ['old_status' => $oldStatus, 'new_status' => $newStatus], user: $request->user(), request: $request);
+            if ($newStatus === FuneralClaim::STATUS_READY_FOR_APPROVAL) {
+                $managers = User::where('is_active', true)->whereHas('role', fn ($query) => $query->whereIn('name', ['Admin', 'HR Manager']))->get();
+                Notification::send($managers, new FuneralClaimApprovalRequiredNotification($funeralClaim));
+            }
         }
 
         return back()->with('success', 'Claim status updated.');
@@ -116,7 +130,14 @@ class FuneralClaimController extends Controller
         $manualDob = ! empty($data['deceased_date_of_birth']) ? Carbon::parse($data['deceased_date_of_birth']) : null;
         $calculation = $eligibility->calculate($employee, $data['deceased_category'], $deathDate, $dependant, $data['deceased_name'] ?? null, $manualDob, isset($data['gestational_age_weeks']) ? (float) $data['gestational_age_weeks'] : null);
 
-        return array_merge($data, $calculation, ['province_id' => $employee->province_id]);
+        $familyMeetingRequired = $calculation['claimant_context'] === 'former_employee'
+            && $data['deceased_category'] !== FuneralClaim::CATEGORY_EMPLOYEE;
+
+        return array_merge($data, $calculation, [
+            'province_id' => $employee->province_id,
+            'family_meeting_required' => $familyMeetingRequired,
+            'family_meeting_status' => $familyMeetingRequired ? 'required' : 'not_required',
+        ]);
     }
 
     private function createDocumentChecklist(FuneralClaim $claim): void

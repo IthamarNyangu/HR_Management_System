@@ -16,6 +16,7 @@ use App\Http\Controllers\EmployeeImportController;
 use App\Http\Controllers\EmployeeSearchController;
 use App\Http\Controllers\FuneralClaimController;
 use App\Http\Controllers\FuneralClaimDocumentController;
+use App\Http\Controllers\FuneralClaimWorkflowController;
 use App\Http\Controllers\ImportController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OrganisationChartController;
@@ -245,6 +246,11 @@ Route::middleware(['auth', 'active', 'password.changed'])->group(function () use
         ->except(['destroy']);
 
     Route::patch('/funeral-claims/{funeral_claim}/status', [FuneralClaimController::class, 'updateStatus'])->name('funeral-claims.update-status');
+    Route::patch('/funeral-claims/{funeral_claim}/processing', [FuneralClaimWorkflowController::class, 'updateProcessing'])->name('funeral-claims.processing.update');
+    Route::patch('/funeral-claims/{funeral_claim}/decision', [FuneralClaimWorkflowController::class, 'decide'])->name('funeral-claims.decision');
+    Route::patch('/funeral-claims/{funeral_claim}/start-payment', [FuneralClaimWorkflowController::class, 'startPayment'])->name('funeral-claims.start-payment');
+    Route::patch('/funeral-claims/{funeral_claim}/payment', [FuneralClaimWorkflowController::class, 'recordPayment'])->name('funeral-claims.payment');
+    Route::patch('/funeral-claims/{funeral_claim}/reopen', [FuneralClaimWorkflowController::class, 'reopen'])->name('funeral-claims.reopen');
     Route::post('/funeral-claims/{funeral_claim}/documents', [FuneralClaimDocumentController::class, 'add'])->name('funeral-claims.documents.add');
     Route::patch('/funeral-claims/{funeral_claim}/documents/{document}', [FuneralClaimDocumentController::class, 'update'])->name('funeral-claims.documents.update');
     Route::post('/funeral-claims/{funeral_claim}/documents/{document}/upload', [FuneralClaimDocumentController::class, 'upload'])->name('funeral-claims.documents.upload');
