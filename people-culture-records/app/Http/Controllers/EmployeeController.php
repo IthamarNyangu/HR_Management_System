@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateEmployeeRequest;
 use App\Models\Department;
 use App\Models\District;
 use App\Models\Employee;
+use App\Models\EmployeeDependant;
 use App\Models\EmploymentStatus;
 use App\Models\Facility;
 use App\Models\JobTitle;
@@ -149,13 +150,24 @@ class EmployeeController extends Controller
             ->orderBy('end_date')
             ->first();
 
+        $dependants = collect();
+
+        if (request()->user()->can('viewAny', EmployeeDependant::class)) {
+            $dependants = $employee->dependants()
+                ->with('verifiedBy')
+                ->orderByDesc('is_active')
+                ->orderBy('category')
+                ->orderBy('full_name')
+                ->get();
+        }
+
         $directReports = $employee->directReports
             ->sortBy([['last_name', 'asc'], ['first_name', 'asc']])
             ->values();
 
         $workPulseAccountStatus = $this->workPulseAccountStatus($employee);
 
-        return view('employees.show', compact('employee', 'directReports', 'disciplinaryCases', 'staffPromotions', 'staffRelocations', 'temporaryAppointments', 'activeTemporaryAppointment', 'workPulseAccountStatus'));
+        return view('employees.show', compact('employee', 'dependants', 'directReports', 'disciplinaryCases', 'staffPromotions', 'staffRelocations', 'temporaryAppointments', 'activeTemporaryAppointment', 'workPulseAccountStatus'));
     }
 
     public function edit(Request $request, Employee $employee): View

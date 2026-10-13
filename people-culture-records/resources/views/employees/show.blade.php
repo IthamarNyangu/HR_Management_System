@@ -89,6 +89,91 @@
                 </div>
             </section>
 
+            @can('viewAny', App\Models\EmployeeDependant::class)
+                <section class="bg-white border rounded-2 p-4 mb-3">
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                        <div>
+                            <h2 class="h5 mb-1">Employee Dependants</h2>
+                            <p class="text-muted small mb-0">Verified family records used for funeral benefit eligibility.</p>
+                        </div>
+                        <div class="d-flex flex-wrap gap-2">
+                            <a href="{{ route('employees.dependants.archived', $employee) }}" class="btn btn-sm btn-outline-secondary">Archived</a>
+                            @can('create', [App\Models\EmployeeDependant::class, $employee])
+                                <a href="{{ route('employees.dependants.create', $employee) }}" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg" aria-hidden="true"></i> Add Dependant</a>
+                            @endcan
+                        </div>
+                    </div>
+
+                    @if ($dependants->where('category', App\Models\EmployeeDependant::CATEGORY_SPOUSE)->where('is_active', true)->count() > 1)
+                        <div class="alert alert-warning py-2" role="status">
+                            More than one active spouse is recorded. Please review these records before using them for benefit eligibility.
+                        </div>
+                    @endif
+
+                    <div class="table-responsive data-table-wrap">
+                        <table class="table table-hover align-middle data-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Relationship</th>
+                                    <th>Date of Birth</th>
+                                    <th>Verification</th>
+                                    <th>Status</th>
+                                    <th class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse ($dependants as $dependant)
+                                    @php
+                                        $verificationClasses = [
+                                            'verified' => 'text-bg-success',
+                                            'pending_verification' => 'text-bg-warning',
+                                            'unverified' => 'text-bg-secondary',
+                                        ];
+                                    @endphp
+                                    <tr>
+                                        <td>
+                                            <div class="fw-semibold">{{ $dependant->full_name }}</div>
+                                            @if ($dependant->national_id)
+                                                <div class="small text-muted">NRC: {{ $dependant->national_id }}</div>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            {{ App\Models\EmployeeDependant::categories()[$dependant->category] ?? ucfirst($dependant->category) }}
+                                            <div class="small text-muted">{{ App\Models\EmployeeDependant::relationshipDetails()[$dependant->relationship_detail] ?? '-' }}</div>
+                                        </td>
+                                        <td>{{ $dependant->date_of_birth?->format('d M Y') ?? '-' }}</td>
+                                        <td>
+                                            <span class="badge {{ $verificationClasses[$dependant->verification_status] ?? 'text-bg-secondary' }}">
+                                                {{ App\Models\EmployeeDependant::verificationStatuses()[$dependant->verification_status] ?? ucfirst($dependant->verification_status) }}
+                                            </span>
+                                            @if ($dependant->verified_at)
+                                                <div class="small text-muted mt-1">{{ $dependant->verified_at->format('d M Y') }} by {{ $dependant->verifiedBy?->name ?? 'Unknown' }}</div>
+                                            @endif
+                                        </td>
+                                        <td><span class="badge {{ $dependant->is_active ? 'text-bg-success' : 'text-bg-secondary' }}">{{ $dependant->is_active ? 'Active' : 'Inactive' }}</span></td>
+                                        <td class="text-end text-nowrap">
+                                            @can('update', $dependant)
+                                                <a href="{{ route('employees.dependants.edit', [$employee, $dependant]) }}" class="btn btn-sm btn-outline-primary" title="Edit dependant"><i class="bi bi-pencil" aria-hidden="true"></i><span class="visually-hidden">Edit</span></a>
+                                            @endcan
+                                            @can('archive', $dependant)
+                                                <form method="POST" action="{{ route('employees.dependants.archive', [$employee, $dependant]) }}" class="d-inline" data-confirm="true" data-confirm-title="Archive dependant?" data-confirm-message="The dependant record will be moved to the archive and can be restored later." data-confirm-button="Archive">
+                                                    @csrf
+                                                    @method('PATCH')
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Archive dependant"><i class="bi bi-archive" aria-hidden="true"></i><span class="visually-hidden">Archive</span></button>
+                                                </form>
+                                            @endcan
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr><td colspan="6" class="text-center text-muted py-4">No dependants recorded for this employee.</td></tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            @endcan
+
             @can('update', $employee)
                 @php
                     $workPulseChecks = [

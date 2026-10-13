@@ -6,6 +6,7 @@ use App\Models\ActivityLog;
 use App\Models\Attachment;
 use App\Models\DisciplinaryCase;
 use App\Models\Employee;
+use App\Models\EmployeeDependant;
 use App\Models\ImportBatch;
 use App\Models\StaffPromotion;
 use App\Models\StaffRelocation;
@@ -16,7 +17,7 @@ use Illuminate\Database\Eloquent\Builder;
 class ActivityLogQueryService
 {
     /**
-     * @param array<string, mixed> $filters
+     * @param  array<string, mixed>  $filters
      */
     public function query(User $user, array $filters = []): Builder
     {
@@ -85,7 +86,7 @@ class ActivityLogQueryService
     }
 
     /**
-     * @param array<string, mixed> $filters
+     * @param  array<string, mixed>  $filters
      * @return array<string, string>
      */
     public function filterSummary(array $filters): array
@@ -104,7 +105,7 @@ class ActivityLogQueryService
     {
         $query->where(function (Builder $query) use ($module): void {
             match ($module) {
-                'employees' => $query->where('subject_type', Employee::class)->orWhere('action', 'like', '%employee%'),
+                'employees' => $query->whereIn('subject_type', [Employee::class, EmployeeDependant::class])->orWhere('action', 'like', '%employee%'),
                 'disciplinary-cases' => $query->where('subject_type', DisciplinaryCase::class)->orWhere('action', 'like', '%case%'),
                 'staff-promotions' => $query->where('subject_type', StaffPromotion::class)->orWhere('action', 'like', '%promotion%'),
                 'staff-relocations' => $query->where('subject_type', StaffRelocation::class)->orWhere('action', 'like', '%relocation%'),

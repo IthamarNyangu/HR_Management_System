@@ -1,14 +1,17 @@
 <?php
 
+use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\Admin\MasterDataController;
 use App\Http\Controllers\Admin\UserController;
-use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\Api\PublicJobOpeningController;
+use App\Http\Controllers\Api\WorkPulseDirectoryController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DisciplinaryCaseAttachmentController;
 use App\Http\Controllers\DisciplinaryCaseController;
 use App\Http\Controllers\DisciplinaryCaseImportController;
 use App\Http\Controllers\EmployeeBulkActionController;
 use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\EmployeeDependantController;
 use App\Http\Controllers\EmployeeImportController;
 use App\Http\Controllers\EmployeeSearchController;
 use App\Http\Controllers\ImportController;
@@ -17,14 +20,12 @@ use App\Http\Controllers\OrganisationChartController;
 use App\Http\Controllers\PasswordChangeController;
 use App\Http\Controllers\PublicCareerController;
 use App\Http\Controllers\PublicJobApplicationController;
-use App\Http\Controllers\ReportController;
-use App\Http\Controllers\ReportExportController;
-use App\Http\Controllers\StaffEstablishmentController;
-use App\Http\Controllers\Api\PublicJobOpeningController;
-use App\Http\Controllers\Api\WorkPulseDirectoryController;
 use App\Http\Controllers\Recruitment\JobApplicationController;
 use App\Http\Controllers\Recruitment\JobApplicationDocumentController;
 use App\Http\Controllers\Recruitment\JobOpeningController;
+use App\Http\Controllers\ReportController;
+use App\Http\Controllers\ReportExportController;
+use App\Http\Controllers\StaffEstablishmentController;
 use App\Http\Controllers\StaffPromotionAttachmentController;
 use App\Http\Controllers\StaffPromotionController;
 use App\Http\Controllers\StaffRelocationAttachmentController;
@@ -182,6 +183,13 @@ Route::middleware(['auth', 'active', 'password.changed'])->group(function () use
         ->parameters(['organisation-chart' => 'organisation_chart'])
         ->except(['destroy']);
     Route::get('/employees/archived', [EmployeeController::class, 'archived'])->name('employees.archived');
+    Route::get('/employees/{employee}/dependants/archived', [EmployeeDependantController::class, 'archived'])->name('employees.dependants.archived');
+    Route::get('/employees/{employee}/dependants/create', [EmployeeDependantController::class, 'create'])->name('employees.dependants.create');
+    Route::post('/employees/{employee}/dependants', [EmployeeDependantController::class, 'store'])->name('employees.dependants.store');
+    Route::get('/employees/{employee}/dependants/{dependant}/edit', [EmployeeDependantController::class, 'edit'])->name('employees.dependants.edit');
+    Route::put('/employees/{employee}/dependants/{dependant}', [EmployeeDependantController::class, 'update'])->name('employees.dependants.update');
+    Route::patch('/employees/{employee}/dependants/{dependant}/archive', [EmployeeDependantController::class, 'archive'])->name('employees.dependants.archive');
+    Route::patch('/employees/{employee}/dependants/{dependant}/restore', [EmployeeDependantController::class, 'restore'])->whereNumber('dependant')->name('employees.dependants.restore');
     Route::post('/employees/{employee}/workpulse/validate', [EmployeeController::class, 'validateWorkPulse'])->name('employees.workpulse.validate');
     Route::post('/employees/{employee}/workpulse/invite', [EmployeeController::class, 'inviteToWorkPulse'])->name('employees.workpulse.invite');
     Route::post('/employees/{employee}/workpulse/resend', [EmployeeController::class, 'resendWorkPulseSetup'])->name('employees.workpulse.resend');

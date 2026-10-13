@@ -97,6 +97,7 @@ class ActivityLog extends Model
         if ($this->subject_type) {
             return match (class_basename($this->subject_type)) {
                 'Employee' => 'Employees',
+                'EmployeeDependant' => 'Employees',
                 'DisciplinaryCase' => 'Disciplinary Cases',
                 'StaffPromotion' => 'Staff Promotions',
                 'StaffRelocation' => 'Staff Relocations',

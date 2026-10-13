@@ -6,6 +6,7 @@ use App\Models\ActivityLog;
 use App\Models\Attachment;
 use App\Models\DisciplinaryCase;
 use App\Models\Employee;
+use App\Models\EmployeeDependant;
 use App\Models\JobApplication;
 use App\Models\JobApplicationDocument;
 use App\Models\JobOpening;
@@ -20,7 +21,7 @@ use Illuminate\Http\Request;
 class ActivityLogger
 {
     /**
-     * @param array<string, mixed> $properties
+     * @param  array<string, mixed>  $properties
      */
     public function log(
         string $action,
@@ -58,6 +59,16 @@ class ActivityLogger
                 'province_name' => $subject->province?->name,
                 'facility_id' => $subject->facility_id,
                 'facility_name' => $subject->facility?->name,
+            ];
+        }
+
+        if ($subject instanceof EmployeeDependant) {
+            return [
+                'employee_id' => $subject->employee_id,
+                'employee_no' => $subject->employee?->employee_no,
+                'province_id' => $subject->employee?->province_id,
+                'province_name' => $subject->employee?->province?->name,
+                'category' => $subject->category,
             ];
         }
 
