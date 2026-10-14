@@ -83,8 +83,7 @@ class StaffRelocationController extends Controller
         ReferenceNumberService $referenceNumbers,
         ActivityLogger $activity,
         StaffRelocationApplicationService $relocationApplications,
-    ): RedirectResponse
-    {
+    ): RedirectResponse {
         $relocation = DB::transaction(function () use ($request, $referenceNumbers) {
             $data = $this->relocationData($request->validated());
             $data['reference_no'] = $referenceNumbers->generate('REL', 'staff_relocations');
@@ -136,8 +135,7 @@ class StaffRelocationController extends Controller
         StaffRelocation $staffRelocation,
         ActivityLogger $activity,
         StaffRelocationApplicationService $relocationApplications,
-    ): RedirectResponse
-    {
+    ): RedirectResponse {
         DB::transaction(function () use ($request, $staffRelocation) {
             $data = $this->relocationData($request->validated());
             $data['updated_by'] = $request->user()->id;
@@ -325,7 +323,7 @@ class StaffRelocationController extends Controller
     }
 
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
     private function relocationData(array $data): array

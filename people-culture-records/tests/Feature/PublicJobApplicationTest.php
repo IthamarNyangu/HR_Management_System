@@ -4,8 +4,8 @@ namespace Tests\Feature;
 
 use App\Mail\JobApplicationReceivedMail;
 use App\Mail\JobApplicationRejectedMail;
-use App\Mail\JobApplicationWithdrawnMail;
 use App\Mail\JobApplicationWithdrawalLinkMail;
+use App\Mail\JobApplicationWithdrawnMail;
 use App\Models\Department;
 use App\Models\District;
 use App\Models\Facility;
@@ -28,16 +28,27 @@ class PublicJobApplicationTest extends TestCase
     use RefreshDatabase;
 
     private Role $adminRole;
+
     private Role $managerRole;
+
     private Role $officerRole;
+
     private Role $viewerRole;
+
     private Province $northern;
+
     private Province $luapula;
+
     private District $kasama;
+
     private District $mansa;
+
     private Facility $kasamaFacility;
+
     private Department $department;
+
     private Project $project;
+
     private JobTitle $jobTitle;
 
     protected function setUp(): void
@@ -306,7 +317,7 @@ class PublicJobApplicationTest extends TestCase
     }
 
     /**
-     * @param array<string, mixed> $attributes
+     * @param  array<string, mixed>  $attributes
      */
     private function jobOpening(array $attributes = []): JobOpening
     {
@@ -335,7 +346,7 @@ class PublicJobApplicationTest extends TestCase
     }
 
     /**
-     * @param array<string, mixed> $attributes
+     * @param  array<string, mixed>  $attributes
      */
     private function application(array $attributes = []): JobApplication
     {
@@ -356,7 +367,7 @@ class PublicJobApplicationTest extends TestCase
     }
 
     /**
-     * @param array<string, mixed> $overrides
+     * @param  array<string, mixed>  $overrides
      * @return array<string, mixed>
      */
     private function payload(array $overrides = []): array

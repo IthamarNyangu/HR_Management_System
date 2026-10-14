@@ -25,7 +25,7 @@ class EmployeeImportController extends Controller
 
     public function template(): BinaryFileResponse
     {
-        return Excel::download(new EmployeeImportTemplateExport(), 'employee-import-template.xlsx');
+        return Excel::download(new EmployeeImportTemplateExport, 'employee-import-template.xlsx');
     }
 
     public function upload(UploadEmployeeImportRequest $request, EmployeeImportPreviewService $previewService): RedirectResponse

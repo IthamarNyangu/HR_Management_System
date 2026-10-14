@@ -88,7 +88,7 @@ class MasterDataController extends Controller
     }
 
     /**
-     * @param class-string<Model> $model
+     * @param  class-string<Model>  $model
      */
     private function findRecord(string $model, int $id): Model
     {
@@ -96,7 +96,7 @@ class MasterDataController extends Controller
     }
 
     /**
-     * @param array<string, mixed> $config
+     * @param  array<string, mixed>  $config
      * @return array<string, mixed>
      */
     private function formData(string $type, array $config): array

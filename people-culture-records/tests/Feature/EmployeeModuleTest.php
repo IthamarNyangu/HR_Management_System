@@ -2,13 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Models\ActivityLog;
+use App\Models\Department;
 use App\Models\District;
 use App\Models\Employee;
 use App\Models\EmploymentStatus;
-use App\Models\ActivityLog;
-use App\Models\Department;
-use App\Models\Province;
 use App\Models\Project;
+use App\Models\Province;
 use App\Models\Role;
 use App\Models\TerminationReason;
 use App\Models\User;
@@ -21,15 +21,25 @@ class EmployeeModuleTest extends TestCase
     use RefreshDatabase;
 
     private Role $adminRole;
+
     private Role $managerRole;
+
     private Role $officerRole;
+
     private Role $viewerRole;
+
     private Province $northern;
+
     private Province $luapula;
+
     private District $kasama;
+
     private District $mansa;
+
     private EmploymentStatus $activeStatus;
+
     private EmploymentStatus $terminatedStatus;
+
     private TerminationReason $resignationReason;
 
     protected function setUp(): void
@@ -481,7 +491,7 @@ class EmployeeModuleTest extends TestCase
     }
 
     /**
-     * @param array<string, mixed> $attributes
+     * @param  array<string, mixed>  $attributes
      */
     private function employee(array $attributes = []): Employee
     {
@@ -495,7 +505,7 @@ class EmployeeModuleTest extends TestCase
     }
 
     /**
-     * @param array<string, mixed> $overrides
+     * @param  array<string, mixed>  $overrides
      * @return array<string, mixed>
      */
     private function employeePayload(Employee $employee, array $overrides = []): array

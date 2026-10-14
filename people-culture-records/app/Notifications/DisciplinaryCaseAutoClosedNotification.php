@@ -10,9 +10,7 @@ class DisciplinaryCaseAutoClosedNotification extends Notification
 {
     use Queueable;
 
-    public function __construct(private readonly DisciplinaryCase $disciplinaryCase)
-    {
-    }
+    public function __construct(private readonly DisciplinaryCase $disciplinaryCase) {}
 
     /**
      * @return array<int, string>

@@ -13,6 +13,7 @@ use App\Models\Province;
 use App\Models\Role;
 use App\Models\StaffEstablishmentPlan;
 use App\Models\User;
+use App\Services\StaffEstablishmentMetricsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -21,16 +22,27 @@ class StaffEstablishmentModuleTest extends TestCase
     use RefreshDatabase;
 
     private Role $adminRole;
+
     private Role $managerRole;
+
     private Role $officerRole;
+
     private Role $viewerRole;
+
     private Province $northern;
+
     private Province $luapula;
+
     private District $kasama;
+
     private District $mansa;
+
     private Project $project;
+
     private Department $department;
+
     private JobTitle $jobTitle;
+
     private EmploymentStatus $activeStatus;
 
     protected function setUp(): void
@@ -182,7 +194,7 @@ class StaffEstablishmentModuleTest extends TestCase
             'department_id' => $this->department->id,
             'budgeted_positions' => 1,
         ]);
-        $export = new StaffEstablishmentPlanExport($plan, $admin, app(\App\Services\StaffEstablishmentMetricsService::class));
+        $export = new StaffEstablishmentPlanExport($plan, $admin, app(StaffEstablishmentMetricsService::class));
 
         $this->actingAs($admin)
             ->get(route('staff-establishment.create'))
@@ -525,7 +537,7 @@ class StaffEstablishmentModuleTest extends TestCase
     }
 
     /**
-     * @param array<string, mixed> $attributes
+     * @param  array<string, mixed>  $attributes
      */
     private function employee(array $attributes = []): Employee
     {
@@ -558,7 +570,7 @@ class StaffEstablishmentModuleTest extends TestCase
     }
 
     /**
-     * @param array<string, mixed> $overrides
+     * @param  array<string, mixed>  $overrides
      * @return array<string, mixed>
      */
     private function payload(array $overrides = []): array

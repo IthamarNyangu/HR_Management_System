@@ -23,6 +23,8 @@ class WorkPulseDirectoryController extends Controller
                 'department:id,name,code,is_active',
                 'jobTitle:id,name,code,is_active',
                 'facility:id,district_id,name,code,is_active',
+                'district:id,province_id,name,code,is_active',
+                'province:id,name,code,is_active',
                 'employmentStatus:id,name,code,is_active',
                 'supervisor:id,employee_no,first_name,last_name,email',
             ])
@@ -44,6 +46,8 @@ class WorkPulseDirectoryController extends Controller
                 'department' => $this->masterData($employee->department),
                 'job_title' => $this->masterData($employee->jobTitle),
                 'facility' => $this->masterData($employee->facility),
+                'district' => $this->masterData($employee->district),
+                'province' => $this->masterData($employee->province),
                 'employment_status' => $this->masterData($employee->employmentStatus),
                 'supervisor' => $employee->supervisor ? [
                     'source_id' => $employee->supervisor->id,

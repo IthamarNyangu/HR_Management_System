@@ -9,11 +9,17 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class OrganisationChartNode extends Model
 {
     public const TYPE_CENTRAL_HEAD_OFFICE = 'central_head_office';
+
     public const TYPE_REGIONAL_LEVEL = 'regional_level';
+
     public const TYPE_PROVINCIAL_LEVEL = 'provincial_level';
+
     public const TYPE_HUB_FACILITY = 'hub_facility';
+
     public const TYPE_KEY_POSITION = 'key_position';
+
     public const TYPE_EXTERNAL_PARTNER = 'external_partner';
+
     public const TYPE_SUPPORT_UNIT = 'support_unit';
 
     public const TYPES = [

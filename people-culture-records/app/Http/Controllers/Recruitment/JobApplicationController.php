@@ -238,7 +238,7 @@ class JobApplicationController extends Controller
     }
 
     /**
-     * @param array<string, mixed> $scores
+     * @param  array<string, mixed>  $scores
      */
     private function overallScore(array $scores): ?float
     {
@@ -255,7 +255,7 @@ class JobApplicationController extends Controller
     }
 
     /**
-     * @param array<string, mixed> $extra
+     * @param  array<string, mixed>  $extra
      */
     private function changeStatus(
         JobApplication $jobApplication,

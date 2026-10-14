@@ -390,7 +390,7 @@ class DisciplinaryCaseController extends Controller
     }
 
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
     private function caseData(array $data): array

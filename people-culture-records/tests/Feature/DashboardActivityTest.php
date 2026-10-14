@@ -19,14 +19,23 @@ class DashboardActivityTest extends TestCase
     use RefreshDatabase;
 
     private Role $adminRole;
+
     private Role $managerRole;
+
     private Role $officerRole;
+
     private Role $viewerRole;
+
     private Province $northern;
+
     private Province $luapula;
+
     private District $kasama;
+
     private District $mansa;
+
     private Employee $northernEmployee;
+
     private Employee $luapulaEmployee;
 
     protected function setUp(): void
@@ -355,7 +364,7 @@ class DashboardActivityTest extends TestCase
     }
 
     /**
-     * @param array<string, mixed> $attributes
+     * @param  array<string, mixed>  $attributes
      */
     private function employee(array $attributes = []): Employee
     {
@@ -369,7 +378,7 @@ class DashboardActivityTest extends TestCase
     }
 
     /**
-     * @param array<string, mixed> $attributes
+     * @param  array<string, mixed>  $attributes
      */
     private function disciplinaryCase(array $attributes = []): DisciplinaryCase
     {

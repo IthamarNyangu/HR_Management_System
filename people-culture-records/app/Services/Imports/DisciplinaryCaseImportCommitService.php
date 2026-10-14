@@ -15,8 +15,7 @@ class DisciplinaryCaseImportCommitService
     public function __construct(
         private ReferenceNumberService $referenceNumberService,
         private ActivityLogger $activityLogger,
-    ) {
-    }
+    ) {}
 
     public function commit(ImportBatch $batch, User $user): ImportBatch
     {

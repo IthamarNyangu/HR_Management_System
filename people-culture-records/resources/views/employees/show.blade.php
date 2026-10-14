@@ -19,18 +19,6 @@
     </div>
 @endsection
 
-@push('styles')
-    <style>
-        .workpulse-access-card { position: relative; overflow: hidden; isolation: isolate; border-color: #d9d7ee !important; background: linear-gradient(145deg, #f8f7ff 0%, #f1f5ff 54%, #eef8f4 100%) !important; color: #142440; }
-        .workpulse-access-card::after { content: ""; position: absolute; z-index: 0; left: 50%; top: 50%; width: min(72%, 30rem); aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; background: url("{{ asset('images/workpulse-app-icon.png') }}") center/cover no-repeat; opacity: .075; pointer-events: none; }
-        .workpulse-access-card > * { position: relative; z-index: 1; }
-        .workpulse-access-card > .d-flex p, .workpulse-access-card > .small { color: #52627a !important; }
-        .workpulse-access-card .row .border { border-color: rgba(111, 118, 159, .24) !important; background: rgba(255, 255, 255, .72); backdrop-filter: blur(1px); }
-        .workpulse-title-icon { width: 2rem; height: 2rem; border-radius: 50%; object-fit: cover; box-shadow: 0 0 0 1px rgba(23,32,51,.1); }
-        @media (max-width: 767.98px) { .workpulse-access-card::after { width: min(82%, 20rem); } }
-    </style>
-@endpush
-
 @section('content')
     @php
         $canViewSensitivePersonalData = auth()->user()->can('viewSensitivePersonalData', $employee);
@@ -171,101 +159,6 @@
                             </tbody>
                         </table>
                     </div>
-                </section>
-            @endcan
-
-            @can('update', $employee)
-                @php
-                    $workPulseChecks = [
-                        'Active employment status' => !$employee->trashed() && !$employee->termination_date && (!$employee->employmentStatus?->code || strtoupper($employee->employmentStatus->code) === 'ACTIVE'),
-                        'Employee number' => filled($employee->employee_no),
-                        'Employee name' => filled($employee->first_name) && filled($employee->last_name),
-                        'Valid work email' => filled($employee->email) && filter_var($employee->email, FILTER_VALIDATE_EMAIL),
-                        'Department' => filled($employee->department_id),
-                        'Job title' => filled($employee->job_title_id),
-                    ];
-                    $workPulseReadyLocally = !in_array(false, $workPulseChecks, true);
-                    $workPulseValidation = session('workpulse_validation');
-                    $workPulseStatusLabels = [
-                        'not_enabled' => ['Not enabled', 'text-bg-secondary'],
-                        'ready' => ['Ready to onboard', 'text-bg-success'],
-                        'account_created' => ['Account created', 'text-bg-info'],
-                        'invitation_pending' => ['Invitation requested', 'text-bg-warning'],
-                        'active' => ['Account active', 'text-bg-success'],
-                        'deactivated' => ['Account deactivated', 'text-bg-secondary'],
-                        'invitation_failed' => ['Invitation failed', 'text-bg-danger'],
-                        'ineligible' => ['Not eligible', 'text-bg-secondary'],
-                        'unavailable' => ['Status unavailable', 'text-bg-danger'],
-                    ];
-                    $workPulseStatus = $workPulseAccountStatus['status'] ?? 'unavailable';
-                    $workPulseStatusDisplay = $workPulseStatusLabels[$workPulseStatus] ?? ['Unknown', 'text-bg-secondary'];
-                @endphp
-                <section class="workpulse-access-card bg-white border rounded-2 p-4 mb-3">
-                    <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
-                        <div>
-                            <div class="d-flex align-items-center gap-2 mb-1">
-                                <img class="workpulse-title-icon" src="{{ asset('images/workpulse-app-icon.png') }}" alt="">
-                                <h2 class="h5 mb-0">WorkPulse Access</h2>
-                                <span class="badge {{ $workPulseStatusDisplay[1] }}">{{ $workPulseStatusDisplay[0] }}</span>
-                            </div>
-                            <p class="text-muted mb-0">
-                                @if ($workPulseStatus === 'ready')
-                                    Requirements are confirmed. Creating the account will send a WorkPulse invitation email.
-                                @elseif ($workPulseStatus === 'invitation_pending')
-                                    WorkPulse requested an invitation email. Delivery is not confirmed; the account is awaiting the employee's first sign-in.
-                                @elseif ($workPulseStatus === 'account_created')
-                                    A linked WorkPulse account exists, but no sign-in has been recorded.
-                                @elseif ($workPulseStatus === 'active')
-                                    This employee has an active linked WorkPulse account.
-                                @else
-                                    Check whether this employee is ready for a WorkPulse account. Validation does not create an account or send email.
-                                @endif
-                            </p>
-                        </div>
-                        @if (!in_array($workPulseStatus, ['ready', 'account_created', 'invitation_pending', 'active', 'deactivated'], true))
-                            <form method="POST" action="{{ route('employees.workpulse.validate', $employee) }}">
-                                @csrf
-                                <button type="submit" class="btn btn-outline-primary" {{ $workPulseReadyLocally ? '' : 'disabled' }}>
-                                    Validate WorkPulse readiness
-                                </button>
-                            </form>
-                        @elseif ($workPulseStatus === 'ready')
-                            <form method="POST" action="{{ route('employees.workpulse.invite', $employee) }}" data-confirm="true" data-confirm-title="Create WorkPulse account?" data-confirm-message="This will create a WorkPulse login for {{ $employee->full_name }} and send an invitation to {{ $employee->email }}." data-confirm-button="Create account">
-                                @csrf
-                                <button type="submit" class="btn btn-success"><i class="bi bi-person-plus"></i> Create WorkPulse account</button>
-                            </form>
-                        @elseif (in_array($workPulseStatus, ['account_created', 'invitation_pending'], true))
-                            <form method="POST" action="{{ route('employees.workpulse.resend', $employee) }}" data-confirm="true" data-confirm-title="Send account setup email?" data-confirm-message="WorkPulse will request another secure password setup email for {{ $employee->email }}." data-confirm-button="Send email">
-                                @csrf
-                                <button type="submit" class="btn btn-outline-primary"><i class="bi bi-envelope"></i> Send setup email</button>
-                            </form>
-                        @endif
-                    </div>
-
-                    @if ($workPulseValidation)
-                        <div class="alert alert-{{ $workPulseValidation['type'] }} mt-3 mb-0" role="status">
-                            <strong>{{ ($workPulseValidation['ready'] ?? false) ? 'Ready:' : 'WorkPulse:' }}</strong>
-                            {{ $workPulseValidation['message'] }}
-                        </div>
-                    @endif
-
-                    @if ($workPulseStatus === 'unavailable')
-                        <div class="alert alert-warning mt-3 mb-0" role="status">{{ $workPulseAccountStatus['message'] ?? 'WorkPulse account status is unavailable.' }}</div>
-                    @elseif (!empty($workPulseAccountStatus['last_sign_in_at']))
-                        <div class="small text-muted mt-3">Last WorkPulse sign-in: {{ \Illuminate\Support\Carbon::parse($workPulseAccountStatus['last_sign_in_at'])->format('d M Y, H:i') }}</div>
-                    @endif
-
-                    <div class="row g-2 mt-3">
-                        @foreach ($workPulseChecks as $label => $complete)
-                            <div class="col-md-6">
-                                <div class="border rounded-2 px-3 py-2 d-flex align-items-center justify-content-between">
-                                    <span>{{ $label }}</span>
-                                    <span class="badge {{ $complete ? 'text-bg-success' : 'text-bg-danger' }}">{{ $complete ? 'Available' : 'Missing' }}</span>
-                                </div>
-                            </div>
-                        @endforeach
-                    </div>
-                    <div class="small text-muted mt-3">Line manager is recommended but does not block account creation.</div>
                 </section>
             @endcan
 

@@ -7,6 +7,7 @@ use App\Models\Facility;
 use App\Models\JobOpening;
 use App\Models\JobTitle;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 
 class StoreJobOpeningRequest extends FormRequest
@@ -133,8 +134,8 @@ class StoreJobOpeningRequest extends FormRequest
         }
 
         try {
-            $openingDate = \Illuminate\Support\Carbon::parse($this->input('opening_date'))->startOfDay();
-            $closingDate = \Illuminate\Support\Carbon::parse($this->input('closing_date'))->startOfDay();
+            $openingDate = Carbon::parse($this->input('opening_date'))->startOfDay();
+            $closingDate = Carbon::parse($this->input('closing_date'))->startOfDay();
         } catch (\Throwable) {
             return;
         }

@@ -13,6 +13,7 @@ class OrganisationChart extends Model
     use SoftDeletes;
 
     public const STATUS_DRAFT = 'draft';
+
     public const STATUS_PUBLISHED = 'published';
 
     public const STATUSES = [

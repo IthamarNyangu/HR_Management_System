@@ -7,9 +7,7 @@ use App\Services\ActivityLogger;
 
 class ExpiredJobOpeningCloser
 {
-    public function __construct(private readonly ActivityLogger $activity)
-    {
-    }
+    public function __construct(private readonly ActivityLogger $activity) {}
 
     public function closeExpired(): int
     {

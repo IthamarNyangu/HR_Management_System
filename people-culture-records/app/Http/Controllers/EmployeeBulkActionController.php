@@ -87,12 +87,12 @@ class EmployeeBulkActionController extends Controller
                 'action' => $action,
                 'employee_count' => $employeeCount,
                 'employee_ids' => $employees->pluck('id')->values()->all(),
-            'changed_value' => $valueLabel,
-            'termination_reason' => $action === 'change_employment_status' && isset($data['termination_reason_id'])
-                ? TerminationReason::find($data['termination_reason_id'])?->name
-                : null,
-            'termination_date' => $data['termination_date'] ?? null,
-            'performed_by' => $user->name,
+                'changed_value' => $valueLabel,
+                'termination_reason' => $action === 'change_employment_status' && isset($data['termination_reason_id'])
+                    ? TerminationReason::find($data['termination_reason_id'])?->name
+                    : null,
+                'termination_date' => $data['termination_date'] ?? null,
+                'performed_by' => $user->name,
                 'linked_user_accounts_count' => $linkedUserAccountsCount,
                 'province_id' => $this->singleProvinceId($employees),
                 'province_name' => $this->singleProvinceName($employees),
@@ -116,7 +116,7 @@ class EmployeeBulkActionController extends Controller
     }
 
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
     private function valueLabel(string $action, array $data): ?string
     {
@@ -130,7 +130,7 @@ class EmployeeBulkActionController extends Controller
     }
 
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
     private function employmentStatusLabel(array $data): ?string
     {
@@ -179,7 +179,7 @@ class EmployeeBulkActionController extends Controller
     }
 
     /**
-     * @param Collection<int, Employee> $employees
+     * @param  Collection<int, Employee>  $employees
      */
     private function singleProvinceId(Collection $employees): ?int
     {
@@ -189,7 +189,7 @@ class EmployeeBulkActionController extends Controller
     }
 
     /**
-     * @param Collection<int, Employee> $employees
+     * @param  Collection<int, Employee>  $employees
      */
     private function singleProvinceName(Collection $employees): ?string
     {

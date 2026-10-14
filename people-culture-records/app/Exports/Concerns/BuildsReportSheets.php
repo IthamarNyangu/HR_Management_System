@@ -12,7 +12,7 @@ use Maatwebsite\Excel\Concerns\WithHeadings;
 abstract class BuildsReportSheets implements FromCollection, ShouldAutoSize, WithHeadings
 {
     /**
-     * @param array<string, mixed> $filters
+     * @param  array<string, mixed>  $filters
      */
     public function __construct(
         protected ReportQueryService $reports,

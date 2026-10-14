@@ -194,7 +194,7 @@ class UpdateOrganisationChartRequest extends FormRequest
     }
 
     /**
-     * @param array<string, mixed> $node
+     * @param  array<string, mixed>  $node
      */
     private function boxDuplicateKey(array $node): string
     {

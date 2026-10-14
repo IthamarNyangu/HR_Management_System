@@ -52,7 +52,7 @@ class StaffEstablishmentMetricsService
     }
 
     /**
-     * @param EloquentCollection<int, StaffEstablishmentLine>|Collection<int, StaffEstablishmentLine> $lines
+     * @param  EloquentCollection<int, StaffEstablishmentLine>|Collection<int, StaffEstablishmentLine>  $lines
      * @return array{budgeted:int, filled:int, vacant:int, overstaffed:int, vacancy_rate:float}
      */
     public function summaryForLines(EloquentCollection|Collection $lines, User $user): array

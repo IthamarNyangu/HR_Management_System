@@ -11,9 +11,7 @@ use Illuminate\Support\Facades\DB;
 
 class EmployeeImportCommitService
 {
-    public function __construct(private ActivityLogger $activityLogger)
-    {
-    }
+    public function __construct(private ActivityLogger $activityLogger) {}
 
     public function commit(ImportBatch $batch, User $user): ImportBatch
     {

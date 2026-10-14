@@ -11,7 +11,6 @@ use App\Models\Employee;
 use App\Models\JobTitle;
 use App\Models\Project;
 use App\Models\Province;
-use App\Models\StaffEstablishmentLine;
 use App\Models\StaffEstablishmentPlan;
 use App\Services\ActivityLogger;
 use App\Services\ReferenceNumberService;
@@ -297,7 +296,7 @@ class StaffEstablishmentController extends Controller
     }
 
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
     private function planData(array $data): array
@@ -324,7 +323,7 @@ class StaffEstablishmentController extends Controller
     }
 
     /**
-     * @param array<int, array<string, mixed>> $lines
+     * @param  array<int, array<string, mixed>>  $lines
      */
     private function syncLines(StaffEstablishmentPlan $plan, array $lines): void
     {
@@ -339,6 +338,7 @@ class StaffEstablishmentController extends Controller
                 if ($existingLine) {
                     $existingLine->update($lineData);
                     $keptIds[] = $existingLine->id;
+
                     continue;
                 }
             }
@@ -353,7 +353,7 @@ class StaffEstablishmentController extends Controller
     }
 
     /**
-     * @param array<string, mixed> $line
+     * @param  array<string, mixed>  $line
      * @return array<string, mixed>
      */
     private function lineData(array $line): array
@@ -377,7 +377,7 @@ class StaffEstablishmentController extends Controller
     }
 
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
     private function applyApprovalFields(array &$data, int $userId, ?StaffEstablishmentPlan $existingPlan = null): void
     {
@@ -448,7 +448,7 @@ class StaffEstablishmentController extends Controller
     }
 
     /**
-     * @param array<int, array<string, mixed>> $rows
+     * @param  array<int, array<string, mixed>>  $rows
      * @return LengthAwarePaginator<int, array<string, mixed>>
      */
     private function paginateRows(array $rows, Request $request): LengthAwarePaginator

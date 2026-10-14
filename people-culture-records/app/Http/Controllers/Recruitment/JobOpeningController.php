@@ -511,7 +511,7 @@ class JobOpeningController extends Controller
     }
 
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
     private function jobOpeningData(array $data): array

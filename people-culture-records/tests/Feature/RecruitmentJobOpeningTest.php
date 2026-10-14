@@ -2,14 +2,14 @@
 
 namespace Tests\Feature;
 
-use App\Mail\SharedJobOpeningMail;
 use App\Mail\JobOpeningReadvertisedMail;
+use App\Mail\SharedJobOpeningMail;
 use App\Models\Department;
 use App\Models\District;
 use App\Models\EmploymentType;
 use App\Models\Facility;
-use App\Models\JobOpening;
 use App\Models\JobApplication;
+use App\Models\JobOpening;
 use App\Models\JobTitle;
 use App\Models\Project;
 use App\Models\Province;
@@ -24,17 +24,29 @@ class RecruitmentJobOpeningTest extends TestCase
     use RefreshDatabase;
 
     private Role $adminRole;
+
     private Role $managerRole;
+
     private Role $officerRole;
+
     private Role $viewerRole;
+
     private Province $northern;
+
     private Province $luapula;
+
     private District $kasama;
+
     private District $mansa;
+
     private Facility $kasamaFacility;
+
     private Department $department;
+
     private Project $project;
+
     private JobTitle $jobTitle;
+
     private EmploymentType $employmentType;
 
     protected function setUp(): void
@@ -475,7 +487,7 @@ class RecruitmentJobOpeningTest extends TestCase
     }
 
     /**
-     * @param array<string, mixed> $attributes
+     * @param  array<string, mixed>  $attributes
      */
     private function jobOpening(array $attributes = []): JobOpening
     {
@@ -509,7 +521,7 @@ class RecruitmentJobOpeningTest extends TestCase
     }
 
     /**
-     * @param array<string, mixed> $attributes
+     * @param  array<string, mixed>  $attributes
      */
     private function applicationFor(JobOpening $jobOpening, array $attributes = []): JobApplication
     {
@@ -529,7 +541,7 @@ class RecruitmentJobOpeningTest extends TestCase
     }
 
     /**
-     * @param array<string, mixed> $overrides
+     * @param  array<string, mixed>  $overrides
      * @return array<string, mixed>
      */
     private function payload(array $overrides = []): array

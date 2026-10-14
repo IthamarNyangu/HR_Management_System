@@ -23,24 +23,43 @@ class StaffRelocationModuleTest extends TestCase
     use RefreshDatabase;
 
     private Role $adminRole;
+
     private Role $managerRole;
+
     private Role $officerRole;
+
     private Role $viewerRole;
+
     private Province $northern;
+
     private Province $luapula;
+
     private Province $muchinga;
+
     private District $kasama;
+
     private District $mansa;
+
     private District $chinsali;
+
     private Facility $kasamaFacility;
+
     private Facility $mansaFacility;
+
     private Facility $chinsaliFacility;
+
     private Department $peopleCulture;
+
     private Project $generalOperations;
+
     private JobTitle $jobTitle;
+
     private RelocationReason $relocationReason;
+
     private Employee $northernEmployee;
+
     private Employee $luapulaEmployee;
+
     private Employee $muchingaEmployee;
 
     protected function setUp(): void
@@ -462,7 +481,7 @@ class StaffRelocationModuleTest extends TestCase
     }
 
     /**
-     * @param array<string, mixed> $attributes
+     * @param  array<string, mixed>  $attributes
      */
     private function employee(array $attributes = []): Employee
     {
@@ -476,7 +495,7 @@ class StaffRelocationModuleTest extends TestCase
     }
 
     /**
-     * @param array<string, mixed> $attributes
+     * @param  array<string, mixed>  $attributes
      */
     private function relocation(array $attributes = []): StaffRelocation
     {
@@ -499,7 +518,7 @@ class StaffRelocationModuleTest extends TestCase
     }
 
     /**
-     * @param array<string, mixed> $overrides
+     * @param  array<string, mixed>  $overrides
      * @return array<string, mixed>
      */
     private function relocationPayload(array $overrides = []): array

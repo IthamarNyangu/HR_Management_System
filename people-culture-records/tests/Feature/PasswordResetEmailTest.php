@@ -2,8 +2,8 @@
 
 namespace Tests\Feature;
 
-use App\Mail\SystemTestMail;
 use App\Mail\PasswordResetMail;
+use App\Mail\SystemTestMail;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Auth\Notifications\ResetPassword;
@@ -142,7 +142,7 @@ class PasswordResetEmailTest extends TestCase
 
     public function test_branded_test_email_can_render(): void
     {
-        $html = (new SystemTestMail())->render();
+        $html = (new SystemTestMail)->render();
 
         $this->assertStringContainsString('People &amp; Culture Records Management System', $html);
         $this->assertStringContainsString('Right to Care Zambia. All rights reserved.', $html);

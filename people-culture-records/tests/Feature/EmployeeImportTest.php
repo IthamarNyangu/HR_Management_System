@@ -2,11 +2,9 @@
 
 namespace Tests\Feature;
 
-use App\Models\ActivityLog;
 use App\Models\District;
 use App\Models\Employee;
 use App\Models\ImportBatch;
-use App\Models\ImportRow;
 use App\Models\Province;
 use App\Models\Role;
 use App\Models\User;
@@ -22,12 +20,19 @@ class EmployeeImportTest extends TestCase
     use RefreshDatabase;
 
     private Role $adminRole;
+
     private Role $managerRole;
+
     private Role $officerRole;
+
     private Role $viewerRole;
+
     private Province $northern;
+
     private Province $luapula;
+
     private District $kasama;
+
     private District $mansa;
 
     protected function setUp(): void
@@ -300,7 +305,7 @@ class EmployeeImportTest extends TestCase
     }
 
     /**
-     * @param array<string, mixed> $overrides
+     * @param  array<string, mixed>  $overrides
      * @return array<string, mixed>
      */
     private function row(array $overrides = []): array
@@ -316,11 +321,11 @@ class EmployeeImportTest extends TestCase
     }
 
     /**
-     * @param list<array<string, mixed>> $rows
+     * @param  list<array<string, mixed>>  $rows
      */
     private function employeeFile(array $rows): UploadedFile
     {
-        $spreadsheet = new Spreadsheet();
+        $spreadsheet = new Spreadsheet;
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Employees_Import');
         $headings = ['employee_no', 'first_name', 'last_name', 'email', 'province', 'district'];
@@ -348,11 +353,11 @@ class EmployeeImportTest extends TestCase
     }
 
     /**
-     * @param list<array<string, mixed>> $rows
+     * @param  list<array<string, mixed>>  $rows
      */
     private function multiSheetEmployeeFile(array $rows): UploadedFile
     {
-        $spreadsheet = new Spreadsheet();
+        $spreadsheet = new Spreadsheet;
         $readme = $spreadsheet->getActiveSheet();
         $readme->setTitle('README');
         $readme->setCellValue('A1', 'This sheet should not be processed.');

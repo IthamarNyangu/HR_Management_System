@@ -3,7 +3,7 @@
 require __DIR__.'/../vendor/autoload.php';
 
 $app = require __DIR__.'/../bootstrap/app.php';
-$app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+$app->make(Kernel::class)->bootstrap();
 
 use App\Models\Department;
 use App\Models\Employee;
@@ -12,6 +12,7 @@ use App\Models\JobTitle;
 use App\Models\Project;
 use App\Models\PromotionType;
 use App\Models\RelocationReason;
+use Illuminate\Contracts\Console\Kernel;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
@@ -53,7 +54,7 @@ $employmentStatus = EmploymentStatus::query()->value('name') ?: 'Active';
 
 function writeWorkbook(string $path, string $sheetName, array $headings, array $rows, string $title): void
 {
-    $spreadsheet = new Spreadsheet();
+    $spreadsheet = new Spreadsheet;
     $sheet = $spreadsheet->getActiveSheet();
     $sheet->setTitle($sheetName);
 

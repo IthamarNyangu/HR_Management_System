@@ -7,7 +7,7 @@ use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 
-class EmployeesPreviewImport implements ToCollection, WithHeadingRow, SkipsEmptyRows
+class EmployeesPreviewImport implements SkipsEmptyRows, ToCollection, WithHeadingRow
 {
     public Collection $rows;
 

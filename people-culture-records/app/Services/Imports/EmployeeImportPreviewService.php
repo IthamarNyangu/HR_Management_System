@@ -20,8 +20,8 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
 use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use RuntimeException;
 use Throwable;
@@ -55,8 +55,7 @@ class EmployeeImportPreviewService
     public function __construct(
         private ReferenceNumberService $referenceNumberService,
         private ActivityLogger $activityLogger,
-    ) {
-    }
+    ) {}
 
     public function preview(UploadedFile $file, User $user): ImportBatch
     {
@@ -233,7 +232,7 @@ class EmployeeImportPreviewService
     }
 
     /**
-     * @param array<string, mixed> $row
+     * @param  array<string, mixed>  $row
      * @return array<string, mixed>
      */
     private function normalizeRow(array $row): array
@@ -275,7 +274,7 @@ class EmployeeImportPreviewService
     }
 
     /**
-     * @param Collection<int, mixed> $records
+     * @param  Collection<int, mixed>  $records
      * @return array<string, mixed>
      */
     private function masterLookup(Collection $records): array
@@ -294,7 +293,7 @@ class EmployeeImportPreviewService
     }
 
     /**
-     * @param Collection<int, District> $records
+     * @param  Collection<int, District>  $records
      * @return array<string, District>
      */
     private function districtLookup(Collection $records): array
@@ -313,7 +312,7 @@ class EmployeeImportPreviewService
     }
 
     /**
-     * @param Collection<int, Facility> $records
+     * @param  Collection<int, Facility>  $records
      * @return array<string, Facility>
      */
     private function facilityLookup(Collection $records): array
@@ -332,10 +331,10 @@ class EmployeeImportPreviewService
     }
 
     /**
-     * @param array<string, mixed> $normalized
-     * @param array<string, mixed> $lookups
-     * @param array<int, string> $fileDuplicateNumbers
-     * @param Collection<string, Employee> $existingEmployees
+     * @param  array<string, mixed>  $normalized
+     * @param  array<string, mixed>  $lookups
+     * @param  array<int, string>  $fileDuplicateNumbers
+     * @param  Collection<string, Employee>  $existingEmployees
      * @return array{0: string, 1: array<string, mixed>, 2: list<string>, 3: list<string>, 4: int|null}
      */
     private function validateRow(array $normalized, array $lookups, array $fileDuplicateNumbers, Collection $existingEmployees, User $user): array
@@ -420,8 +419,8 @@ class EmployeeImportPreviewService
     }
 
     /**
-     * @param array<string, mixed> $lookup
-     * @param list<string> $errors
+     * @param  array<string, mixed>  $lookup
+     * @param  list<string>  $errors
      */
     private function matchRequiredMaster(mixed $value, array $lookup, string $label, array &$errors): mixed
     {
@@ -433,8 +432,8 @@ class EmployeeImportPreviewService
     }
 
     /**
-     * @param array<string, mixed> $lookup
-     * @param list<string> $errors
+     * @param  array<string, mixed>  $lookup
+     * @param  list<string>  $errors
      */
     private function matchOptionalMaster(mixed $value, array $lookup, string $label, array &$errors): mixed
     {
@@ -454,8 +453,8 @@ class EmployeeImportPreviewService
     }
 
     /**
-     * @param array<string, mixed> $lookup
-     * @param list<string> $errors
+     * @param  array<string, mixed>  $lookup
+     * @param  list<string>  $errors
      */
     private function matchDistrict(mixed $value, array $lookup, array &$errors): mixed
     {
@@ -475,8 +474,8 @@ class EmployeeImportPreviewService
     }
 
     /**
-     * @param array<string, mixed> $lookup
-     * @param list<string> $errors
+     * @param  array<string, mixed>  $lookup
+     * @param  list<string>  $errors
      */
     private function matchFacility(mixed $value, mixed $district, array $lookup, array &$errors): mixed
     {
@@ -500,7 +499,7 @@ class EmployeeImportPreviewService
     }
 
     /**
-     * @param list<string> $errors
+     * @param  list<string>  $errors
      */
     private function parseDate(mixed $value, string $label, array &$errors): ?string
     {
@@ -570,8 +569,8 @@ class EmployeeImportPreviewService
     }
 
     /**
-     * @param array<string, int> $errorSummary
-     * @param list<string> $workbookWarnings
+     * @param  array<string, int>  $errorSummary
+     * @param  list<string>  $workbookWarnings
      * @return array<string, mixed>|null
      */
     private function buildErrorSummary(array $errorSummary, array $workbookWarnings): ?array

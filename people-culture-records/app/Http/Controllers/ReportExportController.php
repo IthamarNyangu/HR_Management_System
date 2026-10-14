@@ -135,7 +135,7 @@ class ReportExportController extends Controller
     }
 
     /**
-     * @param array<string, mixed> $filters
+     * @param  array<string, mixed>  $filters
      */
     private function logExport(string $type, string $format, Request $request, ActivityLogger $activity, array $filters): void
     {

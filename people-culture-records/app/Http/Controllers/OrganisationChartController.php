@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Department;
 use App\Http\Requests\StoreOrganisationChartRequest;
 use App\Http\Requests\UpdateOrganisationChartLayoutRequest;
 use App\Http\Requests\UpdateOrganisationChartRequest;
+use App\Models\Department;
 use App\Models\District;
 use App\Models\Employee;
 use App\Models\Facility;
@@ -18,8 +18,8 @@ use App\Services\ActivityLogger;
 use App\Support\EmployeeNumber;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -431,6 +431,7 @@ class OrganisationChartController extends Controller
 
                 if (! $lineManager || (int) $lineManager->id === (int) $employee->id) {
                     $skippedCount++;
+
                     continue;
                 }
 
@@ -475,8 +476,8 @@ class OrganisationChartController extends Controller
     }
 
     /**
-     * @param Collection<int, Employee> $employees
-     * @param Collection<int, Employee> $rootEmployees
+     * @param  Collection<int, Employee>  $employees
+     * @param  Collection<int, Employee>  $rootEmployees
      * @return array<string, int>
      */
     private function stats(Collection $employees, Collection $rootEmployees): array
@@ -516,7 +517,7 @@ class OrganisationChartController extends Controller
     }
 
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
     private function chartData(array $data): array
@@ -573,7 +574,7 @@ class OrganisationChartController extends Controller
     }
 
     /**
-     * @param array<int, array<string, mixed>> $nodes
+     * @param  array<int, array<string, mixed>>  $nodes
      */
     private function syncNodes(OrganisationChart $organisationChart, array $nodes): void
     {
@@ -592,6 +593,7 @@ class OrganisationChartController extends Controller
 
             if ($nodeId) {
                 $organisationChart->nodes()->whereKey($nodeId)->update($data);
+
                 continue;
             }
 
@@ -600,7 +602,7 @@ class OrganisationChartController extends Controller
     }
 
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
     private function nodeData(array $data, int $index): array

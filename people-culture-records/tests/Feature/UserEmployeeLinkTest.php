@@ -17,12 +17,19 @@ class UserEmployeeLinkTest extends TestCase
     use RefreshDatabase;
 
     private Role $adminRole;
+
     private Role $managerRole;
+
     private Role $officerRole;
+
     private Role $viewerRole;
+
     private Province $northern;
+
     private District $kasama;
+
     private Department $peopleCulture;
+
     private Employee $employee;
 
     protected function setUp(): void

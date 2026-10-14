@@ -14,12 +14,17 @@ class JobOpening extends Model
     use SoftDeletes;
 
     public const VISIBILITY_EXTERNAL = 'external';
+
     public const VISIBILITY_INTERNAL = 'internal';
+
     public const VISIBILITY_BOTH = 'both';
 
     public const STATUS_DRAFT = 'draft';
+
     public const STATUS_PUBLISHED = 'published';
+
     public const STATUS_CLOSED = 'closed';
+
     public const STATUS_CANCELLED = 'cancelled';
 
     public const VISIBILITIES = [

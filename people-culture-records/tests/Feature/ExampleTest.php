@@ -20,5 +20,4 @@ class ExampleTest extends TestCase
     {
         $this->get('/dashboard')->assertRedirect('/login');
     }
-
 }

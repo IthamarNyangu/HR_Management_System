@@ -150,7 +150,9 @@ class EmployeeDependantModuleTest extends TestCase
             ->assertOk()
             ->assertSee('Employee Dependants')
             ->assertSee('Jane Nyambe')
-            ->assertSee('Pending Verification');
+            ->assertSee('Pending Verification')
+            ->assertDontSee('WorkPulse Access')
+            ->assertDontSee('Validate WorkPulse readiness');
     }
 
     public function test_relationship_and_date_rules_are_enforced(): void

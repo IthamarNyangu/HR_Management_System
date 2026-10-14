@@ -165,9 +165,7 @@ class EmployeeController extends Controller
             ->sortBy([['last_name', 'asc'], ['first_name', 'asc']])
             ->values();
 
-        $workPulseAccountStatus = $this->workPulseAccountStatus($employee);
-
-        return view('employees.show', compact('employee', 'dependants', 'directReports', 'disciplinaryCases', 'staffPromotions', 'staffRelocations', 'temporaryAppointments', 'activeTemporaryAppointment', 'workPulseAccountStatus'));
+        return view('employees.show', compact('employee', 'dependants', 'directReports', 'disciplinaryCases', 'staffPromotions', 'staffRelocations', 'temporaryAppointments', 'activeTemporaryAppointment'));
     }
 
     public function edit(Request $request, Employee $employee): View

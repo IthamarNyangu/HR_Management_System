@@ -24,16 +24,27 @@ class RecruitmentApplicationReviewTest extends TestCase
     use RefreshDatabase;
 
     private Role $adminRole;
+
     private Role $managerRole;
+
     private Role $officerRole;
+
     private Role $viewerRole;
+
     private Province $northern;
+
     private Province $luapula;
+
     private District $kasama;
+
     private District $mansa;
+
     private Facility $kasamaFacility;
+
     private Department $department;
+
     private Project $project;
+
     private JobTitle $jobTitle;
 
     protected function setUp(): void
@@ -358,7 +369,7 @@ class RecruitmentApplicationReviewTest extends TestCase
     }
 
     /**
-     * @param array<string, mixed> $attributes
+     * @param  array<string, mixed>  $attributes
      */
     private function jobOpening(array $attributes = []): JobOpening
     {
@@ -387,7 +398,7 @@ class RecruitmentApplicationReviewTest extends TestCase
     }
 
     /**
-     * @param array<string, mixed> $attributes
+     * @param  array<string, mixed>  $attributes
      */
     private function application(array $attributes = []): JobApplication
     {

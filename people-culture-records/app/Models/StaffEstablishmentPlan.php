@@ -13,6 +13,7 @@ class StaffEstablishmentPlan extends Model
     use SoftDeletes;
 
     public const STATUS_DRAFT = 'draft';
+
     public const STATUS_APPROVED = 'approved';
 
     public const STATUSES = [

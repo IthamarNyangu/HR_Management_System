@@ -3,16 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Models\ActivityLog;
+use App\Models\AppointmentStatus;
 use App\Models\CaseStatus;
 use App\Models\DisciplinaryCase;
 use App\Models\Employee;
 use App\Models\EmploymentStatus;
 use App\Models\JobApplication;
 use App\Models\JobOpening;
-use App\Models\StaffEstablishmentPlan;
 use App\Models\StaffPromotion;
 use App\Models\StaffRelocation;
-use App\Models\AppointmentStatus;
 use App\Models\TemporaryAppointment;
 use App\Services\Recruitment\ExpiredJobOpeningCloser;
 use App\Services\StaffEstablishmentMetricsService;

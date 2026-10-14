@@ -27,20 +27,35 @@ class ReportsAndExportsTest extends TestCase
     use RefreshDatabase;
 
     private Role $adminRole;
+
     private Role $managerRole;
+
     private Role $officerRole;
+
     private Role $viewerRole;
+
     private Province $northern;
+
     private Province $luapula;
+
     private Province $muchinga;
+
     private District $kasama;
+
     private District $mansa;
+
     private District $chinsali;
+
     private Facility $kasamaFacility;
+
     private Facility $mansaFacility;
+
     private JobTitle $jobTitle;
+
     private Employee $northernEmployee;
+
     private Employee $luapulaEmployee;
+
     private Employee $muchingaEmployee;
 
     protected function setUp(): void

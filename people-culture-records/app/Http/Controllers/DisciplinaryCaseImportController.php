@@ -25,7 +25,7 @@ class DisciplinaryCaseImportController extends Controller
 
     public function template(): BinaryFileResponse
     {
-        return Excel::download(new DisciplinaryCaseImportTemplateExport(), 'disciplinary-cases-import-template.xlsx');
+        return Excel::download(new DisciplinaryCaseImportTemplateExport, 'disciplinary-cases-import-template.xlsx');
     }
 
     public function upload(UploadDisciplinaryCaseImportRequest $request, DisciplinaryCaseImportPreviewService $previewService): RedirectResponse

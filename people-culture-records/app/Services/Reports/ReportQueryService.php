@@ -170,7 +170,7 @@ class ReportQueryService
     }
 
     /**
-     * @param array<string, mixed> $filters
+     * @param  array<string, mixed>  $filters
      */
     public function rows(string $type, User $user, array $filters = []): Collection
     {
@@ -186,7 +186,7 @@ class ReportQueryService
     }
 
     /**
-     * @param array<string, mixed> $filters
+     * @param  array<string, mixed>  $filters
      */
     public function paginate(string $type, User $user, array $filters = [], int $perPage = 5): LengthAwarePaginator
     {
@@ -222,7 +222,7 @@ class ReportQueryService
     }
 
     /**
-     * @param array<string, mixed> $filters
+     * @param  array<string, mixed>  $filters
      * @return array<string, string>
      */
     public function filterSummary(array $filters): array
@@ -234,7 +234,7 @@ class ReportQueryService
     }
 
     /**
-     * @param array<string, mixed> $filters
+     * @param  array<string, mixed>  $filters
      */
     public function employeesQuery(User $user, array $filters): Builder
     {
@@ -263,7 +263,7 @@ class ReportQueryService
     }
 
     /**
-     * @param array<string, mixed> $filters
+     * @param  array<string, mixed>  $filters
      */
     public function disciplinaryCasesQuery(User $user, array $filters): Builder
     {
@@ -286,7 +286,7 @@ class ReportQueryService
     }
 
     /**
-     * @param array<string, mixed> $filters
+     * @param  array<string, mixed>  $filters
      */
     public function expiringCasesQuery(User $user, array $filters): Builder
     {
@@ -301,7 +301,7 @@ class ReportQueryService
     }
 
     /**
-     * @param array<string, mixed> $filters
+     * @param  array<string, mixed>  $filters
      */
     public function promotionsQuery(User $user, array $filters): Builder
     {
@@ -324,7 +324,7 @@ class ReportQueryService
     }
 
     /**
-     * @param array<string, mixed> $filters
+     * @param  array<string, mixed>  $filters
      */
     public function relocationsQuery(User $user, array $filters): Builder
     {
@@ -368,7 +368,7 @@ class ReportQueryService
     }
 
     /**
-     * @param array<string, mixed> $filters
+     * @param  array<string, mixed>  $filters
      */
     private function archivedRows(User $user, array $filters): Collection
     {

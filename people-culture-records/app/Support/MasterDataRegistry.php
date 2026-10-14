@@ -2,6 +2,8 @@
 
 namespace App\Support;
 
+use App\Models\AppointmentStatus;
+use App\Models\AppointmentType;
 use App\Models\CaseStatus;
 use App\Models\Department;
 use App\Models\District;
@@ -11,8 +13,6 @@ use App\Models\EmploymentType;
 use App\Models\Facility;
 use App\Models\JobTitle;
 use App\Models\OffenceCategory;
-use App\Models\AppointmentStatus;
-use App\Models\AppointmentType;
 use App\Models\PenaltyType;
 use App\Models\Project;
 use App\Models\PromotionType;

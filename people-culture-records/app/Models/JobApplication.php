@@ -13,10 +13,15 @@ class JobApplication extends Model
     public const SOURCE_EXTERNAL = 'external';
 
     public const STATUS_SUBMITTED = 'submitted';
+
     public const STATUS_UNDER_REVIEW = 'under_review';
+
     public const STATUS_LONGLISTED = 'longlisted';
+
     public const STATUS_SHORTLISTED = 'shortlisted';
+
     public const STATUS_REJECTED = 'rejected';
+
     public const STATUS_WITHDRAWN = 'withdrawn';
 
     public const STATUSES = [
@@ -29,8 +34,11 @@ class JobApplication extends Model
     ];
 
     public const DOCUMENT_CV = 'cv';
+
     public const DOCUMENT_COVER_LETTER = 'cover_letter';
+
     public const DOCUMENT_EDUCATION_CERTIFICATES = 'education_certificates';
+
     public const DOCUMENT_SUPPORTING = 'supporting_document';
 
     public const HIGHEST_QUALIFICATIONS = [

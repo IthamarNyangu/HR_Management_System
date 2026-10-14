@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\ActivityLog;
 use App\Models\AppointmentStatus;
 use App\Models\AppointmentType;
 use App\Models\District;
@@ -21,22 +20,39 @@ class TemporaryAppointmentModuleTest extends TestCase
     use RefreshDatabase;
 
     private Role $adminRole;
+
     private Role $managerRole;
+
     private Role $officerRole;
+
     private Role $viewerRole;
+
     private Province $northern;
+
     private Province $luapula;
+
     private District $kasama;
+
     private District $mansa;
+
     private JobTitle $currentTitle;
+
     private JobTitle $temporaryTitle;
+
     private AppointmentType $appointmentType;
+
     private AppointmentStatus $draftStatus;
+
     private AppointmentStatus $upcomingStatus;
+
     private AppointmentStatus $activeStatus;
+
     private AppointmentStatus $completedStatus;
+
     private AppointmentStatus $cancelledStatus;
+
     private Employee $northernEmployee;
+
     private Employee $luapulaEmployee;
 
     protected function setUp(): void
@@ -491,7 +507,7 @@ class TemporaryAppointmentModuleTest extends TestCase
     }
 
     /**
-     * @param array<string, mixed> $attributes
+     * @param  array<string, mixed>  $attributes
      */
     private function employee(array $attributes = []): Employee
     {
@@ -505,7 +521,7 @@ class TemporaryAppointmentModuleTest extends TestCase
     }
 
     /**
-     * @param array<string, mixed> $attributes
+     * @param  array<string, mixed>  $attributes
      */
     private function appointment(array $attributes = []): TemporaryAppointment
     {
@@ -525,7 +541,7 @@ class TemporaryAppointmentModuleTest extends TestCase
     }
 
     /**
-     * @param array<string, mixed> $overrides
+     * @param  array<string, mixed>  $overrides
      * @return array<string, mixed>
      */
     private function appointmentPayload(array $overrides = []): array

@@ -1,5 +1,7 @@
 <?php
 
+use Laravel\Fortify\Features;
+
 return [
 
     /*
@@ -160,7 +162,7 @@ return [
     */
 
     'features' => [
-        Laravel\Fortify\Features::resetPasswords(),
+        Features::resetPasswords(),
     ],
 
 ];

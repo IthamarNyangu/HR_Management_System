@@ -51,6 +51,7 @@ class UpdateOrganisationChartLayoutRequest extends FormRequest
 
                     if (! $nodeId || ! in_array($nodeId, $chartNodeIds, true)) {
                         $validator->errors()->add("nodes.{$index}.id", 'This chart box does not belong to this organisation chart.');
+
                         continue;
                     }
 

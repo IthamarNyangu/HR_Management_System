@@ -24,18 +24,31 @@ class DisciplinaryCaseImportTest extends TestCase
     use RefreshDatabase;
 
     private Role $adminRole;
+
     private Role $managerRole;
+
     private Role $officerRole;
+
     private Role $viewerRole;
+
     private Province $northern;
+
     private Province $luapula;
+
     private District $kasama;
+
     private District $mansa;
+
     private Employee $northernEmployee;
+
     private Employee $luapulaEmployee;
+
     private CaseStatus $draft;
+
     private CaseStatus $active;
+
     private OffenceCategory $attendance;
+
     private PenaltyType $warning;
 
     protected function setUp(): void
@@ -327,7 +340,7 @@ class DisciplinaryCaseImportTest extends TestCase
     }
 
     /**
-     * @param array<string, mixed> $overrides
+     * @param  array<string, mixed>  $overrides
      * @return array<string, mixed>
      */
     private function row(array $overrides = []): array
@@ -352,11 +365,11 @@ class DisciplinaryCaseImportTest extends TestCase
     }
 
     /**
-     * @param list<array<string, mixed>> $rows
+     * @param  list<array<string, mixed>>  $rows
      */
     private function caseFile(array $rows): UploadedFile
     {
-        $spreadsheet = new Spreadsheet();
+        $spreadsheet = new Spreadsheet;
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Disciplinary_Cases_Import');
         $headings = [

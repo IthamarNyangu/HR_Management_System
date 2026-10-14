@@ -52,8 +52,7 @@ class DisciplinaryCaseImportPreviewService
     public function __construct(
         private ReferenceNumberService $referenceNumberService,
         private ActivityLogger $activityLogger,
-    ) {
-    }
+    ) {}
 
     public function preview(UploadedFile $file, User $user): ImportBatch
     {
@@ -230,7 +229,7 @@ class DisciplinaryCaseImportPreviewService
     }
 
     /**
-     * @param array<string, mixed> $row
+     * @param  array<string, mixed>  $row
      * @return array<string, mixed>
      */
     private function normalizeRow(array $row): array
@@ -268,7 +267,7 @@ class DisciplinaryCaseImportPreviewService
     }
 
     /**
-     * @param Collection<int, mixed> $records
+     * @param  Collection<int, mixed>  $records
      * @return array<string, mixed>
      */
     private function masterLookup(Collection $records): array
@@ -287,9 +286,9 @@ class DisciplinaryCaseImportPreviewService
     }
 
     /**
-     * @param array<string, mixed> $normalized
-     * @param array<string, mixed> $lookups
-     * @param Collection<string, Employee> $employees
+     * @param  array<string, mixed>  $normalized
+     * @param  array<string, mixed>  $lookups
+     * @param  Collection<string, Employee>  $employees
      * @return array{data: array<string, mixed>, errors: list<string>, warnings: list<string>, duplicate_key: string|null}
      */
     private function validateRow(array $normalized, array $lookups, Collection $employees, User $user): array
@@ -425,8 +424,8 @@ class DisciplinaryCaseImportPreviewService
     }
 
     /**
-     * @param array<string, mixed> $lookup
-     * @param list<string> $errors
+     * @param  array<string, mixed>  $lookup
+     * @param  list<string>  $errors
      */
     private function matchRequiredMaster(mixed $value, array $lookup, string $label, array &$errors): mixed
     {
@@ -438,8 +437,8 @@ class DisciplinaryCaseImportPreviewService
     }
 
     /**
-     * @param array<string, mixed> $lookup
-     * @param list<string> $errors
+     * @param  array<string, mixed>  $lookup
+     * @param  list<string>  $errors
      */
     private function matchOptionalMaster(mixed $value, array $lookup, string $label, array &$errors): mixed
     {
@@ -459,7 +458,7 @@ class DisciplinaryCaseImportPreviewService
     }
 
     /**
-     * @param list<string> $errors
+     * @param  list<string>  $errors
      */
     private function parseDate(mixed $value, string $label, array &$errors): ?string
     {
@@ -511,8 +510,8 @@ class DisciplinaryCaseImportPreviewService
     }
 
     /**
-     * @param array<string, int> $errorSummary
-     * @param list<string> $workbookWarnings
+     * @param  array<string, int>  $errorSummary
+     * @param  list<string>  $workbookWarnings
      * @return array<string, mixed>|null
      */
     private function buildErrorSummary(array $errorSummary, array $workbookWarnings): ?array

@@ -113,6 +113,7 @@ class StoreStaffEstablishmentPlanRequest extends FormRequest
 
             if (isset($seen[$key])) {
                 $validator->errors()->add("lines.{$index}.job_title_id", 'This establishment line is already listed. Change the job title, location, or department.');
+
                 continue;
             }
 

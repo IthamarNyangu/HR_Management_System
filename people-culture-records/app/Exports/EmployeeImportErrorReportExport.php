@@ -11,9 +11,7 @@ use Maatwebsite\Excel\Concerns\WithTitle;
 
 class EmployeeImportErrorReportExport implements FromCollection, ShouldAutoSize, WithHeadings, WithTitle
 {
-    public function __construct(private ImportBatch $batch)
-    {
-    }
+    public function __construct(private ImportBatch $batch) {}
 
     /**
      * @return list<string>
