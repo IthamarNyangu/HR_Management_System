@@ -61,6 +61,7 @@ class StoreFuneralClaimRequest extends FormRequest
             if ($dependant && $this->isNewDependantSelection($dependant)) {
                 $existingClaim = FuneralClaim::query()
                     ->where('employee_dependant_id', $dependant->id)
+                    ->where('status', '!=', FuneralClaim::STATUS_VOIDED)
                     ->latest('id')
                     ->first();
 
@@ -80,6 +81,7 @@ class StoreFuneralClaimRequest extends FormRequest
                     ->where('deceased_category', $category)
                     ->where('deceased_name', trim((string) $this->input('deceased_name')))
                     ->whereDate('date_of_death', $this->input('date_of_death'))
+                    ->where('status', '!=', FuneralClaim::STATUS_VOIDED)
                     ->latest('id')
                     ->first();
 

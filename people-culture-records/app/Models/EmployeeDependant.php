@@ -124,7 +124,9 @@ class EmployeeDependant extends Model
 
     public function latestFuneralClaim(): HasOne
     {
-        return $this->hasOne(FuneralClaim::class, 'employee_dependant_id')->latestOfMany();
+        return $this->hasOne(FuneralClaim::class, 'employee_dependant_id')
+            ->where('status', '!=', FuneralClaim::STATUS_VOIDED)
+            ->latestOfMany();
     }
 
     public function scopeVisibleTo(Builder $query, User $user): Builder

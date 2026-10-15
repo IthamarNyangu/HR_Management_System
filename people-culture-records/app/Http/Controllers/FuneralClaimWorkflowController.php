@@ -6,6 +6,7 @@ use App\Http\Requests\DecideFuneralClaimRequest;
 use App\Http\Requests\RecordFuneralClaimPaymentRequest;
 use App\Http\Requests\ReopenFuneralClaimRequest;
 use App\Http\Requests\UpdateFuneralClaimProcessingRequest;
+use App\Http\Requests\VoidFuneralClaimRequest;
 use App\Models\FuneralClaim;
 use App\Models\User;
 use App\Notifications\FuneralClaimDecisionNotification;
@@ -102,6 +103,38 @@ class FuneralClaimWorkflowController extends Controller
         $activity->log('funeral_claim_reopened', "{$request->user()->name} reopened {$funeralClaim->reference_no}.", $funeralClaim, user: $request->user(), request: $request);
 
         return back()->with('success', 'Claim reopened for verification.');
+    }
+
+    public function void(VoidFuneralClaimRequest $request, FuneralClaim $funeralClaim, ActivityLogger $activity): RedirectResponse
+    {
+        if ($funeralClaim->status === FuneralClaim::STATUS_PAID) {
+            throw ValidationException::withMessages(['void_reason' => 'A paid claim cannot be voided. Record a financial correction through the approved process.']);
+        }
+
+        if ($funeralClaim->status === FuneralClaim::STATUS_VOIDED) {
+            throw ValidationException::withMessages(['void_reason' => 'This claim has already been voided.']);
+        }
+
+        $oldStatus = $funeralClaim->status;
+        $reason = $request->validated('void_reason');
+
+        DB::transaction(function () use ($request, $funeralClaim, $oldStatus, $reason) {
+            $funeralClaim->update([
+                'status' => FuneralClaim::STATUS_VOIDED,
+                'voided_by' => $request->user()->id,
+                'voided_at' => now(),
+                'void_reason' => $reason,
+                'last_status_changed_by' => $request->user()->id,
+                'last_status_changed_at' => now(),
+                'updated_by' => $request->user()->id,
+            ]);
+            $funeralClaim->statusHistories()->create(['from_status' => $oldStatus, 'to_status' => FuneralClaim::STATUS_VOIDED, 'changed_by' => $request->user()->id, 'comment' => $reason]);
+            $funeralClaim->workflowEvents()->create(['event_type' => 'claim_voided', 'performed_by' => $request->user()->id, 'comment' => $reason]);
+        });
+
+        $activity->log('funeral_claim_voided', "{$request->user()->name} voided {$funeralClaim->reference_no}.", $funeralClaim, ['old_status' => $oldStatus, 'void_reason' => $reason], user: $request->user(), request: $request);
+
+        return redirect()->route('funeral-claims.index')->with('success', 'Funeral claim voided and removed from the active register.');
     }
 
     private function ensureApprovalPrerequisites(FuneralClaim $claim): void

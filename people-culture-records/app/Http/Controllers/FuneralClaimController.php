@@ -31,7 +31,7 @@ class FuneralClaimController extends Controller
         Gate::authorize('viewAny', FuneralClaim::class);
         $claims = FuneralClaim::query()->visibleTo($request->user())->with(['employee', 'province'])
             ->when($request->filled('search'), fn ($q) => $q->where(fn ($inner) => $inner->where('reference_no', 'like', '%'.$request->search.'%')->orWhere('deceased_name', 'like', '%'.$request->search.'%')->orWhereHas('employee', fn ($employee) => $employee->where('first_name', 'like', '%'.$request->search.'%')->orWhere('last_name', 'like', '%'.$request->search.'%')->orWhere('employee_no', 'like', '%'.$request->search.'%'))))
-            ->when($request->filled('status'), fn ($q) => $q->where('status', $request->status))
+            ->when($request->filled('status'), fn ($q) => $q->where('status', $request->status), fn ($q) => $q->where('status', '!=', FuneralClaim::STATUS_VOIDED))
             ->when($request->filled('deceased_category'), fn ($q) => $q->where('deceased_category', $request->deceased_category))
             ->when($request->filled('province_id'), fn ($q) => $q->where('province_id', $request->province_id))
             ->latest('notification_date')->latest('id')->paginate(10)->withQueryString();
@@ -66,7 +66,7 @@ class FuneralClaimController extends Controller
     public function show(FuneralClaim $funeralClaim): View
     {
         Gate::authorize('view', $funeralClaim);
-        $funeralClaim->load(['employee', 'dependant', 'province', 'benefitRule', 'assignedTo', 'approvedBy', 'bankingDetailsVerifiedBy', 'documents.attachments.uploadedBy', 'documents.statusUpdatedBy', 'statusHistories.changedBy', 'workflowEvents.performedBy']);
+        $funeralClaim->load(['employee', 'dependant', 'province', 'benefitRule', 'assignedTo', 'approvedBy', 'bankingDetailsVerifiedBy', 'voidedBy', 'documents.attachments.uploadedBy', 'documents.statusUpdatedBy', 'statusHistories.changedBy', 'workflowEvents.performedBy']);
 
         return view('funeral-claims.show', ['claim' => $funeralClaim, 'statuses' => FuneralClaim::statuses(), 'reviewStatuses' => FuneralClaim::reviewStatuses(), 'documentStatuses' => FuneralClaimDocument::statuses()]);
     }
@@ -171,6 +171,7 @@ class FuneralClaimController extends Controller
             EmployeeDependant::query()->whereKey($data['employee_dependant_id'])->lockForUpdate()->firstOrFail();
             $existingClaim = FuneralClaim::query()
                 ->where('employee_dependant_id', $data['employee_dependant_id'])
+                ->where('status', '!=', FuneralClaim::STATUS_VOIDED)
                 ->latest('id')
                 ->first();
 
@@ -192,6 +193,7 @@ class FuneralClaimController extends Controller
             ->where('deceased_category', $data['deceased_category'])
             ->where('deceased_name', trim((string) $data['deceased_name']))
             ->whereDate('date_of_death', $data['date_of_death'])
+            ->where('status', '!=', FuneralClaim::STATUS_VOIDED)
             ->latest('id')
             ->first();
 

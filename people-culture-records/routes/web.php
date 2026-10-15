@@ -255,6 +255,7 @@ Route::middleware(['auth', 'active', 'password.changed'])->group(function () use
     Route::patch('/funeral-claims/{funeral_claim}/start-payment', [FuneralClaimWorkflowController::class, 'startPayment'])->name('funeral-claims.start-payment');
     Route::patch('/funeral-claims/{funeral_claim}/payment', [FuneralClaimWorkflowController::class, 'recordPayment'])->name('funeral-claims.payment');
     Route::patch('/funeral-claims/{funeral_claim}/reopen', [FuneralClaimWorkflowController::class, 'reopen'])->name('funeral-claims.reopen');
+    Route::patch('/funeral-claims/{funeral_claim}/void', [FuneralClaimWorkflowController::class, 'void'])->name('funeral-claims.void');
     Route::post('/funeral-claims/{funeral_claim}/documents', [FuneralClaimDocumentController::class, 'add'])->name('funeral-claims.documents.add');
     Route::patch('/funeral-claims/{funeral_claim}/documents/{document}', [FuneralClaimDocumentController::class, 'update'])->name('funeral-claims.documents.update');
     Route::post('/funeral-claims/{funeral_claim}/documents/{document}/upload', [FuneralClaimDocumentController::class, 'upload'])->name('funeral-claims.documents.upload');

@@ -316,6 +316,59 @@ class FuneralClaimModuleTest extends TestCase
         $this->assertSame(FuneralClaim::STATUS_UNDER_VERIFICATION, $claim->fresh()->status);
     }
 
+    public function test_manager_can_void_unpaid_claim_with_reason_and_it_is_hidden_from_default_register(): void
+    {
+        $admin = $this->user($this->adminRole);
+        $manager = $this->user($this->managerRole);
+        $employee = $this->employee();
+        $this->actingAs($admin)->post(route('funeral-claims.store'), $this->payload($employee))->assertRedirect();
+        $claim = FuneralClaim::firstOrFail();
+
+        $this->actingAs($manager)
+            ->patch(route('funeral-claims.void', $claim), ['void_reason' => 'Duplicate test claim.'])
+            ->assertRedirect(route('funeral-claims.index'));
+
+        $claim->refresh();
+        $this->assertSame(FuneralClaim::STATUS_VOIDED, $claim->status);
+        $this->assertSame('Duplicate test claim.', $claim->void_reason);
+        $this->assertSame($manager->id, $claim->voided_by);
+        $this->assertNotNull($claim->voided_at);
+        $this->assertDatabaseHas('funeral_claim_status_histories', ['funeral_claim_id' => $claim->id, 'from_status' => FuneralClaim::STATUS_AWAITING_DOCUMENTS, 'to_status' => FuneralClaim::STATUS_VOIDED, 'comment' => 'Duplicate test claim.']);
+        $this->assertDatabaseHas('funeral_claim_workflow_events', ['funeral_claim_id' => $claim->id, 'event_type' => 'claim_voided']);
+        $this->assertDatabaseHas('activity_logs', ['action' => 'funeral_claim_voided', 'subject_id' => $claim->id]);
+
+        $this->actingAs($manager)->get(route('funeral-claims.index'))->assertDontSee($claim->reference_no);
+        $this->actingAs($manager)->get(route('funeral-claims.index', ['status' => FuneralClaim::STATUS_VOIDED]))->assertSee($claim->reference_no);
+    }
+
+    public function test_void_requires_reason_and_hr_officer_cannot_void_claim(): void
+    {
+        $admin = $this->user($this->adminRole);
+        $manager = $this->user($this->managerRole);
+        $officer = $this->user($this->officerRole, $this->northern);
+        $employee = $this->employee();
+        $this->actingAs($admin)->post(route('funeral-claims.store'), $this->payload($employee))->assertRedirect();
+        $claim = FuneralClaim::firstOrFail();
+
+        $this->actingAs($manager)->patch(route('funeral-claims.void', $claim), [])->assertSessionHasErrors('void_reason');
+        $this->actingAs($officer)->patch(route('funeral-claims.void', $claim), ['void_reason' => 'Not authorized.'])->assertForbidden();
+        $this->assertSame(FuneralClaim::STATUS_AWAITING_DOCUMENTS, $claim->fresh()->status);
+    }
+
+    public function test_paid_claim_cannot_be_voided(): void
+    {
+        $admin = $this->user($this->adminRole);
+        $manager = $this->user($this->managerRole);
+        $claim = $this->readyClaim($admin);
+        $claim->update(['status' => FuneralClaim::STATUS_PAID, 'payment_status' => 'paid']);
+
+        $this->actingAs($manager)
+            ->patch(route('funeral-claims.void', $claim), ['void_reason' => 'Attempt to remove payment.'])
+            ->assertForbidden();
+
+        $this->assertSame(FuneralClaim::STATUS_PAID, $claim->fresh()->status);
+    }
+
     private function user(Role $role, ?Province $province = null): User
     {
         return User::factory()->create(['role_id' => $role->id, 'province_id' => $province?->id, 'is_active' => true]);

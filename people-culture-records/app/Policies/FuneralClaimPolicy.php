@@ -24,7 +24,7 @@ class FuneralClaimPolicy
 
     public function update(User $user, FuneralClaim $claim): bool
     {
-        return $this->manage($user, $claim);
+        return $claim->status !== FuneralClaim::STATUS_VOIDED && $this->manage($user, $claim);
     }
 
     public function approve(User $user, FuneralClaim $claim): bool
@@ -35,6 +35,13 @@ class FuneralClaimPolicy
     public function reopen(User $user, FuneralClaim $claim): bool
     {
         return $this->approve($user, $claim);
+    }
+
+    public function void(User $user, FuneralClaim $claim): bool
+    {
+        return $user->is_active
+            && ($user->isAdmin() || $user->isHrManager())
+            && ! in_array($claim->status, [FuneralClaim::STATUS_PAID, FuneralClaim::STATUS_VOIDED], true);
     }
 
     private function manage(User $user, FuneralClaim $claim): bool
