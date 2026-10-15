@@ -6,6 +6,7 @@ use App\Casts\EncryptedDate;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class EmployeeDependant extends Model
@@ -119,6 +120,11 @@ class EmployeeDependant extends Model
     public function archivedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'archived_by');
+    }
+
+    public function latestFuneralClaim(): HasOne
+    {
+        return $this->hasOne(FuneralClaim::class, 'employee_dependant_id')->latestOfMany();
     }
 
     public function scopeVisibleTo(Builder $query, User $user): Builder

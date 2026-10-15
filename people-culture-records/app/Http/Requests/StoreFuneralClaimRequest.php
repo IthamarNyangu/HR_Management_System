@@ -58,12 +58,63 @@ class StoreFuneralClaimRequest extends FormRequest
             if ($dependant && ($dependant->employee_id !== $employee->id || $dependant->category !== $category || ! $dependant->is_active)) {
                 $validator->errors()->add('employee_dependant_id', 'Select an active dependant in the matching category.');
             }
+            if ($dependant && $this->isNewDependantSelection($dependant)) {
+                $existingClaim = FuneralClaim::query()
+                    ->where('employee_dependant_id', $dependant->id)
+                    ->latest('id')
+                    ->first();
+
+                if ($existingClaim) {
+                    $validator->errors()->add(
+                        'employee_dependant_id',
+                        "A funeral claim already exists for this dependant ({$existingClaim->reference_no}). Open the existing claim instead."
+                    );
+                }
+            }
             if ($category !== FuneralClaim::CATEGORY_EMPLOYEE && ! $dependant && ! $this->filled('deceased_name')) {
                 $validator->errors()->add('deceased_name', 'Enter the deceased person name when no registered dependant is selected.');
+            }
+            if ($category !== FuneralClaim::CATEGORY_EMPLOYEE && ! $dependant && $this->filled('deceased_name') && $this->isNewManualDeceasedIdentity()) {
+                $existingClaim = FuneralClaim::query()
+                    ->where('employee_id', $employee->id)
+                    ->where('deceased_category', $category)
+                    ->where('deceased_name', trim((string) $this->input('deceased_name')))
+                    ->whereDate('date_of_death', $this->input('date_of_death'))
+                    ->latest('id')
+                    ->first();
+
+                if ($existingClaim) {
+                    $validator->errors()->add(
+                        'deceased_name',
+                        "A matching funeral claim already exists ({$existingClaim->reference_no}). Open the existing claim instead."
+                    );
+                }
             }
             if ($category === FuneralClaim::CATEGORY_CHILD && ! $dependant?->date_of_birth && ! $this->filled('deceased_date_of_birth') && ! $this->filled('gestational_age_weeks')) {
                 $validator->errors()->add('deceased_date_of_birth', 'Enter a date of birth or gestational age to assess child eligibility.');
             }
         });
+    }
+
+    private function isNewDependantSelection(EmployeeDependant $dependant): bool
+    {
+        $claim = $this->route('funeral_claim');
+
+        return ! $claim instanceof FuneralClaim || $claim->employee_dependant_id !== $dependant->id;
+    }
+
+    private function isNewManualDeceasedIdentity(): bool
+    {
+        $claim = $this->route('funeral_claim');
+
+        if (! $claim instanceof FuneralClaim) {
+            return true;
+        }
+
+        return $claim->employee_dependant_id !== null
+            || $claim->employee_id !== $this->integer('employee_id')
+            || $claim->deceased_category !== $this->input('deceased_category')
+            || $claim->deceased_name !== trim((string) $this->input('deceased_name'))
+            || $claim->date_of_death?->format('Y-m-d') !== $this->input('date_of_death');
     }
 }

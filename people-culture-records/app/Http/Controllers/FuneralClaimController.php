@@ -49,6 +49,7 @@ class FuneralClaimController extends Controller
     public function store(StoreFuneralClaimRequest $request, FuneralClaimEligibilityService $eligibility, ReferenceNumberService $references, ActivityLogger $activity): RedirectResponse
     {
         $claim = DB::transaction(function () use ($request, $eligibility, $references) {
+            $this->preventConcurrentDuplicate($request->validated());
             $data = $this->claimData($request->validated(), $eligibility);
             $data += ['reference_no' => $references->generate('FCL', 'funeral_claims'), 'status' => FuneralClaim::STATUS_AWAITING_DOCUMENTS, 'last_status_changed_by' => $request->user()->id, 'last_status_changed_at' => now(), 'created_by' => $request->user()->id, 'updated_by' => $request->user()->id];
             $claim = FuneralClaim::create($data);
@@ -156,11 +157,48 @@ class FuneralClaimController extends Controller
     {
         $employees = Employee::query()
             ->visibleTo($request->user())
-            ->with(['dependants' => fn ($q) => $q->where('is_active', true)])
+            ->with(['dependants' => fn ($q) => $q->where('is_active', true)->with('latestFuneralClaim')])
             ->orderBy('first_name')
             ->orderBy('last_name')
             ->get();
 
         return ['employees' => $employees, 'categories' => FuneralClaim::categories(), 'assignees' => User::where('is_active', true)->whereHas('role', fn ($q) => $q->whereIn('name', ['Admin', 'HR Manager', 'HR Officer']))->orderBy('name')->get()];
+    }
+
+    private function preventConcurrentDuplicate(array $data): void
+    {
+        if (! empty($data['employee_dependant_id'])) {
+            EmployeeDependant::query()->whereKey($data['employee_dependant_id'])->lockForUpdate()->firstOrFail();
+            $existingClaim = FuneralClaim::query()
+                ->where('employee_dependant_id', $data['employee_dependant_id'])
+                ->latest('id')
+                ->first();
+
+            if ($existingClaim) {
+                throw ValidationException::withMessages([
+                    'employee_dependant_id' => "A funeral claim already exists for this dependant ({$existingClaim->reference_no}). Open the existing claim instead.",
+                ]);
+            }
+
+            return;
+        }
+
+        if (($data['deceased_category'] ?? null) === FuneralClaim::CATEGORY_EMPLOYEE || empty($data['deceased_name'])) {
+            return;
+        }
+
+        $existingClaim = FuneralClaim::query()
+            ->where('employee_id', $data['employee_id'])
+            ->where('deceased_category', $data['deceased_category'])
+            ->where('deceased_name', trim((string) $data['deceased_name']))
+            ->whereDate('date_of_death', $data['date_of_death'])
+            ->latest('id')
+            ->first();
+
+        if ($existingClaim) {
+            throw ValidationException::withMessages([
+                'deceased_name' => "A matching funeral claim already exists ({$existingClaim->reference_no}). Open the existing claim instead.",
+            ]);
+        }
     }
 }

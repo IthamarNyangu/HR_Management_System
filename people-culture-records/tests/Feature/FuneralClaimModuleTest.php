@@ -88,6 +88,64 @@ class FuneralClaimModuleTest extends TestCase
             ->assertSee('data-date-of-birth="2018-06-15"', false);
     }
 
+    public function test_registered_dependant_cannot_have_multiple_funeral_claims(): void
+    {
+        $admin = $this->user($this->adminRole);
+        $employee = $this->employee();
+        $child = $employee->dependants()->create([
+            'category' => 'child',
+            'relationship_detail' => 'biological_child',
+            'full_name' => 'Single Claim Child',
+            'date_of_birth' => '2018-06-15',
+            'verification_status' => EmployeeDependant::VERIFICATION_VERIFIED,
+            'is_active' => true,
+        ]);
+        $payload = $this->payload($employee, [
+            'deceased_category' => 'child',
+            'employee_dependant_id' => $child->id,
+        ]);
+
+        $this->actingAs($admin)->post(route('funeral-claims.store'), $payload)->assertRedirect();
+        $existingClaim = FuneralClaim::firstOrFail();
+
+        $this->actingAs($admin)
+            ->post(route('funeral-claims.store'), $payload)
+            ->assertSessionHasErrors('employee_dependant_id');
+
+        $this->assertSame(1, FuneralClaim::where('employee_dependant_id', $child->id)->count());
+        $this->actingAs($admin)
+            ->get(route('funeral-claims.create'))
+            ->assertOk()
+            ->assertSee("Claim {$existingClaim->reference_no} already registered")
+            ->assertSee('disabled', false);
+    }
+
+    public function test_existing_claim_can_be_edited_without_triggering_its_own_duplicate_check(): void
+    {
+        $admin = $this->user($this->adminRole);
+        $employee = $this->employee();
+        $spouse = $employee->dependants()->create([
+            'category' => 'spouse',
+            'relationship_detail' => 'spouse',
+            'full_name' => 'Existing Spouse',
+            'date_of_birth' => '1985-06-15',
+            'verification_status' => EmployeeDependant::VERIFICATION_VERIFIED,
+            'is_active' => true,
+        ]);
+        $payload = $this->payload($employee, [
+            'deceased_category' => 'spouse',
+            'employee_dependant_id' => $spouse->id,
+        ]);
+        $this->actingAs($admin)->post(route('funeral-claims.store'), $payload)->assertRedirect();
+        $claim = FuneralClaim::firstOrFail();
+
+        $this->actingAs($admin)
+            ->put(route('funeral-claims.update', $claim), array_merge($payload, ['internal_notes' => 'Updated note.']))
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame('Updated note.', $claim->fresh()->internal_notes);
+    }
+
     public function test_hr_officer_can_only_register_and_view_assigned_province_claims(): void
     {
         $officer = $this->user($this->officerRole, $this->northern);
