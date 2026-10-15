@@ -4,10 +4,13 @@ use App\Console\Commands\ApplyEffectiveStaffPromotions;
 use App\Console\Commands\ApplyEffectiveStaffRelocations;
 use App\Console\Commands\AutoCloseExpiredDisciplinaryCases;
 use App\Console\Commands\AutoCompleteTemporaryAppointments;
+use App\Console\Commands\CheckProductionSecurity;
 use App\Console\Commands\NotifyTemporaryAppointmentsEndingSoon;
 use App\Console\Commands\ReconcileWorkPulse;
 use App\Console\Commands\SendMailTest;
 use App\Console\Commands\SyncEmployeeImportMasterData;
+use App\Http\Middleware\ApplySecurityHeaders;
+use App\Http\Middleware\EnforceProductionSecurity;
 use App\Http\Middleware\EnsurePasswordHasBeenChanged;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\RedirectIfAuthenticated;
@@ -33,8 +36,11 @@ return Application::configure(basePath: dirname(__DIR__))
         SyncEmployeeImportMasterData::class,
         SendMailTest::class,
         ReconcileWorkPulse::class,
+        CheckProductionSecurity::class,
     ])
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->append(EnforceProductionSecurity::class);
+        $middleware->append(ApplySecurityHeaders::class);
         $middleware->alias([
             'active' => EnsureUserIsActive::class,
             'guest' => RedirectIfAuthenticated::class,
