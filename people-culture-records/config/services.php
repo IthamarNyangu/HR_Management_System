@@ -36,8 +36,17 @@ return [
     ],
 
     'workpulse' => [
+        'enabled' => (bool) env('WORKPULSE_SYNC_ENABLED', false),
         'base_url' => env('WORKPULSE_BASE_URL', 'http://localhost:3000'),
         'sync_token' => env('WORKPULSE_SYNC_TOKEN'),
+    ],
+
+    'exitclear' => [
+        'enabled' => (bool) env('EXITCLEAR_INTEGRATION_ENABLED', true),
+        'base_url' => env('EXITCLEAR_BASE_URL', 'http://127.0.0.1:8012'),
+        'integration_token' => env('EXITCLEAR_INTEGRATION_TOKEN', env('WORKPULSE_SYNC_TOKEN')),
+        'initiation_path' => env('EXITCLEAR_INITIATION_PATH', '/api/integrations/hrms/exit-cases'),
+        'timeout' => (int) env('EXITCLEAR_TIMEOUT', 10),
     ],
 
 ];

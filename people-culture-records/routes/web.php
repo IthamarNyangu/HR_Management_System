@@ -14,6 +14,7 @@ use App\Http\Controllers\EmployeeBulkActionController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\EmployeeDependantController;
 use App\Http\Controllers\EmployeeImportController;
+use App\Http\Controllers\EmployeeOffboardingController;
 use App\Http\Controllers\EmployeeSearchController;
 use App\Http\Controllers\FuneralClaimController;
 use App\Http\Controllers\FuneralClaimDocumentController;
@@ -61,7 +62,7 @@ Route::get('/api/integrations/workpulse/directory', WorkPulseDirectoryController
     ->middleware(['workpulse.integration', 'throttle:60,1'])
     ->name('api.integrations.workpulse.directory');
 Route::get('/api/integrations/exitclear/employees', ExitClearEmployeeDirectoryController::class)
-    ->middleware(['workpulse.integration', 'throttle:120,1'])
+    ->middleware(['exitclear.integration', 'throttle:120,1'])
     ->name('api.integrations.exitclear.employees');
 
 Route::post('/sign-out', function (Request $request) {
@@ -197,6 +198,8 @@ Route::middleware(['auth', 'active', 'password.changed'])->group(function () use
     Route::put('/employees/{employee}/dependants/{dependant}', [EmployeeDependantController::class, 'update'])->name('employees.dependants.update');
     Route::patch('/employees/{employee}/dependants/{dependant}/archive', [EmployeeDependantController::class, 'archive'])->name('employees.dependants.archive');
     Route::patch('/employees/{employee}/dependants/{dependant}/restore', [EmployeeDependantController::class, 'restore'])->whereNumber('dependant')->name('employees.dependants.restore');
+    Route::post('/employees/{employee}/offboarding', [EmployeeOffboardingController::class, 'store'])->name('employees.offboarding.store');
+    Route::patch('/employees/{employee}/offboarding/refresh', [EmployeeOffboardingController::class, 'refresh'])->name('employees.offboarding.refresh');
     Route::post('/employees/{employee}/workpulse/validate', [EmployeeController::class, 'validateWorkPulse'])->name('employees.workpulse.validate');
     Route::post('/employees/{employee}/workpulse/invite', [EmployeeController::class, 'inviteToWorkPulse'])->name('employees.workpulse.invite');
     Route::post('/employees/{employee}/workpulse/resend', [EmployeeController::class, 'resendWorkPulseSetup'])->name('employees.workpulse.resend');

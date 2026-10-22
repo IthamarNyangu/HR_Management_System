@@ -14,6 +14,7 @@ use App\Http\Middleware\EnforceProductionSecurity;
 use App\Http\Middleware\EnsurePasswordHasBeenChanged;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\RedirectIfAuthenticated;
+use App\Http\Middleware\VerifyExitClearIntegrationToken;
 use App\Http\Middleware\VerifyWorkPulseIntegrationToken;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -45,6 +46,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'active' => EnsureUserIsActive::class,
             'guest' => RedirectIfAuthenticated::class,
             'password.changed' => EnsurePasswordHasBeenChanged::class,
+            'exitclear.integration' => VerifyExitClearIntegrationToken::class,
             'workpulse.integration' => VerifyWorkPulseIntegrationToken::class,
         ]);
     })

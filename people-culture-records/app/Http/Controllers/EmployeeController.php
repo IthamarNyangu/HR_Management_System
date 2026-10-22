@@ -15,6 +15,7 @@ use App\Models\Project;
 use App\Models\Province;
 use App\Models\TerminationReason;
 use App\Services\ActivityLogger;
+use App\Services\ExitClearClient;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -91,7 +92,7 @@ class EmployeeController extends Controller
         return redirect()->route('employees.show', $employee)->with('success', 'Employee created successfully.');
     }
 
-    public function show(Employee $employee): View
+    public function show(Employee $employee, ExitClearClient $exitClear): View
     {
         Gate::authorize('view', $employee);
 
@@ -165,7 +166,13 @@ class EmployeeController extends Controller
             ->sortBy([['last_name', 'asc'], ['first_name', 'asc']])
             ->values();
 
-        return view('employees.show', compact('employee', 'dependants', 'directReports', 'disciplinaryCases', 'staffPromotions', 'staffRelocations', 'temporaryAppointments', 'activeTemporaryAppointment'));
+        $offboardingCase = $employee->offboardingCases()
+            ->latest('initiated_at')
+            ->latest('id')
+            ->first();
+        $offboardingUrl = $offboardingCase?->isLinked() ? $exitClear->caseUrl($offboardingCase) : null;
+
+        return view('employees.show', compact('employee', 'dependants', 'directReports', 'disciplinaryCases', 'staffPromotions', 'staffRelocations', 'temporaryAppointments', 'activeTemporaryAppointment', 'offboardingCase', 'offboardingUrl'));
     }
 
     public function edit(Request $request, Employee $employee): View

@@ -22,6 +22,14 @@ class ProductionSecurity
         if (filled(config('services.workpulse.sync_token')) && ! str_starts_with(mb_strtolower((string) config('services.workpulse.base_url')), 'https://')) {
             $failures[] = 'WORKPULSE_BASE_URL must use HTTPS when WorkPulse integration is enabled.';
         }
+        if (config('services.exitclear.enabled')) {
+            if (blank(config('services.exitclear.integration_token'))) {
+                $failures[] = 'EXITCLEAR_INTEGRATION_TOKEN must be configured when ExitClear integration is enabled.';
+            }
+            if (! str_starts_with(mb_strtolower((string) config('services.exitclear.base_url')), 'https://')) {
+                $failures[] = 'EXITCLEAR_BASE_URL must use HTTPS when ExitClear integration is enabled.';
+            }
+        }
         if (! config('session.encrypt')) {
             $failures[] = 'SESSION_ENCRYPT must be true.';
         }

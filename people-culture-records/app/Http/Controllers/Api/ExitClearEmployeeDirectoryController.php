@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Employee;
+use App\Support\ExitClearEmployeeSnapshot;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -44,29 +45,7 @@ class ExitClearEmployeeDirectoryController extends Controller
             ->get();
 
         return response()->json([
-            'data' => $employees->map(fn (Employee $employee) => [
-                'source_id' => $employee->id,
-                'employee_no' => $employee->employee_no,
-                'full_name' => $employee->full_name,
-                'hire_date' => $employee->hire_date?->toDateString(),
-                'department' => $this->namedRecord($employee->department),
-                'job_title' => $this->namedRecord($employee->jobTitle),
-                'facility' => $this->namedRecord($employee->facility),
-                'district' => $this->namedRecord($employee->district),
-                'province' => $this->namedRecord($employee->province),
-                'supervisor' => $employee->supervisor ? [
-                    'source_id' => $employee->supervisor->id,
-                    'employee_no' => $employee->supervisor->employee_no,
-                    'full_name' => $employee->supervisor->full_name,
-                    'work_email' => $employee->supervisor->email,
-                ] : null,
-                'updated_at' => $employee->updated_at?->toIso8601String(),
-            ])->values(),
+            'data' => $employees->map(fn (Employee $employee) => ExitClearEmployeeSnapshot::make($employee))->values(),
         ]);
-    }
-
-    private function namedRecord($record): ?array
-    {
-        return $record ? ['source_id' => $record->id, 'name' => $record->name] : null;
     }
 }

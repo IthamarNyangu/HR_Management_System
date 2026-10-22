@@ -20,6 +20,10 @@ class SyncEmployeeToWorkPulse implements ShouldQueue
 
     public function handle(): void
     {
+        if (! config('services.workpulse.enabled', false)) {
+            return;
+        }
+
         $employee = Employee::withTrashed()->with(['department', 'jobTitle', 'facility', 'employmentStatus', 'supervisor'])->find($this->employeeId);
         if (! $employee) {
             return;

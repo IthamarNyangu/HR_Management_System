@@ -153,6 +153,16 @@ class Employee extends Model
         return $this->hasMany(EmployeeDependant::class);
     }
 
+    public function terminationAlerts(): HasMany
+    {
+        return $this->hasMany(EmployeeTerminationAlert::class);
+    }
+
+    public function offboardingCases(): HasMany
+    {
+        return $this->hasMany(EmployeeOffboardingCase::class);
+    }
+
     public function user(): HasOne
     {
         return $this->hasOne(User::class);
@@ -166,6 +176,14 @@ class Employee extends Model
     public function getDisplayNameAttribute(): string
     {
         return "{$this->employee_no} - {$this->full_name}";
+    }
+
+    public function isTerminated(): bool
+    {
+        $status = $this->employmentStatus;
+
+        return mb_strtoupper((string) $status?->code) === 'TERMINATED'
+            || mb_strtolower((string) $status?->name) === 'terminated';
     }
 
     public function scopeVisibleTo(Builder $query, User $user): Builder

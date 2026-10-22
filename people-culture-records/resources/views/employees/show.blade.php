@@ -77,6 +77,89 @@
                 </div>
             </section>
 
+            @if ($employee->isTerminated())
+                @php
+                    $offboardingStatusClasses = [
+                        'draft' => 'text-bg-secondary',
+                        'in_progress' => 'text-bg-primary',
+                        'completed' => 'text-bg-success',
+                        'closed' => 'text-bg-success',
+                        'cancelled' => 'text-bg-secondary',
+                        'error' => 'text-bg-danger',
+                        'initiating' => 'text-bg-warning',
+                    ];
+                    $offboardingStatus = $offboardingCase?->status ?? 'not_started';
+                    $offboardingStatusLabel = str($offboardingStatus)->replace('_', ' ')->title();
+                @endphp
+                <section class="bg-white border rounded-2 p-4 mb-3" aria-labelledby="offboarding-heading">
+                    <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-3">
+                        <div>
+                            <h2 id="offboarding-heading" class="h5 mb-1"><i class="bi bi-box-arrow-right me-1" aria-hidden="true"></i> Offboarding</h2>
+                            <p class="text-muted small mb-0">Employee exit clearance through ExitClear.</p>
+                        </div>
+                        <span class="badge {{ $offboardingStatusClasses[$offboardingStatus] ?? 'text-bg-light' }}">
+                            {{ $offboardingCase ? $offboardingStatusLabel : 'Not Started' }}
+                        </span>
+                    </div>
+
+                    @if (! $offboardingCase)
+                        <p class="mb-3">No exit clearance case has been initiated for this employee.</p>
+                        @can('update', $employee)
+                            <form method="POST" action="{{ route('employees.offboarding.store', $employee) }}" data-confirm="true" data-confirm-title="Begin offboarding?" data-confirm-message="A draft ExitClear case will be created using this employee's current HRMS information and termination date." data-confirm-button="Begin Offboarding">
+                                @csrf
+                                <button type="submit" class="btn btn-warning"><i class="bi bi-box-arrow-up-right" aria-hidden="true"></i> Begin Offboarding</button>
+                            </form>
+                        @endcan
+                    @elseif ($offboardingCase->status === App\Models\EmployeeOffboardingCase::STATUS_ERROR)
+                        <div class="alert alert-warning mb-3" role="alert">
+                            <div class="fw-semibold">ExitClear could not create or link the case.</div>
+                            <div class="small mt-1">{{ $offboardingCase->failure_message ?: 'Please verify the ExitClear connection and try again.' }}</div>
+                        </div>
+                        @can('update', $employee)
+                            <form method="POST" action="{{ route('employees.offboarding.store', $employee) }}">
+                                @csrf
+                                <button type="submit" class="btn btn-primary"><i class="bi bi-arrow-clockwise" aria-hidden="true"></i> Retry Offboarding</button>
+                            </form>
+                        @endcan
+                    @else
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-4">
+                                <div class="text-muted small">ExitClear Case</div>
+                                <div class="fw-semibold">{{ $offboardingCase->case_number ?? '-' }}</div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="text-muted small">Initiated</div>
+                                <div>{{ $offboardingCase->initiated_at?->format('d M Y H:i') ?? '-' }}</div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="text-muted small">Last Status Check</div>
+                                <div>{{ $offboardingCase->last_synced_at?->format('d M Y H:i') ?? '-' }}</div>
+                            </div>
+                        </div>
+                        <div class="d-flex flex-wrap gap-2">
+                            @if ($offboardingUrl)
+                                <a href="{{ $offboardingUrl }}" class="btn btn-primary" target="_blank" rel="noopener noreferrer"><i class="bi bi-box-arrow-up-right" aria-hidden="true"></i> Open in ExitClear</a>
+                            @endif
+                            @can('update', $employee)
+                                <form method="POST" action="{{ route('employees.offboarding.refresh', $employee) }}">
+                                    @csrf
+                                    @method('PATCH')
+                                    <button type="submit" class="btn btn-outline-secondary"><i class="bi bi-arrow-clockwise" aria-hidden="true"></i> Refresh Status</button>
+                                </form>
+                            @endcan
+                            @if ($offboardingCase->status === 'cancelled')
+                                @can('update', $employee)
+                                    <form method="POST" action="{{ route('employees.offboarding.store', $employee) }}" data-confirm="true" data-confirm-title="Begin a new offboarding case?" data-confirm-message="The cancelled case will remain in history and a new draft case will be requested from ExitClear." data-confirm-button="Begin New Case">
+                                        @csrf
+                                        <button type="submit" class="btn btn-warning"><i class="bi bi-plus-lg" aria-hidden="true"></i> Begin New Case</button>
+                                    </form>
+                                @endcan
+                            @endif
+                        </div>
+                    @endif
+                </section>
+            @endif
+
             @can('viewAny', App\Models\EmployeeDependant::class)
                 <section class="bg-white border rounded-2 p-4 mb-3">
                     <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
