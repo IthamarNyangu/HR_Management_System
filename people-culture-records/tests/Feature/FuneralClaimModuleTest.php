@@ -59,13 +59,20 @@ class FuneralClaimModuleTest extends TestCase
     public function test_authorized_user_can_open_claim_registration_form(): void
     {
         $admin = $this->user($this->adminRole);
-        $employee = $this->employee();
+        $employee = $this->employee(['employee_no' => '26496']);
+        $admin->update([
+            'name' => 'Ithamar Nyangu',
+            'employee_id' => $employee->id,
+            'province_id' => $this->northern->id,
+        ]);
 
         $this->actingAs($admin)
             ->get(route('funeral-claims.create'))
             ->assertOk()
             ->assertSee('Register Funeral Claim')
-            ->assertSee($employee->employee_no);
+            ->assertSee($employee->employee_no)
+            ->assertSee('Assigned HR personnel')
+            ->assertSee('Ithamar Nyangu - 26496 - Northern');
     }
 
     public function test_registration_form_exposes_registered_dependant_details_for_auto_fill(): void
@@ -118,6 +125,23 @@ class FuneralClaimModuleTest extends TestCase
             ->assertOk()
             ->assertSee("Claim {$existingClaim->reference_no} already registered")
             ->assertSee('disabled', false);
+    }
+
+    public function test_employee_cannot_have_multiple_active_funeral_claims(): void
+    {
+        $admin = $this->user($this->adminRole);
+        $employee = $this->employee();
+        $payload = $this->payload($employee);
+
+        $this->actingAs($admin)->post(route('funeral-claims.store'), $payload)->assertRedirect();
+        $existingClaim = FuneralClaim::firstOrFail();
+
+        $this->actingAs($admin)
+            ->post(route('funeral-claims.store'), $payload)
+            ->assertSessionHasErrors('employee_id');
+
+        $this->assertSame(1, FuneralClaim::where('employee_id', $employee->id)->count());
+        $this->assertNotNull($existingClaim->reference_no);
     }
 
     public function test_existing_claim_can_be_edited_without_triggering_its_own_duplicate_check(): void
@@ -184,6 +208,25 @@ class FuneralClaimModuleTest extends TestCase
         $preterm = FuneralClaim::latest('id')->firstOrFail();
         $this->assertSame(FuneralClaim::REQUIRES_REVIEW, $preterm->eligibility_status);
         $this->assertSame('7500.00', $preterm->eligible_amount);
+    }
+
+    public function test_gestational_age_uses_completed_whole_weeks(): void
+    {
+        $admin = $this->user($this->adminRole);
+        $employee = $this->employee();
+
+        $this->actingAs($admin)
+            ->get(route('funeral-claims.create'))
+            ->assertOk()
+            ->assertSee('Gestational age (completed weeks)');
+
+        $this->actingAs($admin)
+            ->post(route('funeral-claims.store'), $this->payload($employee, [
+                'deceased_category' => 'child',
+                'deceased_name' => 'Baby',
+                'gestational_age_weeks' => 24.5,
+            ]))
+            ->assertSessionHasErrors('gestational_age_weeks');
     }
 
     public function test_claim_cannot_be_ready_until_eligible_and_required_documents_complete(): void

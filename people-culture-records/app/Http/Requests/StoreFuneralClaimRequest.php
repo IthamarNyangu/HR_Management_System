@@ -35,7 +35,7 @@ class StoreFuneralClaimRequest extends FormRequest
             'date_of_death' => ['required', 'date', 'before_or_equal:today'],
             'deceased_name' => ['nullable', 'string', 'max:255'],
             'deceased_date_of_birth' => ['nullable', 'date', 'before_or_equal:date_of_death'],
-            'gestational_age_weeks' => ['nullable', 'numeric', 'min:1', 'max:45'],
+            'gestational_age_weeks' => ['nullable', 'integer', 'min:1', 'max:45'],
             'assigned_to' => ['nullable', 'integer', 'exists:users,id'],
             'internal_notes' => ['nullable', 'string', 'max:10000'],
         ];
@@ -54,6 +54,21 @@ class StoreFuneralClaimRequest extends FormRequest
             $dependant = $this->filled('employee_dependant_id') ? EmployeeDependant::find($this->integer('employee_dependant_id')) : null;
             if ($category === FuneralClaim::CATEGORY_EMPLOYEE && $dependant) {
                 $validator->errors()->add('employee_dependant_id', 'An employee claim cannot be linked to a dependant.');
+            }
+            if ($category === FuneralClaim::CATEGORY_EMPLOYEE && $this->isNewEmployeeClaim($employee)) {
+                $existingClaim = FuneralClaim::query()
+                    ->where('employee_id', $employee->id)
+                    ->where('deceased_category', FuneralClaim::CATEGORY_EMPLOYEE)
+                    ->where('status', '!=', FuneralClaim::STATUS_VOIDED)
+                    ->latest('id')
+                    ->first();
+
+                if ($existingClaim) {
+                    $validator->errors()->add(
+                        'employee_id',
+                        "An employee funeral claim already exists ({$existingClaim->reference_no}). Open the existing claim instead."
+                    );
+                }
             }
             if ($dependant && ($dependant->employee_id !== $employee->id || $dependant->category !== $category || ! $dependant->is_active)) {
                 $validator->errors()->add('employee_dependant_id', 'Select an active dependant in the matching category.');
@@ -103,6 +118,15 @@ class StoreFuneralClaimRequest extends FormRequest
         $claim = $this->route('funeral_claim');
 
         return ! $claim instanceof FuneralClaim || $claim->employee_dependant_id !== $dependant->id;
+    }
+
+    private function isNewEmployeeClaim(Employee $employee): bool
+    {
+        $claim = $this->route('funeral_claim');
+
+        return ! $claim instanceof FuneralClaim
+            || $claim->employee_id !== $employee->id
+            || $claim->deceased_category !== FuneralClaim::CATEGORY_EMPLOYEE;
     }
 
     private function isNewManualDeceasedIdentity(): bool

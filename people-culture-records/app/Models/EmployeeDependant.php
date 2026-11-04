@@ -30,6 +30,8 @@ class EmployeeDependant extends Model
         'employee_id',
         'category',
         'relationship_detail',
+        'first_name',
+        'last_name',
         'full_name',
         'gender',
         'date_of_birth',

@@ -162,11 +162,36 @@ class FuneralClaimController extends Controller
             ->orderBy('last_name')
             ->get();
 
-        return ['employees' => $employees, 'categories' => FuneralClaim::categories(), 'assignees' => User::where('is_active', true)->whereHas('role', fn ($q) => $q->whereIn('name', ['Admin', 'HR Manager', 'HR Officer']))->orderBy('name')->get()];
+        $assignees = User::query()
+            ->where('is_active', true)
+            ->whereHas('role', fn ($query) => $query->whereIn('name', ['Admin', 'HR Manager', 'HR Officer']))
+            ->with(['employee.province', 'province'])
+            ->orderBy('name')
+            ->get();
+
+        return ['employees' => $employees, 'categories' => FuneralClaim::categories(), 'assignees' => $assignees];
     }
 
     private function preventConcurrentDuplicate(array $data): void
     {
+        if (($data['deceased_category'] ?? null) === FuneralClaim::CATEGORY_EMPLOYEE) {
+            Employee::query()->whereKey($data['employee_id'])->lockForUpdate()->firstOrFail();
+            $existingClaim = FuneralClaim::query()
+                ->where('employee_id', $data['employee_id'])
+                ->where('deceased_category', FuneralClaim::CATEGORY_EMPLOYEE)
+                ->where('status', '!=', FuneralClaim::STATUS_VOIDED)
+                ->latest('id')
+                ->first();
+
+            if ($existingClaim) {
+                throw ValidationException::withMessages([
+                    'employee_id' => "An employee funeral claim already exists ({$existingClaim->reference_no}). Open the existing claim instead.",
+                ]);
+            }
+
+            return;
+        }
+
         if (! empty($data['employee_dependant_id'])) {
             EmployeeDependant::query()->whereKey($data['employee_dependant_id'])->lockForUpdate()->firstOrFail();
             $existingClaim = FuneralClaim::query()
@@ -184,7 +209,7 @@ class FuneralClaimController extends Controller
             return;
         }
 
-        if (($data['deceased_category'] ?? null) === FuneralClaim::CATEGORY_EMPLOYEE || empty($data['deceased_name'])) {
+        if (empty($data['deceased_name'])) {
             return;
         }
 

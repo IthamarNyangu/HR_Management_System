@@ -75,6 +75,8 @@ class EmployeeDependantModuleTest extends TestCase
         $raw = DB::table('employee_dependants')->where('id', $dependant->id)->first();
 
         $this->assertSame('Jane Nyambe', $dependant->full_name);
+        $this->assertSame('Jane', $dependant->first_name);
+        $this->assertSame('Nyambe', $dependant->last_name);
         $this->assertSame('2015-04-06', $dependant->date_of_birth->toDateString());
         $this->assertSame('123456/78/1', $dependant->national_id);
         $this->assertSame('Sensitive family note.', $dependant->internal_notes);
@@ -116,7 +118,11 @@ class EmployeeDependantModuleTest extends TestCase
             ->assertRedirect(route('employees.show', $assignedEmployee));
 
         $this->actingAs($officer)
-            ->post(route('employees.dependants.store', $outsideEmployee), $this->dependantPayload(['full_name' => 'Outside Province']))
+            ->post(route('employees.dependants.store', $outsideEmployee), $this->dependantPayload([
+                'first_name' => 'Outside',
+                'last_name' => 'Province',
+                'full_name' => 'Outside Province',
+            ]))
             ->assertForbidden();
 
         $this->assertDatabaseMissing('employee_dependants', ['full_name' => 'Outside Province']);
@@ -283,6 +289,8 @@ class EmployeeDependantModuleTest extends TestCase
         return array_merge([
             'category' => EmployeeDependant::CATEGORY_CHILD,
             'relationship_detail' => 'stepchild',
+            'first_name' => 'Jane',
+            'last_name' => 'Nyambe',
             'full_name' => 'Jane Nyambe',
             'gender' => 'Female',
             'date_of_birth' => '2015-04-06',

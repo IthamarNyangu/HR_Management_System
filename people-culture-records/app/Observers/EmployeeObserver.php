@@ -6,6 +6,7 @@ use App\Jobs\SendEmployeeTerminationItAlert;
 use App\Jobs\SyncEmployeeToWorkPulse;
 use App\Models\Employee;
 use App\Models\EmploymentStatus;
+use App\Services\EmployeeDeathFuneralClaimService;
 use Illuminate\Support\Str;
 
 class EmployeeObserver
@@ -19,6 +20,10 @@ class EmployeeObserver
 
     public function updated(Employee $employee): void
     {
+        if ($employee->wasChanged(['employment_status_id', 'termination_reason_id', 'termination_date'])) {
+            app(EmployeeDeathFuneralClaimService::class)->createIfRequired($employee);
+        }
+
         if (! config('offboarding.termination_alerts.enabled', true)
             || ! $employee->wasChanged('employment_status_id')
             || ! $this->isTerminatedStatus($employee->employment_status_id)) {

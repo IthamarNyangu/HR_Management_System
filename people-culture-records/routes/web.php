@@ -4,6 +4,7 @@ use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\Admin\MasterDataController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Api\ExitClearEmployeeDirectoryController;
+use App\Http\Controllers\Api\ExitClearOrganisationDirectoryController;
 use App\Http\Controllers\Api\PublicJobOpeningController;
 use App\Http\Controllers\Api\WorkPulseDirectoryController;
 use App\Http\Controllers\DashboardController;
@@ -64,6 +65,9 @@ Route::get('/api/integrations/workpulse/directory', WorkPulseDirectoryController
 Route::get('/api/integrations/exitclear/employees', ExitClearEmployeeDirectoryController::class)
     ->middleware(['exitclear.integration', 'throttle:120,1'])
     ->name('api.integrations.exitclear.employees');
+Route::get('/api/integrations/exitclear/organisation', ExitClearOrganisationDirectoryController::class)
+    ->middleware(['exitclear.integration', 'throttle:30,1'])
+    ->name('api.integrations.exitclear.organisation');
 
 Route::post('/sign-out', function (Request $request) {
     Auth::logout();

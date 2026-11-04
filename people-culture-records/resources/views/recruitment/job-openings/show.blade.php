@@ -164,7 +164,7 @@
                 <div class="border rounded-2 bg-light p-3">
                     <div class="fw-semibold mb-1">How to Apply</div>
                     @if ($jobOpening->is_publicly_applyable)
-                        <div>Applicants submit through the HRMS careers portal: <a href="{{ route('careers.apply', $jobOpening->slug) }}">{{ route('careers.apply', $jobOpening->slug) }}</a></div>
+                        <div>Applicants submit through the HRMS careers portal: <a href="{{ route('careers.apply', $jobOpening->slug) }}" target="_blank" rel="noopener noreferrer">{{ route('careers.apply', $jobOpening->slug) }}</a></div>
                     @else
                         <div class="text-muted">The system will show the application link after this vacancy is published, externally visible, and still open.</div>
                     @endif

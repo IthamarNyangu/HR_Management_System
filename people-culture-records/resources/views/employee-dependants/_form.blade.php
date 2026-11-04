@@ -1,6 +1,9 @@
 @php
     $selectedCategory = old('category', $dependant->category);
     $selectedRelationship = old('relationship_detail', $dependant->relationship_detail);
+    $existingNameParts = preg_split('/\s+/', trim((string) $dependant->full_name), 2);
+    $firstName = old('first_name', $dependant->first_name ?: ($existingNameParts[0] ?? ''));
+    $lastName = old('last_name', $dependant->last_name ?: ($existingNameParts[1] ?? ''));
 @endphp
 
 <div class="row g-3">
@@ -32,13 +35,19 @@
         @error('relationship_detail')<div class="invalid-feedback">{{ $message }}</div>@enderror
     </div>
 
-    <div class="col-md-8">
-        <label for="full_name" class="form-label">Full name <span class="text-danger">*</span></label>
-        <input id="full_name" name="full_name" type="text" value="{{ old('full_name', $dependant->full_name) }}" class="form-control @error('full_name') is-invalid @enderror" maxlength="255" required>
-        @error('full_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
+    <div class="col-md-6">
+        <label for="first_name" class="form-label">First name <span class="text-danger">*</span></label>
+        <input id="first_name" name="first_name" type="text" value="{{ $firstName }}" class="form-control @error('first_name') is-invalid @enderror" maxlength="255" required autocomplete="given-name">
+        @error('first_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
     </div>
 
-    <div class="col-md-4">
+    <div class="col-md-6">
+        <label for="last_name" class="form-label">Last name <span class="text-danger">*</span></label>
+        <input id="last_name" name="last_name" type="text" value="{{ $lastName }}" class="form-control @error('last_name') is-invalid @enderror" maxlength="255" required autocomplete="family-name">
+        @error('last_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
+    </div>
+
+    <div class="col-md-6">
         <label for="gender" class="form-label">Gender</label>
         <select id="gender" name="gender" class="form-select @error('gender') is-invalid @enderror">
             <option value="">Select gender</option>

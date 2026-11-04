@@ -20,13 +20,17 @@ class StoreEmployeeDependantRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         $relationshipDetail = $this->filled('relationship_detail') ? $this->input('relationship_detail') : null;
+        $firstName = trim((string) $this->input('first_name'));
+        $lastName = trim((string) $this->input('last_name'));
 
         if ($this->input('category') === EmployeeDependant::CATEGORY_SPOUSE) {
             $relationshipDetail = 'spouse';
         }
 
         $this->merge([
-            'full_name' => trim((string) $this->input('full_name')),
+            'first_name' => $firstName,
+            'last_name' => $lastName,
+            'full_name' => trim($firstName.' '.$lastName),
             'national_id' => $this->filled('national_id') ? trim((string) $this->input('national_id')) : null,
             'relationship_detail' => $relationshipDetail,
             'is_active' => $this->boolean('is_active'),
@@ -41,6 +45,8 @@ class StoreEmployeeDependantRequest extends FormRequest
         return [
             'category' => ['required', Rule::in(array_keys(EmployeeDependant::categories()))],
             'relationship_detail' => ['nullable', Rule::in(array_keys(EmployeeDependant::relationshipDetails()))],
+            'first_name' => ['required', 'string', 'max:255'],
+            'last_name' => ['required', 'string', 'max:255'],
             'full_name' => ['required', 'string', 'max:255'],
             'gender' => ['nullable', 'string', 'max:50'],
             'date_of_birth' => ['nullable', 'date', 'before_or_equal:today'],

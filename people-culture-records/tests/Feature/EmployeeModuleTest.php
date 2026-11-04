@@ -7,6 +7,7 @@ use App\Models\Department;
 use App\Models\District;
 use App\Models\Employee;
 use App\Models\EmploymentStatus;
+use App\Models\FuneralClaim;
 use App\Models\Project;
 use App\Models\Province;
 use App\Models\Role;
@@ -173,6 +174,47 @@ class EmployeeModuleTest extends TestCase
         $this->assertSame($this->resignationReason->id, $employee->termination_reason_id);
         $this->assertSame('2026-06-06', $employee->termination_date->toDateString());
         $this->assertSame('Employee resigned after notice period.', $employee->termination_comment);
+    }
+
+    public function test_deceased_termination_automatically_creates_one_funeral_claim(): void
+    {
+        $admin = $this->user($this->adminRole);
+        $deceasedReason = TerminationReason::updateOrCreate(
+            ['code' => 'DECEASED'],
+            ['name' => 'Deceased', 'is_active' => true],
+        );
+        $employee = $this->employee([
+            'date_of_birth' => '1980-01-01',
+            'province_id' => $this->northern->id,
+            'district_id' => $this->kasama->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->put(route('employees.update', $employee), $this->employeePayload($employee, [
+                'employment_status_id' => $this->terminatedStatus->id,
+                'termination_reason_id' => $deceasedReason->id,
+                'termination_date' => '2026-10-20',
+            ]))
+            ->assertRedirect(route('employees.show', $employee));
+
+        $claim = FuneralClaim::sole();
+        $this->assertSame(FuneralClaim::CATEGORY_EMPLOYEE, $claim->deceased_category);
+        $this->assertSame(FuneralClaim::STATUS_AWAITING_DOCUMENTS, $claim->status);
+        $this->assertSame('2026-10-20', $claim->date_of_death->toDateString());
+        $this->assertSame($admin->id, $claim->assigned_to);
+        $this->assertSame(2, $claim->documents()->count());
+        $this->assertDatabaseHas('funeral_claim_status_histories', [
+            'funeral_claim_id' => $claim->id,
+            'from_status' => null,
+            'to_status' => FuneralClaim::STATUS_AWAITING_DOCUMENTS,
+        ]);
+        $this->assertDatabaseHas('activity_logs', [
+            'action' => 'employee_death_funeral_claim_created',
+            'subject_id' => $claim->id,
+        ]);
+
+        $employee->update(['termination_comment' => 'Updated without creating another claim.']);
+        $this->assertSame(1, FuneralClaim::count());
     }
 
     public function test_returning_employee_to_active_clears_termination_details(): void

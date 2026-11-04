@@ -187,7 +187,7 @@
                                 <tr>
                                     <th>Name</th>
                                     <th>Relationship</th>
-                                    <th>Date of Birth</th>
+                                    <th>D.O.B</th>
                                     <th>Verification</th>
                                     <th>Status</th>
                                     <th class="text-end">Actions</th>
