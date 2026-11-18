@@ -72,8 +72,26 @@ class DashboardActivityTest extends TestCase
             ->assertOk()
             ->assertSee('Quick Actions')
             ->assertSee('People Overview')
-            ->assertSee('Disciplinary Case Overview')
+            ->assertSee('Staff Establishment Overview')
             ->assertSee('Recent Activity');
+    }
+
+    public function test_dashboard_module_tabs_show_focused_analytics(): void
+    {
+        $admin = $this->user($this->adminRole);
+
+        $this->actingAs($admin)
+            ->get(route('dashboard', ['tab' => 'funeral-benefits']))
+            ->assertOk()
+            ->assertSee('Funeral Benefits Overview')
+            ->assertSee('Active Claims')
+            ->assertDontSee('People Overview');
+
+        $this->actingAs($admin)
+            ->get(route('dashboard', ['tab' => 'disciplinary']))
+            ->assertOk()
+            ->assertSee('Disciplinary Case Overview')
+            ->assertDontSee('People Overview');
     }
 
     public function test_dashboard_counts_respect_province_restrictions(): void

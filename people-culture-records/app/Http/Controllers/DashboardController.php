@@ -8,6 +8,8 @@ use App\Models\CaseStatus;
 use App\Models\DisciplinaryCase;
 use App\Models\Employee;
 use App\Models\EmploymentStatus;
+use App\Models\FuneralClaim;
+use App\Models\FuneralClaimDocument;
 use App\Models\JobApplication;
 use App\Models\JobOpening;
 use App\Models\StaffPromotion;
@@ -25,6 +27,20 @@ class DashboardController extends Controller
         $expiredJobCloser->closeExpired();
 
         $user = $request->user();
+        $dashboardTabs = [
+            'overview' => 'Overview',
+            'recruitment' => 'Recruitment',
+            'promotions' => 'Promotions',
+            'relocations' => 'Relocations',
+            'temporary-appointments' => 'Temporary Appointments',
+            'disciplinary' => 'Disciplinary',
+            'funeral-benefits' => 'Funeral Benefits',
+        ];
+        $activeDashboardTab = $request->string('tab')->toString();
+        if (! array_key_exists($activeDashboardTab, $dashboardTabs)) {
+            $activeDashboardTab = 'overview';
+        }
+
         $employeeQuery = Employee::query()->visibleTo($user);
         $caseQuery = DisciplinaryCase::query()->visibleTo($user);
         $promotionQuery = StaffPromotion::query()->visibleTo($user);
@@ -32,6 +48,16 @@ class DashboardController extends Controller
         $appointmentQuery = TemporaryAppointment::query()->visibleTo($user);
         $jobOpeningQuery = JobOpening::query()->visibleTo($user);
         $jobApplicationQuery = JobApplication::query()->visibleTo($user);
+        $funeralClaimQuery = FuneralClaim::query()->visibleTo($user);
+
+        $dashboardTrends = [
+            'disciplinary' => $this->monthlyTrend($caseQuery, 'created_at'),
+            'recruitment' => $this->monthlyTrend($jobApplicationQuery, 'submitted_at'),
+            'promotions' => $this->monthlyTrend($promotionQuery, 'promotion_date'),
+            'relocations' => $this->monthlyTrend($relocationQuery, 'effective_date'),
+            'temporary-appointments' => $this->monthlyTrend($appointmentQuery, 'start_date'),
+            'funeral-benefits' => $this->monthlyTrend($funeralClaimQuery, 'notification_date'),
+        ];
 
         $activeEmploymentStatus = EmploymentStatus::where('code', 'ACTIVE')->orWhere('name', 'Active')->first();
         $submittedStatus = $this->caseStatus('SUBMITTED');
@@ -164,6 +190,69 @@ class DashboardController extends Controller
             ['label' => 'Received This Week', 'value' => (clone $jobApplicationQuery)->where('submitted_at', '>=', now()->startOfWeek())->count()],
         ];
 
+        $recruitmentApplicationsByStatus = (clone $jobApplicationQuery)
+            ->selectRaw('status as label, count(*) as total')
+            ->groupBy('status')
+            ->orderByDesc('total')
+            ->get();
+
+        $openJobsByVisibility = (clone $jobOpeningQuery)
+            ->where('status', JobOpening::STATUS_PUBLISHED)
+            ->whereDate('closing_date', '>=', today())
+            ->selectRaw('visibility as label, count(*) as total')
+            ->groupBy('visibility')
+            ->orderByDesc('total')
+            ->get();
+
+        $activeFuneralClaimStatuses = [
+            FuneralClaim::STATUS_DRAFT,
+            FuneralClaim::STATUS_AWAITING_DOCUMENTS,
+            FuneralClaim::STATUS_UNDER_VERIFICATION,
+            FuneralClaim::STATUS_READY_FOR_APPROVAL,
+            FuneralClaim::STATUS_APPROVED,
+            FuneralClaim::STATUS_PAYMENT_PROCESSING,
+        ];
+        $approvedFuneralClaimStatuses = [
+            FuneralClaim::STATUS_APPROVED,
+            FuneralClaim::STATUS_PAYMENT_PROCESSING,
+            FuneralClaim::STATUS_PAID,
+        ];
+        $paidFuneralClaims = (clone $funeralClaimQuery)
+            ->where('status', FuneralClaim::STATUS_PAID)
+            ->whereNotNull('payment_date')
+            ->get(['notification_date', 'payment_date']);
+        $averageFuneralTurnaroundDays = $paidFuneralClaims->isEmpty()
+            ? null
+            : round($paidFuneralClaims->average(fn (FuneralClaim $claim) => $claim->notification_date->diffInDays($claim->payment_date)), 1);
+
+        $funeralBenefitOverview = [
+            ['label' => 'Active Claims', 'value' => (clone $funeralClaimQuery)->whereIn('status', $activeFuneralClaimStatuses)->count()],
+            ['label' => 'Awaiting Documents', 'value' => (clone $funeralClaimQuery)->where('status', FuneralClaim::STATUS_AWAITING_DOCUMENTS)->count()],
+            ['label' => 'Ready for Approval', 'value' => (clone $funeralClaimQuery)->where('status', FuneralClaim::STATUS_READY_FOR_APPROVAL)->count()],
+            ['label' => 'Payment Processing', 'value' => (clone $funeralClaimQuery)->where('status', FuneralClaim::STATUS_PAYMENT_PROCESSING)->count()],
+            ['label' => 'Paid Claims', 'value' => (clone $funeralClaimQuery)->where('status', FuneralClaim::STATUS_PAID)->count()],
+            ['label' => 'Approved Grant Value', 'value' => 'ZMW '.number_format((float) (clone $funeralClaimQuery)->whereIn('status', $approvedFuneralClaimStatuses)->sum('grant_amount_approved'), 2)],
+            ['label' => 'Submitted to Insurance', 'value' => FuneralClaimDocument::query()->whereHas('claim', fn ($query) => $query->visibleTo($user))->where('status', FuneralClaimDocument::SUBMITTED)->distinct('funeral_claim_id')->count('funeral_claim_id')],
+            ['label' => 'Average Turnaround', 'value' => $averageFuneralTurnaroundDays === null ? '-' : $averageFuneralTurnaroundDays.' days'],
+        ];
+
+        $funeralClaimsByCategory = (clone $funeralClaimQuery)
+            ->selectRaw('deceased_category as label, count(*) as total')
+            ->groupBy('deceased_category')
+            ->orderBy('deceased_category')
+            ->get();
+        $funeralClaimsByStatus = (clone $funeralClaimQuery)
+            ->selectRaw('status as label, count(*) as total')
+            ->groupBy('status')
+            ->orderBy('status')
+            ->get();
+        $latestFuneralClaims = (clone $funeralClaimQuery)
+            ->with(['employee', 'assignedTo'])
+            ->latest('notification_date')
+            ->latest('id')
+            ->take(8)
+            ->get();
+
         $latestEstablishmentPlan = $establishmentMetrics->latestVisiblePlan($user);
         $establishmentSummary = $latestEstablishmentPlan
             ? $establishmentMetrics->summaryForPlan($latestEstablishmentPlan, $user)
@@ -191,6 +280,8 @@ class DashboardController extends Controller
             ->get();
 
         return view('dashboard', compact(
+            'dashboardTabs',
+            'activeDashboardTab',
             'needsAttention',
             'peopleOverview',
             'employeesByProvince',
@@ -204,6 +295,13 @@ class DashboardController extends Controller
             'temporaryAppointmentOverview',
             'latestTemporaryAppointments',
             'recruitmentOverview',
+            'recruitmentApplicationsByStatus',
+            'openJobsByVisibility',
+            'dashboardTrends',
+            'funeralBenefitOverview',
+            'funeralClaimsByCategory',
+            'funeralClaimsByStatus',
+            'latestFuneralClaims',
             'latestEstablishmentPlan',
             'staffEstablishmentOverview',
             'recentActivities',
@@ -220,5 +318,21 @@ class DashboardController extends Controller
     private function appointmentStatus(string $code): ?AppointmentStatus
     {
         return AppointmentStatus::where('code', $code)->orWhere('name', ucfirst(strtolower($code)))->first();
+    }
+
+    private function monthlyTrend($query, string $dateColumn, int $months = 6): array
+    {
+        return collect(range($months - 1, 0))
+            ->map(function (int $offset) use ($query, $dateColumn): array {
+                $month = now()->startOfMonth()->subMonths($offset);
+
+                return [
+                    'label' => $month->format('M'),
+                    'value' => (clone $query)
+                        ->whereBetween($dateColumn, [$month->copy()->startOfMonth(), $month->copy()->endOfMonth()])
+                        ->count(),
+                ];
+            })
+            ->all();
     }
 }

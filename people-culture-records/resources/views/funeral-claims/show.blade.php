@@ -1,12 +1,50 @@
 @extends('layouts.app')
 @php($isVoided = $claim->status === \App\Models\FuneralClaim::STATUS_VOIDED)
+@php($isEmployeeClaim = $claim->deceased_category === \App\Models\FuneralClaim::CATEGORY_EMPLOYEE)
+@php($canRecordEmployeeAmount = $isEmployeeClaim && in_array($claim->status, [\App\Models\FuneralClaim::STATUS_DRAFT, \App\Models\FuneralClaim::STATUS_AWAITING_DOCUMENTS, \App\Models\FuneralClaim::STATUS_UNDER_VERIFICATION, \App\Models\FuneralClaim::STATUS_READY_FOR_APPROVAL], true))
 @section('title',$claim->reference_no)@section('page-title',$claim->reference_no)
 @section('breadcrumb')<li class="breadcrumb-item"><a href="{{ route('funeral-claims.index') }}">Funeral Claims</a></li><li class="breadcrumb-item active">{{ $claim->reference_no }}</li>@endsection
 @section('page-actions')<div class="d-flex gap-2"><a class="btn btn-outline-secondary" href="{{ route('funeral-claims.index') }}">Back</a>@can('update',$claim)<a class="btn btn-primary" href="{{ route('funeral-claims.edit',$claim) }}"><i class="bi bi-pencil"></i> Edit</a>@endcan @can('void',$claim)<button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#voidClaimModal"><i class="bi bi-x-circle"></i> Void Claim</button>@endcan</div>@endsection
 @section('content')
 <div class="row g-3">
  <div class="col-xl-4"><div class="card h-100"><div class="card-body"><h2 class="h5">Case Summary</h2><dl class="row mb-0"><dt class="col-5">Employee</dt><dd class="col-7">{{ $claim->employee->display_name }}<br><span class="small text-muted">{{ $claim->employee->employee_no }}</span></dd><dt class="col-5">Deceased</dt><dd class="col-7">{{ $claim->deceased_name }}</dd><dt class="col-5">Category</dt><dd class="col-7">{{ $claim->categories()[$claim->deceased_category] }}</dd><dt class="col-5">Context</dt><dd class="col-7">{{ str($claim->claimant_context)->headline() }}</dd><dt class="col-5">Death date</dt><dd class="col-7">{{ $claim->date_of_death->format('d M Y') }}</dd><dt class="col-5">Province</dt><dd class="col-7">{{ $claim->province->name }}</dd><dt class="col-5">Assigned to</dt><dd class="col-7">{{ $claim->assignedTo?->name ?? 'Unassigned' }}</dd></dl></div></div></div>
- <div class="col-xl-4"><div class="card h-100"><div class="card-body"><h2 class="h5">Eligibility Snapshot</h2><div class="mb-2"><span class="badge {{ $claim->eligibility_status==='eligible'?'text-bg-success':($claim->eligibility_status==='ineligible'?'text-bg-danger':'text-bg-warning') }}">{{ $claim->eligibilityStatuses()[$claim->eligibility_status] }}</span></div><div class="display-6 fw-semibold mb-2">{{ $claim->eligible_amount !== null ? 'ZMW '.number_format((float)$claim->eligible_amount,2) : 'Not calculated' }}</div><p>{{ $claim->eligibility_reason }}</p><div class="small text-muted">{{ $claim->benefitRule?->name ?? 'No rule assigned' }}<br>{{ $claim->funding_source ? str($claim->funding_source)->headline() : '' }}</div></div></div></div>
+ <div class="col-xl-4">
+  <div class="card h-100">
+   <div class="card-body">
+    <h2 class="h5">Eligibility Snapshot</h2>
+    <div class="mb-3">
+     <span class="badge {{ $claim->eligibility_status==='eligible'?'text-bg-success':($claim->eligibility_status==='ineligible'?'text-bg-danger':'text-bg-warning') }}">{{ $claim->eligibilityStatuses()[$claim->eligibility_status] }}</span>
+    </div>
+    @if($claim->grant_amount_approved !== null)
+     <div class="small text-muted">Approved amount</div>
+     <div class="display-6 fw-semibold mb-2">ZMW {{ number_format((float)$claim->grant_amount_approved,2) }}</div>
+    @elseif($isEmployeeClaim)
+     <div class="small text-muted mb-2">Proposed funeral grant amount</div>
+     @if($canRecordEmployeeAmount)
+      @can('update',$claim)
+       <form method="POST" action="{{ route('funeral-claims.employee-grant-amount.update',$claim) }}" class="mb-3">
+        @csrf
+        @method('PATCH')
+        <div class="input-group">
+         <span class="input-group-text">K</span>
+         <input type="number" step="0.01" min="0.01" name="eligible_amount" class="form-control @error('eligible_amount') is-invalid @enderror" value="{{ old('eligible_amount',$claim->eligible_amount) }}" placeholder="Enter amount" required>
+         <button class="btn btn-primary">Save Amount</button>
+        </div>
+        @error('eligible_amount')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+       </form>
+      @else
+       <div class="h4 fw-semibold mb-2">{{ $claim->eligible_amount !== null ? 'ZMW '.number_format((float)$claim->eligible_amount,2) : 'Amount pending confirmation' }}</div>
+      @endcan
+     @else
+      <div class="h4 fw-semibold mb-2">{{ $claim->eligible_amount !== null ? 'ZMW '.number_format((float)$claim->eligible_amount,2) : 'Amount pending confirmation' }}</div>
+     @endif
+    @else
+     <div class="display-6 fw-semibold mb-2">{{ $claim->eligible_amount !== null ? 'ZMW '.number_format((float)$claim->eligible_amount,2) : 'Not calculated' }}</div>
+    @endif
+    <div class="small text-muted">{{ $isEmployeeClaim ? 'Employee funeral grant' : $claim->eligibility_reason }}</div>
+   </div>
+  </div>
+ </div>
  <div class="col-xl-4"><div class="card h-100"><div class="card-body"><h2 class="h5">Status</h2><p class="fs-5">{{ $statuses[$claim->status] }}</p>@if($isVoided)<dl class="mb-0"><dt>Voided by</dt><dd>{{ $claim->voidedBy?->name ?? 'System' }}</dd><dt>Voided at</dt><dd>{{ $claim->voided_at?->format('d M Y H:i') }}</dd><dt>Reason</dt><dd class="mb-0">{{ $claim->void_reason }}</dd></dl>@elseif(array_key_exists($claim->status,$reviewStatuses))<form method="POST" action="{{ route('funeral-claims.update-status',$claim) }}" data-confirm="true" data-confirm-title="Change claim status?" data-confirm-message="Are you sure you want to update this claim status?" data-confirm-button="Update Status">@csrf @method('PATCH')<label class="form-label" for="status">Change review status</label><select id="status" name="status" class="form-select mb-2">@foreach($reviewStatuses as $value=>$label)<option value="{{ $value }}" @selected($claim->status===$value)>{{ $label }}</option>@endforeach</select><label class="form-label" for="comment">Comment</label><textarea id="comment" name="comment" class="form-control mb-2" rows="2"></textarea>@error('status')<div class="text-danger small mb-2">{{ $message }}</div>@enderror<button class="btn btn-primary">Update Status</button></form>@else<p class="small text-muted mb-0">Use the workflow actions below to continue this claim.</p>@endif</div></div></div>
 </div>
 @if($isVoided)
@@ -29,7 +67,7 @@
   <div class="col-md-4"><label class="form-label" for="payreq_reference">PayReq reference</label><input id="payreq_reference" name="payreq_reference" class="form-control" value="{{ old('payreq_reference',$claim->payreq_reference) }}">@error('payreq_reference')<div class="text-danger small mt-1">{{ $message }}</div>@enderror</div><div class="col-md-4"><label class="form-label" for="payreq_raised_date">PayReq raised date</label><input type="date" id="payreq_raised_date" name="payreq_raised_date" class="form-control" value="{{ old('payreq_raised_date',optional($claim->payreq_raised_date)->format('Y-m-d')) }}">@error('payreq_raised_date')<div class="text-danger small mt-1">{{ $message }}</div>@enderror</div><div class="col-md-4"><label class="form-label" for="payreq_approved_date">External approval date</label><input type="date" id="payreq_approved_date" name="payreq_approved_date" class="form-control" value="{{ old('payreq_approved_date',optional($claim->payreq_approved_date)->format('Y-m-d')) }}">@error('payreq_approved_date')<div class="text-danger small mt-1">{{ $message }}</div>@enderror</div>
  </div>@error('workflow')<div class="text-danger mt-2">{{ $message }}</div>@enderror<div class="mt-3"><button class="btn btn-primary">Save Preparation</button></div></form>
 </div></div>
-@can('approve',$claim)@if($claim->status===\App\Models\FuneralClaim::STATUS_READY_FOR_APPROVAL)<div class="card mt-3"><div class="card-header bg-white"><h2 class="h5 mb-0">Manager Decision</h2></div><div class="card-body"><form method="POST" action="{{ route('funeral-claims.decision',$claim) }}" class="row g-3">@csrf @method('PATCH')<div class="col-md-3"><label class="form-label">Decision</label><select name="decision" class="form-select" required><option value="approve">Approve</option><option value="reject">Reject</option></select></div><div class="col-md-3"><label class="form-label">Approved grant amount</label><input type="number" step="0.01" min="0" name="grant_amount_approved" class="form-control" value="{{ $claim->eligible_amount }}"></div><div class="col-md-6"><label class="form-label">Decision comment</label><textarea name="comment" class="form-control" rows="2" required></textarea></div><div class="col-12">@error('decision')<div class="text-danger mb-2">{{ $message }}</div>@enderror<button class="btn btn-primary">Record Decision</button></div></form></div></div>@endif @endcan
+@can('approve',$claim)@if($claim->status===\App\Models\FuneralClaim::STATUS_READY_FOR_APPROVAL)<div class="card mt-3"><div class="card-header bg-white"><h2 class="h5 mb-0">Manager Decision</h2></div><div class="card-body"><form method="POST" action="{{ route('funeral-claims.decision',$claim) }}" class="row g-3">@csrf @method('PATCH')<div class="col-md-3"><label class="form-label">Decision</label><select name="decision" class="form-select" required><option value="approve">Approve</option><option value="reject">Reject</option></select></div><div class="col-md-3"><label class="form-label">{{ $isEmployeeClaim ? 'Confirmed grant amount' : 'Approved grant amount' }}</label><input type="number" step="0.01" min="0.01" name="grant_amount_approved" class="form-control" value="{{ old('grant_amount_approved', $isEmployeeClaim ? ($claim->grant_amount_approved ?? $claim->eligible_amount) : $claim->eligible_amount) }}" @required($isEmployeeClaim)>@error('grant_amount_approved')<div class="text-danger small mt-1">{{ $message }}</div>@enderror</div><div class="col-md-6"><label class="form-label">Decision comment</label><textarea name="comment" class="form-control" rows="2" required>{{ old('comment') }}</textarea></div><div class="col-12">@error('decision')<div class="text-danger mb-2">{{ $message }}</div>@enderror<button class="btn btn-primary">Record Decision</button></div></form></div></div>@endif @endcan
 @if($claim->status===\App\Models\FuneralClaim::STATUS_APPROVED)<div class="mt-3"><form method="POST" action="{{ route('funeral-claims.start-payment',$claim) }}">@csrf @method('PATCH')<button class="btn btn-primary">Start Payment Processing</button></form></div>@endif
 @if($claim->status===\App\Models\FuneralClaim::STATUS_PAYMENT_PROCESSING)<div class="card mt-3"><div class="card-header bg-white"><h2 class="h5 mb-0">Record Funeral Grant Payment</h2></div><div class="card-body"><form method="POST" action="{{ route('funeral-claims.payment',$claim) }}" class="row g-3">@csrf @method('PATCH')<div class="col-md-4"><label class="form-label">Payment date</label><input type="date" name="payment_date" class="form-control" required></div><div class="col-md-4"><label class="form-label">Payment reference</label><input name="payment_reference" class="form-control" required></div><div class="col-md-4"><label class="form-label">Family confirmation date</label><input type="date" name="family_payment_confirmed_date" class="form-control"></div><div class="col-12"><button class="btn btn-primary">Record Payment</button></div></form></div></div>@endif
 @can('reopen',$claim)@if(in_array($claim->status,[\App\Models\FuneralClaim::STATUS_REJECTED,\App\Models\FuneralClaim::STATUS_INELIGIBLE],true))<div class="card mt-3"><div class="card-body"><form method="POST" action="{{ route('funeral-claims.reopen',$claim) }}" class="row g-2 align-items-end">@csrf @method('PATCH')<div class="col-md-9"><label class="form-label">Reason for reopening</label><textarea name="reason" class="form-control" required></textarea></div><div class="col-md-3"><button class="btn btn-outline-primary">Reopen Claim</button></div></form></div></div>@endif @endcan

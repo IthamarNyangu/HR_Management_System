@@ -257,6 +257,7 @@ Route::middleware(['auth', 'active', 'password.changed'])->group(function () use
         ->except(['destroy']);
 
     Route::patch('/funeral-claims/{funeral_claim}/status', [FuneralClaimController::class, 'updateStatus'])->name('funeral-claims.update-status');
+    Route::patch('/funeral-claims/{funeral_claim}/employee-grant-amount', [FuneralClaimWorkflowController::class, 'updateEmployeeGrantAmount'])->name('funeral-claims.employee-grant-amount.update');
     Route::patch('/funeral-claims/{funeral_claim}/processing', [FuneralClaimWorkflowController::class, 'updateProcessing'])->name('funeral-claims.processing.update');
     Route::patch('/funeral-claims/{funeral_claim}/decision', [FuneralClaimWorkflowController::class, 'decide'])->name('funeral-claims.decision');
     Route::patch('/funeral-claims/{funeral_claim}/start-payment', [FuneralClaimWorkflowController::class, 'startPayment'])->name('funeral-claims.start-payment');

@@ -21,11 +21,11 @@ class FuneralClaimEligibilityService
 
         if ($category === FuneralClaim::CATEGORY_EMPLOYEE) {
             if ($age === null) {
-                [$status, $reason, $ruleCode] = [FuneralClaim::REQUIRES_REVIEW, 'Employee date of birth is missing; age eligibility requires review.', 'EMPLOYEE_STANDARD'];
+                [$status, $reason, $ruleCode] = [FuneralClaim::REQUIRES_REVIEW, 'Employee date of birth is missing; age eligibility and the final grant amount require review.', 'EMPLOYEE_STANDARD'];
             } elseif ($age > 70) {
-                [$status, $reason, $ruleCode] = [FuneralClaim::REQUIRES_REVIEW, 'Employee was over 70 and requires internal approval for the organisational funeral grant.', 'EMPLOYEE_OVER_70'];
+                [$status, $reason, $ruleCode] = [FuneralClaim::REQUIRES_REVIEW, 'Employee was over 70 and requires internal approval. People & Culture must confirm the final organisational grant amount.', 'EMPLOYEE_OVER_70'];
             } else {
-                [$reason, $ruleCode] = ['Employee qualifies for the organisational funeral grant advance.', 'EMPLOYEE_STANDARD'];
+                [$reason, $ruleCode] = ['People & Culture must confirm the employee funeral grant amount during approval.', 'EMPLOYEE_STANDARD'];
             }
         } elseif ($category === FuneralClaim::CATEGORY_SPOUSE) {
             [$reason, $ruleCode] = ['Spouse qualifies for the funeral benefit.', 'SPOUSE_STANDARD'];
@@ -57,7 +57,7 @@ class FuneralClaimEligibilityService
             'eligibility_status' => $status,
             'eligibility_reason' => trim($reason),
             'funeral_benefit_rule_id' => $rule?->id,
-            'eligible_amount' => $rule?->amount,
+            'eligible_amount' => $category === FuneralClaim::CATEGORY_EMPLOYEE ? null : $rule?->amount,
             'funding_source' => $rule?->funding_source,
             'claimant_context' => $employee->termination_date && $employee->termination_date->lte($deathDate) ? 'former_employee' : 'current_employee',
         ];

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\FuneralClaim;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -14,6 +15,17 @@ class DecideFuneralClaimRequest extends FormRequest
 
     public function rules(): array
     {
-        return ['decision' => ['required', Rule::in(['approve', 'reject'])], 'grant_amount_approved' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99'], 'comment' => ['required', 'string', 'max:5000']];
+        return [
+            'decision' => ['required', Rule::in(['approve', 'reject'])],
+            'grant_amount_approved' => [
+                Rule::requiredIf(fn (): bool => $this->input('decision') === 'approve'
+                    && $this->route('funeral_claim')?->deceased_category === FuneralClaim::CATEGORY_EMPLOYEE),
+                'nullable',
+                'numeric',
+                'min:0.01',
+                'max:9999999999.99',
+            ],
+            'comment' => ['required', 'string', 'max:5000'],
+        ];
     }
 }

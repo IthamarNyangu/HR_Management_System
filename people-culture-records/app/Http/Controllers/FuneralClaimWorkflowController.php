@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\DecideFuneralClaimRequest;
 use App\Http\Requests\RecordFuneralClaimPaymentRequest;
 use App\Http\Requests\ReopenFuneralClaimRequest;
+use App\Http\Requests\UpdateEmployeeFuneralGrantAmountRequest;
 use App\Http\Requests\UpdateFuneralClaimProcessingRequest;
 use App\Http\Requests\VoidFuneralClaimRequest;
 use App\Models\FuneralClaim;
@@ -18,6 +19,49 @@ use Illuminate\Validation\ValidationException;
 
 class FuneralClaimWorkflowController extends Controller
 {
+    public function updateEmployeeGrantAmount(UpdateEmployeeFuneralGrantAmountRequest $request, FuneralClaim $funeralClaim, ActivityLogger $activity): RedirectResponse
+    {
+        if ($funeralClaim->deceased_category !== FuneralClaim::CATEGORY_EMPLOYEE) {
+            throw ValidationException::withMessages([
+                'eligible_amount' => 'A proposed amount can only be entered here for an employee funeral claim.',
+            ]);
+        }
+
+        if (! in_array($funeralClaim->status, [
+            FuneralClaim::STATUS_DRAFT,
+            FuneralClaim::STATUS_AWAITING_DOCUMENTS,
+            FuneralClaim::STATUS_UNDER_VERIFICATION,
+            FuneralClaim::STATUS_READY_FOR_APPROVAL,
+        ], true)) {
+            throw ValidationException::withMessages([
+                'eligible_amount' => 'The proposed amount cannot be changed after the claim decision or closure.',
+            ]);
+        }
+
+        $amount = $request->validated('eligible_amount');
+
+        $funeralClaim->update([
+            'eligible_amount' => $amount,
+            'updated_by' => $request->user()->id,
+        ]);
+        $funeralClaim->workflowEvents()->create([
+            'event_type' => 'employee_grant_amount_recorded',
+            'performed_by' => $request->user()->id,
+            'comment' => 'Proposed employee Funeral Grant amount recorded.',
+            'properties' => ['amount' => (float) $amount],
+        ]);
+        $activity->log(
+            'funeral_claim_employee_amount_recorded',
+            "{$request->user()->name} recorded the proposed Funeral Grant amount for {$funeralClaim->reference_no}.",
+            $funeralClaim,
+            ['amount' => (float) $amount],
+            user: $request->user(),
+            request: $request,
+        );
+
+        return back()->with('success', 'Proposed Funeral Grant amount recorded.');
+    }
+
     public function updateProcessing(UpdateFuneralClaimProcessingRequest $request, FuneralClaim $funeralClaim, ActivityLogger $activity): RedirectResponse
     {
         if (in_array($funeralClaim->status, [FuneralClaim::STATUS_REJECTED, FuneralClaim::STATUS_PAID], true)) {
@@ -48,7 +92,12 @@ class FuneralClaimWorkflowController extends Controller
             $this->ensureApprovalPrerequisites($funeralClaim);
         }
         $newStatus = $decision === 'approve' ? FuneralClaim::STATUS_APPROVED : FuneralClaim::STATUS_REJECTED;
-        $amount = $decision === 'approve' ? ($request->validated('grant_amount_approved') ?? $funeralClaim->eligible_amount) : null;
+        $amount = null;
+        if ($decision === 'approve') {
+            $amount = $funeralClaim->deceased_category === FuneralClaim::CATEGORY_EMPLOYEE
+                ? $request->validated('grant_amount_approved')
+                : ($request->validated('grant_amount_approved') ?? $funeralClaim->eligible_amount);
+        }
 
         DB::transaction(function () use ($request, $funeralClaim, $decision, $newStatus, $amount) {
             $funeralClaim->update(['status' => $newStatus, 'approved_by' => $decision === 'approve' ? $request->user()->id : null, 'approved_at' => $decision === 'approve' ? now() : null, 'approval_comment' => $request->validated('comment'), 'grant_amount_approved' => $amount, 'last_status_changed_by' => $request->user()->id, 'last_status_changed_at' => now(), 'updated_by' => $request->user()->id]);

@@ -201,7 +201,7 @@ class FuneralClaimModuleTest extends TestCase
         $this->actingAs($admin)->post(route('funeral-claims.store'), $this->payload($employee))->assertRedirect();
         $over70 = FuneralClaim::firstOrFail();
         $this->assertSame(FuneralClaim::REQUIRES_REVIEW, $over70->eligibility_status);
-        $this->assertSame('30000.00', $over70->eligible_amount);
+        $this->assertNull($over70->eligible_amount);
 
         $mother = $this->employee(['employee_no' => 'EMP-MOTHER']);
         $this->actingAs($admin)->post(route('funeral-claims.store'), $this->payload($mother, ['deceased_category' => 'child', 'deceased_name' => 'Baby', 'gestational_age_weeks' => 24]))->assertRedirect();
@@ -314,7 +314,7 @@ class FuneralClaimModuleTest extends TestCase
         $claim = $this->readyClaim($admin);
 
         $this->actingAs($officer)->patch(route('funeral-claims.decision', $claim), ['decision' => 'approve', 'comment' => 'Officer approval.'])->assertForbidden();
-        $this->actingAs($manager)->patch(route('funeral-claims.decision', $claim), ['decision' => 'approve', 'comment' => 'Manager approval.'])->assertSessionHasErrors('decision');
+        $this->actingAs($manager)->patch(route('funeral-claims.decision', $claim), ['decision' => 'approve', 'grant_amount_approved' => 30000, 'comment' => 'Manager approval.'])->assertSessionHasErrors('decision');
         $this->assertSame(FuneralClaim::STATUS_READY_FOR_APPROVAL, $claim->fresh()->status);
     }
 
@@ -344,6 +344,79 @@ class FuneralClaimModuleTest extends TestCase
         $this->assertSame('paid', $claim->payment_status);
         $this->assertSame('30000.00', $claim->grant_amount_approved);
         $this->assertDatabaseHas('funeral_claim_workflow_events', ['funeral_claim_id' => $claim->id, 'event_type' => 'payment_recorded']);
+    }
+
+    public function test_employee_claim_requires_an_explicit_grant_amount_before_approval(): void
+    {
+        $admin = $this->user($this->adminRole);
+        $manager = $this->user($this->managerRole);
+        $claim = $this->readyClaim($admin);
+
+        $this->actingAs($admin)->patch(route('funeral-claims.processing.update', $claim), [
+            'family_meeting_status' => 'not_required',
+            'grant_consent_confirmed' => 1,
+            'grant_consent_date' => '2026-01-03',
+            'banking_details_verified' => 1,
+            'payreq_reference' => 'PR-2001',
+            'payreq_raised_date' => '2026-01-03',
+            'payreq_status' => 'approved',
+            'payreq_approved_date' => '2026-01-04',
+        ])->assertSessionHasNoErrors();
+
+        $this->actingAs($manager)
+            ->patch(route('funeral-claims.decision', $claim), [
+                'decision' => 'approve',
+                'comment' => 'Approval attempted without a confirmed amount.',
+            ])
+            ->assertSessionHasErrors('grant_amount_approved');
+
+        $this->assertSame(FuneralClaim::STATUS_READY_FOR_APPROVAL, $claim->fresh()->status);
+        $this->assertNull($claim->grant_amount_approved);
+
+        $this->actingAs($manager)
+            ->patch(route('funeral-claims.decision', $claim), [
+                'decision' => 'approve',
+                'grant_amount_approved' => 42500,
+                'comment' => 'Confirmed after internal review.',
+            ])
+            ->assertSessionHasNoErrors();
+
+        $claim->refresh();
+        $this->assertSame(FuneralClaim::STATUS_APPROVED, $claim->status);
+        $this->assertSame('42500.00', $claim->grant_amount_approved);
+    }
+
+    public function test_authorized_user_can_record_the_proposed_employee_funeral_grant_amount(): void
+    {
+        $admin = $this->user($this->adminRole);
+        $employee = $this->employee();
+        $this->actingAs($admin)
+            ->post(route('funeral-claims.store'), $this->payload($employee))
+            ->assertRedirect();
+        $claim = FuneralClaim::firstOrFail();
+
+        $this->actingAs($admin)
+            ->get(route('funeral-claims.show', $claim))
+            ->assertOk()
+            ->assertSee('Proposed funeral grant amount')
+            ->assertSee('Save Amount');
+
+        $this->actingAs($admin)
+            ->patch(route('funeral-claims.employee-grant-amount.update', $claim), [
+                'eligible_amount' => 37500,
+            ])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame('37500.00', $claim->fresh()->eligible_amount);
+        $this->assertDatabaseHas('funeral_claim_workflow_events', [
+            'funeral_claim_id' => $claim->id,
+            'event_type' => 'employee_grant_amount_recorded',
+            'performed_by' => $admin->id,
+        ]);
+        $this->assertDatabaseHas('activity_logs', [
+            'action' => 'funeral_claim_employee_amount_recorded',
+            'subject_id' => $claim->id,
+        ]);
     }
 
     public function test_only_manager_or_admin_can_reopen_rejected_claim(): void
